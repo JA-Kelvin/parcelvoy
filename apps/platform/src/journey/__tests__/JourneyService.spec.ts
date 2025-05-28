@@ -127,7 +127,7 @@ describe('JourneyService', () => {
             },
         })
 
-        const event = await UserEvent.insertAndFetch({
+        const event = await UserEvent.fromJson({
             project_id: user.project_id,
             user_id: user.id,
             name: 'purchased gourd',

@@ -118,4 +118,19 @@ export class ClickHouseModel extends RawModel {
             nextCursor: results.length < limit ? undefined : `${offset + limit}`,
         }
     }
+
+    static async exists<T extends typeof RawModel>(
+        this: T,
+        where: string,
+        params: any = {},
+        clickhouse = App.main.clickhouse,
+    ): Promise<boolean> {
+        const result = await clickhouse.query({
+            query: `SELECT count() AS count FROM ${this.tableName} WHERE (${where}) LIMIT 1`,
+            query_params: params,
+            format: 'JSONEachRow',
+        })
+        const json = await result.json() as { count: number }[]
+        return json[0].count > 0
+    }
 }
