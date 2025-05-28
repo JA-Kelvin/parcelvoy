@@ -8,7 +8,6 @@ import { User, UserParams } from './User'
 import { extractQueryParams } from '../utilities'
 import { searchParamsSchema, SearchSchema } from '../core/searchParams'
 import { getUser, getUserFromContext, pagedUsers } from './UserRepository'
-import { getUserLists } from '../lists/ListService'
 import { getUserSubscriptions, toggleSubscription } from '../subscriptions/SubscriptionService'
 import { SubscriptionState } from '../subscriptions/Subscription'
 import { getUserEvents } from './UserEventRepository'
@@ -166,11 +165,6 @@ router.delete('/:userId', projectRoleMiddleware('editor'), async ctx => {
 
     ctx.status = 204
     ctx.body = ''
-})
-
-router.get('/:userId/lists', async ctx => {
-    const params = extractQueryParams(ctx.query, searchParamsSchema)
-    ctx.body = await getUserLists(ctx.state.user!.id, params, ctx.state.project.id)
 })
 
 router.get('/:userId/events', async ctx => {

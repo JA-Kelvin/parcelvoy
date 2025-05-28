@@ -83,15 +83,13 @@ export async function syncUserDataPaths({
             userPaths.add(joinPath('$', path))
         }
 
-        const eventQuery = UserEvent.query(trx)
-            .where('project_id', project_id)
-            .select('name', 'data')
-        if (updatedAfter) {
-            eventQuery.where('created_at', '>=', updatedAfter)
-        }
+        const eventQuery = await UserEvent.query(`SELECT name, data FROM user_events WHERE project_id = {projectId: UInt32} ${updatedAfter ? 'AND created_at >= ' + updatedAfter : ''}`, {
+            projectId: project_id,
+        })
 
-        await eventQuery.stream(async function(stream) {
-            for await (const { name, data } of stream) {
+        for await (const chunk of eventQuery.stream() as any) {
+            for (const result of chunk) {
+                const { name, data } = result.json()
                 let set = eventPaths.get(name)
                 if (!set) {
                     eventPaths.set(name, set = new Set())
@@ -101,7 +99,7 @@ export async function syncUserDataPaths({
                     set.add(joinPath('$', path))
                 }
             }
-        })
+        }
 
         const existing = await ProjectRulePath.all(q => q.where('project_id', project_id), trx)
 

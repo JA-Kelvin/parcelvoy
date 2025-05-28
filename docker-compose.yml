@@ -180,10 +180,25 @@ services:
       API_BASE_URL: ${API_BASE_URL}
     ports:
       - ${UI_PORT}:3000
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.5
+    restart: on-failure
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 2s
+      retries: 20
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
 volumes:
   mysql_data:
     driver: local
   redis_data:
     driver: local
   uploads:
+    driver: local
+  clickhouse_data:
     driver: local

@@ -4,7 +4,7 @@ import { PageParams } from '../core/searchParams'
 import { RetryError } from '../queue/Job'
 import { subscribeAll } from '../subscriptions/SubscriptionService'
 import { Device, DeviceParams, User, UserInternalParams } from '../users/User'
-import { uuid } from '../utilities'
+import { deepEqual, pick, uuid } from '../utilities'
 import { getRuleEventNames } from '../rules/RuleHelpers'
 import { UserEvent } from './UserEvent'
 import { Context } from 'koa'
@@ -190,18 +190,27 @@ export const getUserEventsForRules = async (
         return a
     }, []).filter((o, i, a) => a.indexOf(o) === i)
     if (!names.length) return []
-    return UserEvent.all(qb => {
-        qb.whereIn('user_id', userIds)
-            .whereIn('name', names)
-            .orderBy('id', 'asc')
-        if (since) qb.where('created_at', '>=', since)
-        return qb
-    })
+    return UserEvent.all(
+        `
+        SELECT * FROM user_events 
+            WHERE user_id IN ({userIds: Array(UInt32)}) 
+            AND name IN ({names: Array(String)}) 
+            AND created_at >= {since: DateTime} 
+            ORDER BY created_at DESC
+        `,
+        {
+            userIds,
+            names,
+            since: since ?? new Date(0),
+        },
+    )
 }
 
-export const isUserDirty = (params: UserInternalParams) => {
-    const hasData = !!params.data && Object.keys(params.data).length > 0
-    const hasReserved = !!params.email || !!params.phone || !!params.timezone || !!params.locale || !!params.created_at
+export const isUserDirty = (existing: User, patch: UserInternalParams) => {
 
-    return hasData || hasReserved
+    const newData = { ...existing.data, ...patch.data }
+    const fields: Array<keyof UserInternalParams> = ['external_id', 'anonymous_id', 'email', 'phone', 'timezone', 'locale']
+    const hasDataChanged = !deepEqual(existing.data, newData)
+    const haveFieldsChanged = !deepEqual(pick(existing, fields), pick(patch, fields))
+    return hasDataChanged || haveFieldsChanged
 }

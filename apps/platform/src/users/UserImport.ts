@@ -5,7 +5,7 @@ import ListStatsJob from '../lists/ListStatsJob'
 import { RequestError } from '../core/errors'
 import App from '../app'
 import { Chunker } from '../utilities'
-import { getList } from '../lists/ListService'
+import { getList, updateListState } from '../lists/ListService'
 
 export interface UserImport {
     project_id: number
@@ -17,6 +17,8 @@ export const importUsers = async ({ project_id, stream, list_id }: UserImport) =
 
     const list = await getList(list_id, project_id)
     if (!list) return
+
+    await updateListState(list_id, { state: 'loading' })
 
     const options: Options = {
         columns: true,
@@ -55,9 +57,9 @@ export const importUsers = async ({ project_id, stream, list_id }: UserImport) =
     await chunker.flush()
 
     // Generate preliminary list count
-    if (list_id) {
-        await ListStatsJob.from(list_id, project_id, true).delay(2000).queue()
-    }
+    await ListStatsJob.from(list_id, project_id).delay(2000).queue()
+
+    await updateListState(list_id, { state: 'ready' })
 }
 
 const cleanRow = (row: Record<string, any>): Record<string, any> => {

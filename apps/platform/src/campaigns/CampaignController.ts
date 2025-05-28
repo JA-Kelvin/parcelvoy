@@ -7,7 +7,6 @@ import { extractQueryParams } from '../utilities'
 import { ProjectState } from '../auth/AuthMiddleware'
 import { projectRoleMiddleware } from '../projects/ProjectService'
 import { Context, Next } from 'koa'
-import CampaignTriggerSendJob, { CampaignTriggerSendParams } from './CampaignTriggerSendJob'
 
 const router = new Router<ProjectState & { campaign?: Campaign }>({
     prefix: '/campaigns',
@@ -173,47 +172,6 @@ router.post('/:campaignId/duplicate', async ctx => {
 
 router.get('/:campaignId/preview', async ctx => {
     ctx.body = await campaignPreview(ctx.state.project, ctx.state.campaign!)
-})
-
-type CampaignTriggerSchema = Omit<CampaignTriggerSendParams, 'project_id' | 'campaign_id'>
-
-const campaignTriggerParams: JSONSchemaType<CampaignTriggerSchema> = {
-    $id: 'campaignTrigger',
-    type: 'object',
-    required: ['user', 'event'],
-    properties: {
-        user: {
-            type: 'object',
-            required: ['external_id'],
-            properties: {
-                external_id: { type: 'string' },
-                email: { type: 'string', nullable: true },
-                phone: { type: 'string', nullable: true },
-                device_token: { type: 'string', nullable: true },
-                timezone: { type: 'string', nullable: true },
-                locale: { type: 'string', nullable: true },
-            },
-            additionalProperties: true,
-        },
-        event: {
-            type: 'object',
-            additionalProperties: true,
-        },
-    },
-    additionalProperties: false,
-}
-
-router.post('/:campaignId/trigger', async ctx => {
-    const project = ctx.state.project
-    const payload = validate(campaignTriggerParams, ctx.request.body)
-
-    await CampaignTriggerSendJob.from({
-        ...payload,
-        project_id: project.id,
-        campaign_id: ctx.state.campaign!.id,
-    }).queue()
-
-    ctx.body = { success: true }
 })
 
 export default router

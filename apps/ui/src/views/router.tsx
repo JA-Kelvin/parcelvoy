@@ -16,7 +16,6 @@ import UserDetail from './users/UserDetail'
 import { createStatefulRoute } from './createStatefulRoute'
 import UserDetailAttrs from './users/UserDetailAttrs'
 import UserDetailEvents from './users/UserDetailEvents'
-import UserDetailLists from './users/UserDetailLists'
 import UserDetailSubscriptions from './users/UserDetailSubscriptions'
 import CampaignDetail from './campaign/CampaignDetail'
 import Campaigns from './campaign/Campaigns'
@@ -272,10 +271,6 @@ export const createRouter = ({
                             {
                                 path: 'events',
                                 element: <UserDetailEvents />,
-                            },
-                            {
-                                path: 'lists',
-                                element: <UserDetailLists />,
                             },
                             {
                                 path: 'subscriptions',

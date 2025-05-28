@@ -68,7 +68,6 @@ export default function CampaignDetail() {
     const handleAbort = async () => {
         setIsLoading(true)
         const value = await api.campaigns.update(project.id, campaign.id, { state: 'aborted' })
-        console.log('finished', value)
         setCampaign(value)
         setIsLoading(false)
     }

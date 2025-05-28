@@ -1,5 +1,5 @@
 import { ClientIdentity } from '../client/Client'
-import Model, { ModelParams } from '../core/Model'
+import { ModelFormatOptions, ModelParams, UniversalModel } from '../core/Model'
 import parsePhoneNumber from 'libphonenumber-js'
 
 export interface TemplateUser extends Record<string, any> {
@@ -31,7 +31,7 @@ interface PushEnabledDevice extends Device {
     token: string
 }
 
-export class User extends Model {
+export class User extends UniversalModel {
     project_id!: number
     anonymous_id!: string
     external_id!: string
@@ -86,7 +86,7 @@ export class User extends Model {
         return this.data.last_name ?? this.data.lastName ?? this.data.surname
     }
 
-    static formatJson(json: Record<string, any>): Record<string, unknown> {
+    static formatJson(json: Record<string, any>, options: ModelFormatOptions): Record<string, unknown> {
         if (json.phone) {
             const parsedNumber = parsePhoneNumber(json.phone)
             if (parsedNumber) {
@@ -97,7 +97,7 @@ export class User extends Model {
                 }
             }
         }
-        return super.formatJson(json)
+        return super.formatJson(json, options)
     }
 
     toJSON() {

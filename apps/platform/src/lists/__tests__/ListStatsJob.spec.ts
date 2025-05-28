@@ -2,7 +2,7 @@ import { addUserToList } from '../../lists/ListService'
 import { User } from '../../users/User'
 import { uuid } from '../../utilities'
 import ListStatsJob from '../ListStatsJob'
-import List, { UserList } from '../List'
+import List from '../List'
 import { createTestProject } from '../../projects/__tests__/ProjectTestHelpers'
 
 afterEach(() => {
@@ -27,8 +27,8 @@ describe('ListStatsJob', () => {
 
         await ListStatsJob.handler({ listId: list.id, projectId: project.id })
 
-        const count = await UserList.count(qb => qb.where('list_id', list.id))
-        expect(count).toEqual(2)
+        const refreshedList = await List.find(list.id)
+        expect(refreshedList?.users_count).toEqual(2)
     })
 
     test('subsequent count gets new complete total', async () => {
@@ -47,14 +47,14 @@ describe('ListStatsJob', () => {
         await addUserToList(user, list)
         await addUserToList(user2, list)
 
-        await ListStatsJob.handler({ listId: list.id, projectId: 1 })
+        await ListStatsJob.handler({ listId: list.id, projectId: project.id })
 
         await addUserToList(user3, list)
         await addUserToList(user4, list)
 
-        await ListStatsJob.handler({ listId: list.id, projectId: 1 })
+        await ListStatsJob.handler({ listId: list.id, projectId: project.id })
 
-        const count = await UserList.count(qb => qb.where('list_id', list.id))
-        expect(count).toEqual(4)
+        const refreshedList = await List.find(list.id)
+        expect(refreshedList?.users_count).toEqual(4)
     })
 })

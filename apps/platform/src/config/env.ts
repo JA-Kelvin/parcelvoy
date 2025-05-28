@@ -7,6 +7,7 @@ import type { AuthConfig, AuthProviderName } from '../auth/Auth'
 import type { ErrorConfig } from '../error/ErrorHandler'
 import { RedisConfig } from './redis'
 import { isValidUrl } from '../utilities'
+import { ClickhouseConfig } from './clickhouse'
 
 export type Runner = 'api' | 'worker'
 export interface Env {
@@ -17,6 +18,7 @@ export interface Env {
         logCompiledMessage: boolean
     }
     db: DatabaseConfig
+    clickhouse: ClickhouseConfig
     queue: QueueConfig
     storage: StorageConfig
     baseUrl: string
@@ -75,6 +77,11 @@ export default (type?: EnvType): Env => {
             port: envInt(process.env.DB_PORT, 3306),
             database: process.env.DB_DATABASE!,
             migrationPaths: process.env.DB_MIGRATION_PATHS?.split(',') ?? [],
+        },
+        clickhouse: {
+            url: process.env.CLICKHOUSE_URL ?? 'http://localhost:8123',
+            username: process.env.CLICKHOUSE_USERNAME ?? 'admin',
+            password: process.env.CLICKHOUSE_PASSWORD ?? '',
         },
         redis: {
             host: process.env.REDIS_HOST!,

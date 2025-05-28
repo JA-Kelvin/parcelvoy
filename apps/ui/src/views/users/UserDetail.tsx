@@ -54,11 +54,6 @@ export default function UserDetail() {
                     children: t('events'),
                 },
                 {
-                    key: 'lists',
-                    to: 'lists',
-                    children: t('lists'),
-                },
-                {
                     key: 'subscriptions',
                     to: 'subscriptions',
                     children: t('subscriptions'),

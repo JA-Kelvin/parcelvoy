@@ -12,6 +12,7 @@
     "@aws-sdk/lib-storage": "^3.171.0",
     "@bugsnag/js": "^7.20.0",
     "@bugsnag/plugin-koa": "^7.19.0",
+    "@clickhouse/client": "~1.11.1",
     "@koa/cors": "^5.0.0",
     "@koa/router": "^11.0.1",
     "@ladjs/country-language": "^1.0.3",

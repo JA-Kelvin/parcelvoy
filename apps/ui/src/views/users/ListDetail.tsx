@@ -4,7 +4,6 @@ import { ListContext, ProjectContext } from '../../contexts'
 import { DynamicList, ListUpdateParams, Rule } from '../../types'
 import Button from '../../ui/Button'
 import Heading from '../../ui/Heading'
-import Dialog from '../../ui/Dialog'
 import PageContent from '../../ui/PageContent'
 import RuleBuilder from './RuleBuilder'
 import Modal from '../../ui/Modal'
@@ -24,11 +23,12 @@ import { useBlocker } from 'react-router-dom'
 
 interface RuleSectionProps {
     list: DynamicList
+    isSaving: boolean
     onRuleSave: (rule: Rule) => void
     onChange?: (rule: Rule) => void
 }
 
-const RuleSection = ({ list, onRuleSave, onChange }: RuleSectionProps) => {
+const RuleSection = ({ list, isSaving, onRuleSave, onChange }: RuleSectionProps) => {
     const { t } = useTranslation()
     const [rule, setRule] = useState<Rule>(list.rule)
     const onSetRule = (rule: Rule) => {
@@ -37,7 +37,11 @@ const RuleSection = ({ list, onRuleSave, onChange }: RuleSectionProps) => {
     }
     return <>
         <Heading size="h3" title={t('rules')} actions={
-            <Button size="small" onClick={() => onRuleSave(rule) }>{t('rules_save')}</Button>
+            <Button
+                size="small"
+                onClick={() => onRuleSave(rule) }
+                isLoading={isSaving}
+            >{t('rules_save')}</Button>
         } />
         <RuleBuilder rule={rule} setRule={onSetRule} />
     </>
@@ -47,30 +51,30 @@ export default function ListDetail() {
     const { t } = useTranslation()
     const [project] = useContext(ProjectContext)
     const [list, setList] = useContext(ListContext)
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditListOpen, setIsEditListOpen] = useState(false)
     const [isUploadOpen, setIsUploadOpen] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | undefined>()
 
     const state = useSearchTableState(useCallback(async params => await api.lists.users(project.id, list.id, params), [list, project]))
     const route = useRoute()
 
-    useEffect(() => {
-        const refresh = () => {
-            api.lists.get(project.id, list.id)
-                .then(setList)
-                .then(() => state.reload)
-                .catch(() => {})
-        }
+    const refreshList = () => {
+        api.lists.get(project.id, list.id)
+            .then(setList)
+            .then(() => state.reload)
+            .catch(() => {})
+    }
 
+    useEffect(() => {
         if (list.state !== 'loading') return
         const complete = list.progress?.complete ?? 0
         const total = list.progress?.total ?? 0
         const percent = total > 0 ? complete / total * 100 : 0
         const refreshRate = percent < 5 ? 1000 : 5000
-        const interval = setInterval(refresh, refreshRate)
-        refresh()
+        const interval = setInterval(refreshList, refreshRate)
+        refreshList()
 
         return () => clearInterval(interval)
     }, [list.state])
@@ -89,24 +93,26 @@ export default function ListDetail() {
     }, [blocker.state])
 
     const saveList = async ({ name, rule, published, tags }: ListUpdateParams) => {
+        setIsSaving(true)
         try {
             const value = await api.lists.update(project.id, list.id, { name, rule, published, tags })
             setError(undefined)
             setList(value)
             setIsEditListOpen(false)
-            setIsDialogOpen(true)
             setHasUnsavedChanges(false)
         } catch (error: any) {
             const errorMessage = error.response?.data?.error ?? error.message
             setError(errorMessage)
             setIsEditListOpen(false)
+        } finally {
+            setIsSaving(false)
         }
     }
 
     const uploadUsers = async (file: FileList) => {
         await api.lists.upload(project.id, list.id, file[0])
+        refreshList()
         setIsUploadOpen(false)
-        await state.reload()
     }
 
     const handleRecountList = async () => {
@@ -158,6 +164,7 @@ export default function ListDetail() {
             {list.type === 'dynamic' && (
                 <RuleSection
                     list={list}
+                    isSaving={isSaving}
                     onRuleSave={async (rule: any) => await saveList({ name: list.name, rule })}
                     onChange={() => setHasUnsavedChanges(true)} />
             )}
@@ -166,23 +173,11 @@ export default function ListDetail() {
                 {...state}
                 columns={[
                     { key: 'full_name', title: t('name') },
+                    { key: 'external_id', title: t('external_id') },
                     { key: 'email', title: t('email'), sortable: true },
                     { key: 'phone', title: t('phone') },
-                    {
-                        key: 'created_at',
-                        title: t('joined_list_at'),
-                        sortable: true,
-                        sortKey: 'user_list.created_at',
-                    },
                 ]}
                 onSelectRow={({ id }) => route(`users/${id}`)} />
-
-            <Dialog
-                open={isDialogOpen}
-                onClose={setIsDialogOpen}
-                title="Success">
-                {t('list_generation_dialog_description')}
-            </Dialog>
 
             <Modal
                 open={isEditListOpen}
