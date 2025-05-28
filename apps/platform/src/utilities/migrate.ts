@@ -16,9 +16,9 @@ export const migrateToClickhouse = async () => {
 }
 
 const migrateUsers = async () => {
-    const migrate = await cacheGet<boolean>(App.main.redis, 'migration:events') ?? false
+    const migrate = await cacheGet<boolean>(App.main.redis, 'migration:users') ?? false
     if (!migrate) return
-    logger.info('parcelvoy:migration events start')
+    logger.info('parcelvoy:migration users start')
     const users = await User.query().stream()
 
     const size = 500
@@ -31,6 +31,8 @@ const migrateUsers = async () => {
     }
 
     await chunker.flush()
+    logger.info('parcelvoy:migration users finished')
+    await cacheDel(App.main.redis, 'migration:users')
 }
 
 const migrateEvents = async () => {

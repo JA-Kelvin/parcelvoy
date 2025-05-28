@@ -6,6 +6,7 @@ export interface ClickhouseConfig {
     url: string
     username: string
     password: string
+    database?: string
 }
 
 export default (config: ClickhouseConfig) => {

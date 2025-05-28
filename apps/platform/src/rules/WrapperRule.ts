@@ -64,7 +64,7 @@ export default {
                 ].join(` ${operator} `)
         }
 
-        const parentOperator = rule.operator === 'and' ? 'UNION DISTINCT' : 'INTERSECT'
+        const parentOperator = rule.operator === 'and' ? 'INTERSECT' : 'UNION DISTINCT'
         const userRules = children.filter(child => child.group === 'user')
         const eventRules = children.filter(child => child.group === 'event')
 

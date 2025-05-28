@@ -4,7 +4,9 @@ const Redis = require('ioredis')
 
 exports.up = async function() {
 
-    const client = clickhouse.createClient({
+    const isTest = process.env.NODE_ENV === 'test'
+
+    let client = clickhouse.createClient({
         url: process.env.CLICKHOUSE_URL,
         username: process.env.CLICKHOUSE_USERNAME,
         password: process.env.CLICKHOUSE_PASSWORD,
@@ -18,6 +20,18 @@ exports.up = async function() {
             ? { rejectUnauthorized: false }
             : undefined,
     })
+
+    if (process.env.CLICKHOUSE_DATABASE) {
+        await client.command({
+            query: 'CREATE DATABASE IF NOT EXISTS ' + process.env.CLICKHOUSE_DATABASE,
+        })
+        client = clickhouse.createClient({
+            url: process.env.CLICKHOUSE_URL,
+            username: process.env.CLICKHOUSE_USERNAME,
+            password: process.env.CLICKHOUSE_PASSWORD,
+            database: process.env.CLICKHOUSE_DATABASE,
+        })
+    }
 
     // Enable JSON type
     await client.exec({ query: 'SET enable_json_type = 1' })
@@ -41,7 +55,7 @@ exports.up = async function() {
             ENGINE MergeTree()
             PRIMARY KEY (project_id, user_id, name)
             ORDER BY (project_id, user_id, name, created_at)
-            PARTITION BY project_id
+            ${isTest ? '' : 'PARTITION BY project_id'}
         `,
     })
 
@@ -70,7 +84,7 @@ exports.up = async function() {
             )
             ENGINE = VersionedCollapsingMergeTree(sign, version)
             ORDER BY (project_id, id, created_at)
-            PARTITION BY project_id
+            ${isTest ? '' : 'PARTITION BY project_id'}
         `,
     })
 

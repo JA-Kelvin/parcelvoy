@@ -117,6 +117,9 @@ export const createUser = async (projectId: number, { external_id, anonymous_id,
         ...fields,
     })
 
+    // Send user to ClickHouse as well
+    await User.clickhouse().upsert(user)
+
     // Subscribe the user to all channels the user has available
     await subscribeAll(user)
 
