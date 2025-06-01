@@ -39,7 +39,7 @@ export default class ScheduledEntranceJob extends Job {
 
         const ref = uuid()
         const result = await User.clickhouse().query(
-            getRuleQuery(list.project_id, list.rule)
+            getRuleQuery(list.project_id, list.rule),
         )
 
         const chunker = new Chunker<Partial<JourneyUserStep>>(async items => {

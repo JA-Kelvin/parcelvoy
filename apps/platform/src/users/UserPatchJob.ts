@@ -26,13 +26,11 @@ export default class UserPatchJob extends Job {
         const insert = async (patch: UserPatchTrigger) => {
             const { project_id, user: { external_id, anonymous_id, data, ...fields } } = patch
             const identity = { external_id, anonymous_id } as ClientIdentity
-            const user = await createUser(project_id, {
+            return await createUser(project_id, {
                 ...identity,
                 data,
                 ...fields,
             })
-            await User.clickhouse().upsert(user)
-            return user
         }
 
         const update = async (patch: UserPatchTrigger, existing: User, anonymous?: User) => {
