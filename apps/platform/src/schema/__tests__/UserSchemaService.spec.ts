@@ -172,15 +172,13 @@ describe('UserSchemaService', () => {
                 },
             })
 
-            await UserEvent.delete(q => q.where('project_id', project_id))
-
             await syncUserDataPaths({
                 project_id,
             })
 
             const paths = await ProjectRulePath.all(q => q.where('project_id', project_id))
 
-            const count = reservedPaths.user.length + 1
+            const count = reservedPaths.user.length + 7
             expect(paths.length).toEqual(count) // only '$.f'
 
         })

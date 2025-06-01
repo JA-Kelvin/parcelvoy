@@ -1,4 +1,4 @@
-import { addUserToList } from '../../lists/ListService'
+import { addUserToList, createList } from '../../lists/ListService'
 import { User } from '../../users/User'
 import { uuid } from '../../utilities'
 import ListStatsJob from '../ListStatsJob'
@@ -13,10 +13,10 @@ describe('ListStatsJob', () => {
 
     test('initial count gets complete total', async () => {
         const project = await createTestProject()
-        const list = await List.insertAndFetch({
+        const list = await createList(project.id, {
             name: uuid(),
-            project_id: project.id,
             is_visible: true,
+            type: 'static',
         })
 
         const user = await User.insertAndFetch({ project_id: project.id })
@@ -33,10 +33,10 @@ describe('ListStatsJob', () => {
 
     test('subsequent count gets new complete total', async () => {
         const project = await createTestProject()
-        const list = await List.insertAndFetch({
+        const list = await createList(project.id, {
             name: uuid(),
-            project_id: project.id,
             is_visible: true,
+            type: 'static',
         })
 
         const user = await User.insertAndFetch({ project_id: project.id })

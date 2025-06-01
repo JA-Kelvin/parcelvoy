@@ -25,7 +25,6 @@ import { cacheGet, cacheIncr } from '../config/redis'
 import App from '../app'
 import { releaseLock } from '../core/Lock'
 import CampaignAbortJob from './CampaignAbortJob'
-import { fetchAndCompileRule } from '../rules/RuleService'
 import { getRuleQuery } from '../rules/RuleEngine'
 
 export const CacheKeys = {
@@ -368,22 +367,19 @@ export const recipientClickhouseQuery = async (campaign: Campaign) => {
     const listQueries = async (ids: number[]) => {
         const queries = []
         const lists = await List.query()
-            .select('rule_id')
+            .select('rule')
             .whereIn('id', ids)
-        for (const { rule_id } of lists) {
-            const rule = await fetchAndCompileRule(rule_id)
-            if (rule) {
-                queries.push(getRuleQuery(campaign.project_id, rule))
-            }
+        for (const list of lists) {
+            queries.push(getRuleQuery(campaign.project_id, list.rule))
         }
         return queries.join(' union distinct ')
     }
 
     const channelClause = () => {
         if (campaign.channel === 'email') {
-            return " AND users.email != '' AND users.email IS NOT NULL"
+            return "(users.email != '' AND users.email IS NOT NULL)"
         } else if (campaign.channel === 'text') {
-            return " AND users.phone != '' AND users.phone IS NOT NULL"
+            return "(users.phone != '' AND users.phone IS NOT NULL)"
         } else if (campaign.channel === 'push') {
             // TODO: Figure out how to check for push devices
         }
@@ -391,13 +387,17 @@ export const recipientClickhouseQuery = async (campaign: Campaign) => {
     }
 
     // TODO: Need to pre-filter users who are unsubscribed to campaign channel
-
+    const parts = [channelClause()]
+    if (campaign.exclusion_list_ids?.length) {
+        parts.push(`id NOT IN (${await listQueries(campaign.exclusion_list_ids)})`)
+    }
+    if (campaign.list_ids?.length) {
+        parts.push(`id IN (${await listQueries(campaign.list_ids)})`)
+    }
     return `
         SELECT distinct id, argMax(timezone, version) AS timezone
         FROM users
-        WHERE id IN (${await listQueries(campaign.list_ids ?? [])})
-            AND id NOT IN (${await listQueries(campaign.exclusion_list_ids ?? [])})
-            ${channelClause()}
+        WHERE ${parts.join(' AND ')}
         GROUP BY id
     `
 }
