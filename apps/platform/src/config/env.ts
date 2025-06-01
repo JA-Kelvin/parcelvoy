@@ -80,8 +80,8 @@ export default (type?: EnvType): Env => {
         },
         clickhouse: {
             url: process.env.CLICKHOUSE_URL ?? 'http://localhost:8123',
-            username: process.env.CLICKHOUSE_USERNAME ?? 'admin',
-            password: process.env.CLICKHOUSE_PASSWORD ?? '',
+            username: process.env.CLICKHOUSE_USERNAME ?? 'default',
+            password: process.env.CLICKHOUSE_PASSWORD,
             database: process.env.CLICKHOUSE_DATABASE || 'default',
         },
         redis: {

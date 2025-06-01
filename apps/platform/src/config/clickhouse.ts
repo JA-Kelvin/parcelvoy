@@ -5,7 +5,7 @@ export { ClickHouse }
 export interface ClickhouseConfig {
     url: string
     username: string
-    password: string
+    password?: string
     database?: string
 }
 
