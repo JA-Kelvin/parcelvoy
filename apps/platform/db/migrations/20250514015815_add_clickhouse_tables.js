@@ -4,13 +4,14 @@ const Redis = require('ioredis')
 
 exports.up = async function() {
 
+    const clickhouseConfig = {
+        url: process.env.CLICKHOUSE_URL || 'http://localhost:8123',
+        username: process.env.CLICKHOUSE_USERNAME || 'default',
+        password: process.env.CLICKHOUSE_PASSWORD,
+    }
     const isTest = process.env.NODE_ENV === 'test'
 
-    let client = clickhouse.createClient({
-        url: process.env.CLICKHOUSE_URL,
-        username: process.env.CLICKHOUSE_USERNAME,
-        password: process.env.CLICKHOUSE_PASSWORD,
-    })
+    let client = clickhouse.createClient(clickhouseConfig)
     const redis = new Redis({
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT || 6379,
@@ -26,9 +27,7 @@ exports.up = async function() {
             query: 'CREATE DATABASE IF NOT EXISTS ' + process.env.CLICKHOUSE_DATABASE,
         })
         client = clickhouse.createClient({
-            url: process.env.CLICKHOUSE_URL,
-            username: process.env.CLICKHOUSE_USERNAME,
-            password: process.env.CLICKHOUSE_PASSWORD,
+            ...clickhouseConfig,
             database: process.env.CLICKHOUSE_DATABASE,
         })
     }
