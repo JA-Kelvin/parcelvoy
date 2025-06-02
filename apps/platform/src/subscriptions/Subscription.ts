@@ -15,7 +15,6 @@ export enum SubscriptionState {
 
 export type UserSubscription = {
     subscription_id: number
-    user_id: number
     state: SubscriptionState
     name: string
     channel: string

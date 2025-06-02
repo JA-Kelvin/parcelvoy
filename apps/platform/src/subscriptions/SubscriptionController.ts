@@ -3,7 +3,7 @@ import App from '../app'
 import { RequestError } from '../core/errors'
 import { JSONSchemaType, validate } from '../core/validate'
 import Subscription, { SubscriptionParams, SubscriptionState, SubscriptionUpdateParams, UserSubscription } from './Subscription'
-import { createSubscription, getSubscription, pagedSubscriptions, toggleSubscription, unsubscribe, updateSubscription } from './SubscriptionService'
+import { createSubscription, getSubscription, getUserSubscriptions, pagedSubscriptions, toggleSubscription, unsubscribe, updateSubscription } from './SubscriptionService'
 import SubscriptionError from './SubscriptionError'
 import { encodedLinkToParts } from '../render/LinkService'
 import { ProjectState } from '../auth/AuthMiddleware'
@@ -83,27 +83,17 @@ preferencesPage.param('encodedUserId', async (value, ctx, next) => {
     if (!userId) throw new RequestError(SubscriptionError.UnsubscribeInvalidUser)
     const user = await getUser(userId)
     if (!user) throw new RequestError(SubscriptionError.UnsubscribeInvalidUser)
+    const subscriptions = await getUserSubscriptions(user)
 
     ctx.state.user = user
-    ctx.state.subscriptions = await UserSubscription
-        .query()
-        .select('subscriptions.id as id')
-        .select('subscriptions.name as name')
-        .select('state')
-        .join('subscriptions', 'subscription_id', 'subscriptions.id')
-        .where('user_id', user.id)
-        .orderBy('subscriptions.name', 'asc')
+    ctx.state.subscriptions = subscriptions.results
 
     return await next()
 })
 
 interface SubscriptionPreferencesArgs {
     url: string
-    subscriptions: Array<{
-        id: number
-        name: string
-        state: SubscriptionState
-    }>
+    subscriptions: UserSubscription[]
     showUpdatedMessage?: boolean
 }
 
@@ -166,7 +156,7 @@ const subscriptionPreferencesTemplate = compileTemplate<SubscriptionPreferencesA
                     <input
                         type="checkbox"
                         name="subscriptionIds"
-                        value="{{this.id}}"
+                        value="{{this.subscription_id}}"
                         {{#ifEquals this.state 1}}checked{{/ifEquals}}
                     />
                     <span>
@@ -200,11 +190,11 @@ preferencesPage.post('/', async ctx => {
     const ids = (Array.isArray(subscriptionIds) ? subscriptionIds : [subscriptionIds as string])
         ?.map(Number)
         .filter(n => !isNaN(n)) ?? []
-    for (const sub of ctx.state.subscriptions ?? []) {
+    for (const { subscription_id } of ctx.state.subscriptions ?? []) {
         await toggleSubscription(
             ctx.state.user!.id,
-            sub.id,
-            ids.includes(sub.id)
+            subscription_id,
+            ids.includes(subscription_id)
                 ? SubscriptionState.subscribed
                 : SubscriptionState.unsubscribed,
         )

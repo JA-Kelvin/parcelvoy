@@ -16,20 +16,18 @@ export const pagedSubscriptions = async (params: PageParams, projectId: number) 
     )
 }
 
-export const getUserSubscriptions = async (user: User, params: PageParams, projectId: number): Promise<SearchResult<UserSubscription>> => {
+export const getUserSubscriptions = async (user: User, params?: PageParams): Promise<SearchResult<UserSubscription>> => {
     const subscriptions = await Subscription.all(
-        qb => qb.where('project_id', projectId),
+        qb => qb.where('project_id', user.project_id),
     )
     return {
         results: subscriptions.map(subscription => ({
             name: subscription.name,
             channel: subscription.channel,
             state: user.subscriptionState(subscription.id),
-            user_id: user.id,
-            project_id: projectId,
             subscription_id: subscription.id,
         })),
-        limit: params.limit,
+        limit: params?.limit ?? 25,
     }
 }
 
