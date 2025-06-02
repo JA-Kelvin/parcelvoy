@@ -2,7 +2,6 @@ import { RuleTree } from '../rules/Rule'
 import { ClientAliasParams, ClientIdentity } from '../client/Client'
 import { PageParams } from '../core/searchParams'
 import { RetryError } from '../queue/Job'
-import { subscribeAll } from '../subscriptions/SubscriptionService'
 import { Device, DeviceParams, User, UserInternalParams } from '../users/User'
 import { deepEqual, pick, uuid } from '../utilities'
 import { getRuleEventNames } from '../rules/RuleHelpers'
@@ -120,9 +119,6 @@ export const createUser = async (projectId: number, { external_id, anonymous_id,
     // Send user to ClickHouse as well
     await User.clickhouse().upsert(user)
 
-    // Subscribe the user to all channels the user has available
-    await subscribeAll(user)
-
     // Create an event for the user creation
     await EventPostJob.from({
         project_id: projectId,
@@ -138,15 +134,28 @@ export const createUser = async (projectId: number, { external_id, anonymous_id,
     return user
 }
 
+export const updateUser = async (existing: User, params: Partial<User>, anonymous?: User): Promise<User> => {
+    const { external_id, anonymous_id, data, ...fields } = params
+    const hasChanges = isUserDirty(existing, params)
+    if (hasChanges) {
+        const after = await User.updateAndFetch(existing.id, {
+            data: data ? { ...existing.data, ...data } : undefined,
+            ...fields,
+            ...!anonymous ? { anonymous_id } : {},
+        })
+        await User.clickhouse().upsert(after, existing)
+        return after
+    }
+    return existing
+}
+
 export const saveDevice = async (projectId: number, { external_id, anonymous_id, ...params }: DeviceParams): Promise<Device | undefined> => {
 
     const user = await getUserFromClientId(projectId, { external_id, anonymous_id } as ClientIdentity)
     if (!user) throw new RetryError()
 
-    let isFirstDevice = false
     if (!user.devices) {
         user.devices = []
-        isFirstDevice = true
     }
     let device = user.devices?.find(device => {
         return device.device_id === params.device_id
@@ -162,10 +171,6 @@ export const saveDevice = async (projectId: number, { external_id, anonymous_id,
         user.devices.push(device)
     }
     await User.updateAndFetch(user.id, { devices: user.devices })
-
-    if (isFirstDevice) {
-        await subscribeAll(user, ['push'])
-    }
     return device
 }
 
@@ -209,8 +214,7 @@ export const getUserEventsForRules = async (
     )
 }
 
-export const isUserDirty = (existing: User, patch: UserInternalParams) => {
-
+export const isUserDirty = (existing: User, patch: Partial<User>) => {
     const newData = { ...existing.data, ...patch.data }
     const fields: Array<keyof UserInternalParams> = ['external_id', 'anonymous_id', 'email', 'phone', 'timezone', 'locale']
     const hasDataChanged = !deepEqual(existing.data, newData)

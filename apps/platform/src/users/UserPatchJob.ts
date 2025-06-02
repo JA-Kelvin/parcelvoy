@@ -1,6 +1,6 @@
 import { User, UserInternalParams } from './User'
 import { Job } from '../queue'
-import { createUser, getUsersFromIdentity, isUserDirty } from './UserRepository'
+import { createUser, getUsersFromIdentity, updateUser } from './UserRepository'
 import { ClientIdentity } from '../client/Client'
 import { ListVersion } from '../lists/List'
 import { addUserToList } from '../lists/ListService'
@@ -33,21 +33,6 @@ export default class UserPatchJob extends Job {
             })
         }
 
-        const update = async (patch: UserPatchTrigger, existing: User, anonymous?: User) => {
-            const { user: { external_id, anonymous_id, data, ...fields } } = patch
-            const hasChanges = isUserDirty(existing, patch.user)
-            if (hasChanges) {
-                const after = await User.updateAndFetch(existing.id, {
-                    data: data ? { ...existing.data, ...data } : undefined,
-                    ...fields,
-                    ...!anonymous ? { anonymous_id } : {},
-                })
-                await User.clickhouse().upsert(after, existing)
-                return after
-            }
-            return existing
-        }
-
         const upsert = async (patch: UserPatchTrigger, tries = 3): Promise<User> => {
             const { project_id, user: { external_id, anonymous_id } } = patch
             const identity = { external_id, anonymous_id } as ClientIdentity
@@ -59,7 +44,7 @@ export default class UserPatchJob extends Job {
             // If user, update otherwise insert
             try {
                 return existing
-                    ? await update(patch, existing, anonymous)
+                    ? await updateUser(existing, patch.user, anonymous)
                     : await insert(patch)
             } catch (error: any) {
                 // If there is an error (such as constraints,

@@ -8,6 +8,7 @@ import { User } from '../users/User'
 import { UserEvent } from '../users/UserEvent'
 import { logger } from '../config/logger'
 import { cacheDel, cacheGet } from '../config/redis'
+import { raw } from '../core/Model'
 
 export const migrateToClickhouse = async () => {
     await migrateUsers()
@@ -19,7 +20,14 @@ const migrateUsers = async () => {
     const migrate = await cacheGet<boolean>(App.main.redis, 'migration:users') ?? false
     if (!migrate) return
     logger.info('parcelvoy:migration users start')
-    const users = await User.query().stream()
+    const users = await User.query()
+        .select('users.*', raw("CONCAT('[', GROUP_CONCAT(user_subscription.subscription_id), ']') AS unsubscribe_ids"))
+        .leftJoin('user_subscription', (qb) => {
+            qb.on('user_subscription.user_id', '=', 'users.id')
+                .andOn('user_subscription.state', raw('0'))
+        })
+        .groupBy('users.id')
+        .stream()
 
     const size = 500
     const chunker = new Chunker<User>(async users => {
@@ -27,6 +35,7 @@ const migrateUsers = async () => {
     }, size)
 
     for await (const user of users) {
+        user.unsubscribe_ids = user.unsubscribe_ids ? JSON.parse(user.unsubscribe_ids) : []
         await chunker.add(user)
     }
 

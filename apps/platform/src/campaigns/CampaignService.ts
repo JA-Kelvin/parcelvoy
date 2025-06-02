@@ -386,8 +386,10 @@ export const recipientClickhouseQuery = async (campaign: Campaign) => {
         return ''
     }
 
-    // TODO: Need to pre-filter users who are unsubscribed to campaign channel
-    const parts = [channelClause()]
+    const parts = [
+        channelClause(),
+        `NOT has(unsubscribe_ids, ${campaign.subscription_id})`,
+    ]
     if (campaign.exclusion_list_ids?.length) {
         parts.push(`id NOT IN (${await listQueries(campaign.exclusion_list_ids)})`)
     }

@@ -2,7 +2,7 @@
 const clickhouse = require('@clickhouse/client')
 const Redis = require('ioredis')
 
-exports.up = async function() {
+exports.up = async function(knex) {
 
     const clickhouseConfig = {
         url: process.env.CLICKHOUSE_URL || 'http://localhost:8123',
@@ -76,6 +76,7 @@ exports.up = async function() {
                 timezone String,
                 locale String,
                 data JSON,
+                unsubscribe_ids Array(UInt32),
                 created_at DateTime64(3, 'UTC'),
                 updated_at DateTime64(3, 'UTC'),
                 sign Int8,
@@ -86,6 +87,14 @@ exports.up = async function() {
             ${isTest ? '' : 'PARTITION BY project_id'}
         `,
     })
+
+    // Add new column to users table
+    const hasColumn = await knex.raw('SHOW COLUMNS FROM `users` LIKE \'unsubscribe_ids\'')
+    if (hasColumn[0].length <= 0) {
+        await knex.schema.table('users', function(table) {
+            table.json('unsubscribe_ids').nullable()
+        })
+    }
 
     await redis.set('migration:lists', JSON.stringify(true))
     await redis.set('migration:events', JSON.stringify(true))

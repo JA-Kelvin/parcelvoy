@@ -1,6 +1,7 @@
 import { ClientIdentity } from '../client/Client'
 import { ModelFormatOptions, ModelParams, UniversalModel } from '../core/Model'
 import parsePhoneNumber from 'libphonenumber-js'
+import { SubscriptionState } from '../subscriptions/Subscription'
 
 export interface TemplateUser extends Record<string, any> {
     id: string
@@ -39,10 +40,11 @@ export class User extends UniversalModel {
     phone?: string
     devices?: Device[]
     data!: Record<string, any> // first_name, last_name live in data
+    unsubscribe_ids?: number[]
     timezone?: string
     locale?: string
 
-    static jsonAttributes = ['data', 'devices']
+    static jsonAttributes = ['data', 'devices', 'unsubscribe_ids']
     static virtualAttributes = ['firstName', 'lastName', 'fullName']
 
     flatten(): TemplateUser {
@@ -86,6 +88,12 @@ export class User extends UniversalModel {
         return this.data.last_name ?? this.data.lastName ?? this.data.surname
     }
 
+    subscriptionState(subscriptionId: number): SubscriptionState {
+        return this.unsubscribe_ids?.includes(subscriptionId)
+            ? SubscriptionState.unsubscribed
+            : SubscriptionState.subscribed
+    }
+
     static formatJson(json: Record<string, any>, options: ModelFormatOptions): Record<string, unknown> {
         if (json.phone) {
             const parsedNumber = parsePhoneNumber(json.phone)
@@ -115,4 +123,4 @@ export class User extends UniversalModel {
 }
 
 export type UserParams = Partial<Pick<User, 'email' | 'phone' | 'timezone' |'locale' | 'data'>> & ClientIdentity
-export type UserInternalParams = Partial<Pick<User, 'email' | 'phone' | 'timezone' |'locale' | 'created_at' | 'data'>> & ClientIdentity
+export type UserInternalParams = Partial<Pick<User, 'email' | 'phone' | 'timezone' |'locale' | 'created_at' | 'data' | 'unsubscribe_ids'>> & ClientIdentity
