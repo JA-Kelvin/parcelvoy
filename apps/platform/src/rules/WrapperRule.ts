@@ -49,9 +49,7 @@ export default {
         // Need to wrap the query to get latest version of data
         const baseQuery = 'SELECT id FROM users FINAL'
 
-        const children = rule.children
-        if (!children) return baseQuery + ' WHERE project_id = ' + projectId
-
+        const children = rule.children ?? []
         if (isEventWrapper(rule)) {
             return `SELECT DISTINCT user_id AS id FROM user_events WHERE project_id = ${projectId} AND `
                 + [
@@ -62,6 +60,8 @@ export default {
                             ?.query({ registry, rule: child, projectId }),
                         ),
                 ].join(` ${operator} `)
+        } else if (!children.length) {
+            return baseQuery + ' WHERE project_id = ' + projectId
         }
 
         const parentOperator = rule.operator === 'and' ? 'INTERSECT' : 'UNION DISTINCT'
