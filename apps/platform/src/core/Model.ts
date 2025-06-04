@@ -56,6 +56,7 @@ export class UniversalModel extends Model {
                 if (oldRecord) {
                     values.push({
                         ...oldRecord,
+                        updated_at: newRecord.updated_at,
                         sign: -1,
                     })
                 }
