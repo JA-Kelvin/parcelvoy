@@ -8,6 +8,7 @@ import { DeviceParams } from '../users/User'
 import UserPatchJob from '../users/UserPatchJob'
 import UserDeviceJob from '../users/UserDeviceJob'
 import UserAliasJob from '../users/UserAliasJob'
+import App from '../app'
 
 const router = new Router<ProjectState>()
 router.use(projectMiddleware)
@@ -236,12 +237,11 @@ const postEventsRequest: JSONSchemaType<ClientPostEventsRequest> = {
 router.post('/events', async ctx => {
     const events = validate(postEventsRequest, ctx.request.body)
 
-    for (const event of events) {
-        await EventPostJob.from({
-            project_id: ctx.state.project.id,
-            event,
-        }).queue()
-    }
+    const jobs = events.map(event => EventPostJob.from({
+        project_id: ctx.state.project.id,
+        event,
+    }))
+    await App.main.queue.enqueueBatch(jobs)
 
     ctx.status = 204
     ctx.body = ''

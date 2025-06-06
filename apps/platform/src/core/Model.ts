@@ -1,7 +1,7 @@
 import App from '../app'
 import { Database } from '../config/database'
 import { SQLModel } from './models/SQLModel'
-import { clickhouseAll, clickhouseInsert, clickhouseQuery } from './models/ClickHouseModel'
+import { clickhouseAll, clickhouseDelete, clickhouseInsert, clickhouseQuery } from './models/ClickHouseModel'
 
 export interface SearchResult<T> {
     results: T[]
@@ -95,6 +95,14 @@ export class UniversalModel extends Model {
                 const json = await result.json() as { count: number }[]
                 return json[0].count
             },
+            delete: async function(
+                this: T,
+                where: string,
+                params: any = {},
+                clickhouse = App.main.clickhouse,
+            ) {
+                return clickhouseDelete(this, where, params, clickhouse)
+            }.bind(this),
         }
     }
 }

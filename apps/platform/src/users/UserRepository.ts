@@ -149,6 +149,28 @@ export const updateUser = async (existing: User, params: Partial<User>, anonymou
     return existing
 }
 
+export const deleteUser = async (projectId: number, externalId: string): Promise<void> => {
+    const user = await getUserFromClientId(projectId, { external_id: externalId } as ClientIdentity)
+    if (!user) return
+
+    // Delete the user from ClickHouse
+    await User.clickhouse().delete('project_id = {projectId: UInt32} AND id = {id: UInt32}', {
+        projectId,
+        id: user.id,
+    })
+
+    // Delete the user events from ClickHouse
+    await UserEvent.delete('project_id = {projectId: UInt32} AND user_id = {userId: UInt32}', {
+        projectId,
+        userId: user.id,
+    })
+
+    // Delete the user from the database
+    await User.delete(qb => qb.where('project_id', projectId)
+        .where('id', user.id),
+    )
+}
+
 export const saveDevice = async (projectId: number, { external_id, anonymous_id, ...params }: DeviceParams): Promise<Device | undefined> => {
 
     const user = await getUserFromClientId(projectId, { external_id, anonymous_id } as ClientIdentity)

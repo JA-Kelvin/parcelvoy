@@ -33,14 +33,14 @@ exports.up = async function(knex) {
     }
 
     // Enable JSON type
-    await client.exec({ query: 'SET enable_json_type = 1' })
+    await client.command({ query: 'SET enable_json_type = 1' })
 
     await client.command({
         query: 'DROP TABLE IF EXISTS user_events',
     })
 
     // Event object
-    await client.exec({
+    await client.command({
         query: `
             CREATE TABLE user_events
             (
@@ -63,7 +63,7 @@ exports.up = async function(knex) {
     })
 
     // User object
-    await client.exec({
+    await client.command({
         query: `
             CREATE TABLE users
             (

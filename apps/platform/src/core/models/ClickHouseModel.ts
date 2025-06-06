@@ -46,6 +46,18 @@ export const clickhouseAll = async <T extends typeof RawModel>(
     return json.map((item: any) => model.fromJson(item))
 }
 
+export const clickhouseDelete = async <T extends typeof RawModel>(
+    model: T,
+    where: string,
+    params: any = {},
+    clickhouse = App.main.clickhouse,
+) => {
+    return await clickhouse.exec({
+        query: `DELETE FROM ${model.tableName} WHERE (${where})`,
+        query_params: params,
+    })
+}
+
 export class ClickHouseModel extends RawModel {
 
     static async insert<T extends typeof RawModel>(
@@ -132,5 +144,14 @@ export class ClickHouseModel extends RawModel {
         })
         const json = await result.json() as { count: number }[]
         return json[0].count > 0
+    }
+
+    static async delete<T extends typeof RawModel>(
+        this: T,
+        where: string,
+        params: any = {},
+        clickhouse = App.main.clickhouse,
+    ) {
+        return clickhouseDelete(this, where, params, clickhouse)
     }
 }
