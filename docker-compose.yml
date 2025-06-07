@@ -18,7 +18,7 @@ services:
   redis:
     image: redis
     expose:
-      - "6379"
+      - 6379
     restart: always
     volumes:
       - redis_data:/data
@@ -40,6 +40,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
       redis:
         condition: service_started
     environment:
@@ -56,6 +58,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_PORT: ${DB_PORT}
       DB_DATABASE: ${DB_DATABASE}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL}
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
       STORAGE_DRIVER: ${STORAGE_DRIVER}
       STORAGE_BASE_URL: ${STORAGE_BASE_URL}
       STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
@@ -128,6 +134,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_PORT: ${DB_PORT}
       DB_DATABASE: ${DB_DATABASE}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL}
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
       STORAGE_DRIVER: ${STORAGE_DRIVER}
       STORAGE_BASE_URL: ${STORAGE_BASE_URL}
       STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
@@ -188,9 +198,12 @@ services:
       interval: 5s
       timeout: 2s
       retries: 20
-    ports:
-      - "8123:8123"
-      - "9000:9000"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    expose:
+      - 8123
+      - 9000
     volumes:
       - clickhouse_data:/var/lib/clickhouse
 volumes:
