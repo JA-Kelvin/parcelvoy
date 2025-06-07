@@ -1,3 +1,10 @@
 packages:
   - 'apps/*'
 
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - core-js
+  - core-js-pure
+  - farmhash
+  - msgpackr-extract
+  - protobufjs
