@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet, redirect, RouteObject, useNavigate, useParams } from 'react-router-dom'
+import { createBrowserRouter, Outlet, redirect, RouteObject, useNavigate, useParams } from 'react-router'
 import api from '../api'
 
 import ErrorPage from './ErrorPage'
@@ -56,7 +56,9 @@ export const useRoute = (includeProject = true) => {
     }
     return (path: string) => {
         parts.push(path)
-        navigate('/' + parts.join('/'))
+        navigate('/' + parts.join('/'))?.catch(e => {
+            console.error('Failed to navigate to:', e)
+        })
     }
 }
 

@@ -1,6 +1,6 @@
 import { forwardRef, PropsWithChildren, Ref } from 'react'
 import clsx from 'clsx'
-import { Link, To } from 'react-router-dom'
+import { Link, To } from 'react-router'
 import './Button.css'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'plain'

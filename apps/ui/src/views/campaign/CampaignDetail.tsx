@@ -1,6 +1,6 @@
 import Button from '../../ui/Button'
 import PageContent from '../../ui/PageContent'
-import { Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router'
 import { NavigationTabs } from '../../ui/Tabs'
 import { useContext, useEffect, useState } from 'react'
 import { CampaignContext, LocaleContext, LocaleSelection, ProjectContext } from '../../contexts'

@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react'
 import { DeepRequired, DefaultValues, FieldErrorsImpl, FieldValues, useForm, UseFormReturn } from 'react-hook-form'
-import { NavigateFunction, useNavigate } from 'react-router-dom'
+import { NavigateFunction, useNavigate } from 'react-router'
 import Alert from '../Alert'
 import Button from '../Button'
 import { useTranslation } from 'react-i18next'

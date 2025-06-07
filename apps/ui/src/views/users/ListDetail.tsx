@@ -19,7 +19,7 @@ import { ArchiveIcon, EditIcon, RestartIcon, SendIcon, UploadIcon } from '../../
 import { TagPicker } from '../settings/TagPicker'
 import { useTranslation } from 'react-i18next'
 import { Alert, Menu, MenuItem } from '../../ui'
-import { useBlocker } from 'react-router-dom'
+import { useBlocker } from 'react-router'
 
 interface RuleSectionProps {
     list: DynamicList

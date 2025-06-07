@@ -1,5 +1,5 @@
 import { createElement, DragEventHandler, Fragment, memo, ReactNode, SetStateAction, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { useBlocker, useNavigate } from 'react-router-dom'
+import { useBlocker, useNavigate } from 'react-router'
 import ReactFlow, {
     addEdge,
     Background,
@@ -719,7 +719,7 @@ export default function JourneyEditor() {
             size="fullscreen"
             title={journey.name}
             open={true}
-            onClose={() => navigate('../journeys')}
+            onClose={async () => { await navigate('../journeys') }}
             actions={
                 <>
                     <Tag

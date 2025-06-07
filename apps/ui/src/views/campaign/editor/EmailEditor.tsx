@@ -4,7 +4,7 @@ import './EmailEditor.css'
 import Button, { LinkButton } from '../../../ui/Button'
 import api from '../../../api'
 import { Campaign, Resource, Template } from '../../../types'
-import { useBlocker, useNavigate } from 'react-router-dom'
+import { useBlocker, useNavigate } from 'react-router'
 import { localeState } from '../CampaignDetail'
 import Modal from '../../../ui/Modal'
 import HtmlEditor from './HtmlEditor'
@@ -81,7 +81,9 @@ export default function EmailEditor() {
                     size="fullscreen"
                     title={campaign.name}
                     open
-                    onClose={() => navigate(`../campaigns/${campaign.id}/design?locale=${locale.currentLocale?.key}`)}
+                    onClose={async () => {
+                        await navigate(`../campaigns/${campaign.id}/design?locale=${locale.currentLocale?.key}`)
+                    }}
                     actions={
                         <>
                             <Button

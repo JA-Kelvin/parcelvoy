@@ -1,7 +1,7 @@
 import './Sidebar.css'
 import NavLink from './NavLink'
 import { ReactComponent as Logo } from '../assets/logo.svg'
-import { Link, NavLinkProps, useNavigate } from 'react-router-dom'
+import { Link, NavLinkProps, useNavigate } from 'react-router'
 import { PropsWithChildren, ReactNode, useContext, useState } from 'react'
 import Button from './Button'
 import { ChevronDownIcon, MenuIcon } from './icons'
@@ -78,7 +78,9 @@ export default function Sidebar({ children, links, prepend, append }: PropsWithC
                             </div>
                         </div>
                     }>
-                        <MenuItem onClick={() => navigate('/organization')}>{t('settings')}</MenuItem>
+                        <MenuItem onClick={async () => {
+                            await navigate('/organization')
+                        }}>{t('settings')}</MenuItem>
                         <MenuItem onClick={() => setIsLanguageOpen(true)}>{t('language')}</MenuItem>
                         <MenuItem onClick={() => setPreferences({ ...preferences, mode: preferences.mode === 'dark' ? 'light' : 'dark' })}>{preferences.mode === 'dark' ? t('light_mode') : t('dark_mode')}</MenuItem>
                         <MenuItem onClick={async () => await api.auth.logout()}>{t('sign_out')}</MenuItem>

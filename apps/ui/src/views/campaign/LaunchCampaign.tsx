@@ -14,7 +14,7 @@ import { Column, Columns } from '../../ui/Columns'
 import { useController } from 'react-hook-form'
 import { SelectionProps } from '../../ui/form/Field'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 
 interface DateTimeFieldProps extends SelectionProps<CampaignLaunchParams> {
     label: string
@@ -108,7 +108,7 @@ export default function LaunchCampaign({ open, onClose }: LaunchCampaignParams) 
             const value = await api.campaigns.update(project.id, campaign.id, params)
             setCampaign(value)
             onClose(false)
-            navigate('delivery')
+            await navigate('delivery')
         } catch (error: any) {
             if (error?.response?.data) {
                 setError(error?.response?.data?.error)

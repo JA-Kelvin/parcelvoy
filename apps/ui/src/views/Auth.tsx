@@ -1,4 +1,4 @@
-import { Outlet, useLoaderData } from 'react-router-dom'
+import { Outlet, useLoaderData } from 'react-router'
 import { AdminContext } from '../contexts'
 import { Admin } from '../types'
 
