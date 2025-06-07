@@ -48,9 +48,10 @@ jobs:
       #     npm run docker:build:push --tag=$(echo ${GITHUB_REF_NAME:1})
       - name: Build the Beta Docker Image
         if: github.ref != 'refs/heads/main'
-        env:
-          TAG: ${{ GITHUB_REF_NAME:1 }}
         run: |
+          TAG="${GITHUB_REF_NAME:1}"
+          echo "Using tag: $TAG"
+          export TAG
           pnpm run docker:build-beta:push
       
         
