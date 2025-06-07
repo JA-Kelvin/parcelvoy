@@ -15,7 +15,7 @@ COPY --from=compile /usr/src/app/apps/platform/package*.json ./
 COPY --from=compile /usr/src/app/apps/platform/build ./build
 COPY --from=compile /usr/src/app/apps/platform/db ./db
 COPY --from=compile /usr/src/app/apps/platform/public ./public 
-RUN pnpm install -r --config.platform=linux --config.architecture=x64
+RUN pnpm install --prod --filter "./apps/platform" --config.platform=linux --config.architecture=x64
 
 # --------------> The production image
 FROM node:22-alpine
