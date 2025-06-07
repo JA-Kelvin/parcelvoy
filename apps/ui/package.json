@@ -44,8 +44,8 @@
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "docker:build": "docker buildx build -f ./Dockerfile -t ghcr.io/parcelvoy/ui:latest -t ghcr.io/parcelvoy/ui:$TAG ../../",
     "docker:build-beta": "docker buildx build -f ./Dockerfile -t ghcr.io/parcelvoy/ui:$TAG ../../",
-    "docker:build:push": "pnpm docker:build -- --push",
-    "docker:build-beta:push": "pnpm docker:build-beta -- --push"
+    "docker:build:push": "pnpm docker:build --push",
+    "docker:build-beta:push": "pnpm docker:build-beta --push"
   },
   "types": "./lib/cjs/mod.d.ts",
   "main": "./lib/cjs/mod.js",
