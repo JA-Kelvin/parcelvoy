@@ -49,9 +49,7 @@ jobs:
       - name: Build the Beta Docker Image
         if: github.ref != 'refs/heads/main'
         run: |
-          pnpm run docker:build-beta:push
-        env:
-          TAG: $(echo ${GITHUB_REF_NAME:1})
+          TAG=$(echo ${GITHUB_REF_NAME:1}) pnpm run docker:build-beta:push
       - run: |
           echo github.ref
         

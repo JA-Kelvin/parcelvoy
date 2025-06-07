@@ -1,6 +1,7 @@
 # --------------> The compiler image
 FROM node:22 AS compile
 WORKDIR /usr/src/app/apps/platform
+RUN corepack enable
 COPY ./tsconfig.base.json /usr/src/app
 COPY ./apps/platform ./
 RUN pnpm install --frozen-lockfile
@@ -9,6 +10,7 @@ RUN pnpm build
 # --------------> The build image
 FROM node:22 AS build
 WORKDIR /usr/src/app
+RUN corepack enable
 COPY --from=compile /usr/src/app/apps/platform/package*.json ./
 COPY --from=compile /usr/src/app/apps/platform/build ./build
 COPY --from=compile /usr/src/app/apps/platform/db ./db
