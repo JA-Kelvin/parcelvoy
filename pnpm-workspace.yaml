@@ -1,6 +1,14 @@
 packages:
   - 'apps/*'
 
+syncInjectedDepsAfterScripts:
+  - docker:build
+  - docker:build-beta
+  - docker:build:push
+  - docker:build-beta:push
+
+injectWorkspacePackages: true
+
 onlyBuiltDependencies:
   - '@firebase/util'
   - core-js
