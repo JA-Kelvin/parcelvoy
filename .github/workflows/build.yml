@@ -46,7 +46,14 @@ jobs:
       - name: Install Dependencies
         run: npm install
       
-      - name: Build the Docker Image
+      # - name: Build the Prod Docker Image
+      #   if: github.ref == 'refs/heads/main'
+      #   run: |
+      #     npm run docker:build:push --tag=$(echo ${GITHUB_REF_NAME:1})
+      - name: Build the Beta Docker Image
+        if: github.ref != 'refs/heads/main'
         run: |
-          npm run docker:build:push --tag=$(echo ${GITHUB_REF_NAME:1})
+          npm run docker:build-beta:push --tag=$(echo ${GITHUB_REF_NAME:1})
+      - run: |
+          echo github.ref
         
