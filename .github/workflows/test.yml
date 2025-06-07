@@ -24,7 +24,7 @@ jobs:
         cache: 'pnpm'
     - name: Node Install
       run: |
-        pnpm install
+        pnpm install && pnpm install --dev
     - name: Lint
       run: |
         pnpm lint
@@ -67,16 +67,8 @@ jobs:
         registry-url: 'https://registry.npmjs.org'
         cache: 'pnpm'
 
-    - name: Cache NPM
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-
     - name: Install Dependencies
-      run: pnpm install
+      run: pnpm install && pnpm install --dev
 
     - name: 'Run Jest Tests'
       run: pnpm test
@@ -113,7 +105,7 @@ jobs:
         cache: 'pnpm'
     - name: Node Install
       run: |
-        pnpm install
+        pnpm install && pnpm install --dev
     - name: Build
       run: |
         pnpm build
