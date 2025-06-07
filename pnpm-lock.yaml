@@ -185,6 +185,9 @@ importers:
       '@types/koa':
         specifier: ^2.15.0
         version: 2.15.0
+      '@types/koa-send':
+        specifier: ^4.1.6
+        version: 4.1.6
       '@types/koa-static':
         specifier: ^4.0.2
         version: 4.0.4
