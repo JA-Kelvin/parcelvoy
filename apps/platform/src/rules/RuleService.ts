@@ -33,43 +33,6 @@ export const checkRules = (user: User, root: Rule | RuleTree, rules: RuleWithEva
 }
 
 /**
- * For a provided root rule UUID of a set, fetch the associated rules
- * and check if the entire rule set is true.
- *
- * This uses cached result values for evaluations.
- */
-export const checkRootRule = async (uuid: string, user: User) => {
-    const [root, ...rules] = await Rule.all(qb => qb
-        .leftJoin('rule_evaluations', function() {
-            this.on('rule_evaluations.rule_id', 'rules.id')
-                .andOn('rule_evaluations.user_id', Rule.raw(user.id))
-        })
-        .where('parent_uuid', uuid)
-        .orWhere('uuid', uuid)
-        .select('rules.*', 'result'),
-    ) as Array<Rule & { result?: boolean }>
-    return checkRules(user, root, rules)
-}
-
-export const matchingRulesForUser = async (user: User): Promise<RuleResults> => {
-    const rules = await Rule.all(qb =>
-        qb.where('rules.group', 'parent')
-            .where('rules.type', 'wrapper')
-            .where('project_id', user.project_id),
-    )
-
-    const success = []
-    const failure = []
-    for (const rule of rules) {
-        const result = await checkRootRule(rule.uuid, user)
-        result
-            ? success.push(rule.uuid)
-            : failure.push(rule.uuid)
-    }
-    return { success, failure }
-}
-
-/**
  * For a given root ID value of a rule set, find all children and compile
  * into a nested tree structure.
  */
