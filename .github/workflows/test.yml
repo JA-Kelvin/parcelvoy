@@ -79,6 +79,7 @@ jobs:
         DB_DATABASE: parcelvoy
         DB_USERNAME: root
         DB_PORT: 3306
+        CLICKHOUSE_URL: http://localhost:8123
         BASE_URL: https://parcelvoy.com
         AUTH_DRIVER: basic
         QUEUE_DRIVER: memory
