@@ -5,6 +5,8 @@ import { SearchResult } from '../Model'
 import { RawModel } from './RawModel'
 import { PageQueryParams } from '../searchParams'
 
+export type Transaction = Database.Transaction
+
 export const raw = (raw: Database.Value, db: Database = App.main.db) => {
     return db.raw(raw)
 }

@@ -4,6 +4,8 @@ import { createUser, getUsersFromIdentity, updateUser } from './UserRepository'
 import { ClientIdentity } from '../client/Client'
 import { ListVersion } from '../lists/List'
 import { addUserToList } from '../lists/ListService'
+import App from '../app'
+import { Transaction } from '../core/Model'
 
 interface UserPatchTrigger {
     project_id: number
@@ -23,38 +25,39 @@ export default class UserPatchJob extends Job {
 
     static async handler(patch: UserPatchTrigger): Promise<User> {
 
-        const insert = async (patch: UserPatchTrigger) => {
+        const upsert = async (patch: UserPatchTrigger, tries = 3, trx: Transaction): Promise<User> => {
             const { project_id, user: { external_id, anonymous_id, data, ...fields } } = patch
-            const identity = { external_id, anonymous_id } as ClientIdentity
-            return await createUser(project_id, {
-                ...identity,
-                data,
-                ...fields,
-            })
-        }
-
-        const upsert = async (patch: UserPatchTrigger, tries = 3): Promise<User> => {
-            const { project_id, user: { external_id, anonymous_id } } = patch
             const identity = { external_id, anonymous_id } as ClientIdentity
 
             // Check for existing user
-            const { anonymous, external } = await getUsersFromIdentity(project_id, identity)
+            const { anonymous, external } = await getUsersFromIdentity(project_id, identity, trx)
             const existing = external ?? anonymous
 
             // If user, update otherwise insert
             try {
                 return existing
-                    ? await updateUser(existing, patch.user, anonymous)
-                    : await insert(patch)
+                    ? await updateUser(existing, patch.user, anonymous, trx)
+                    : await createUser(project_id, {
+                        ...identity,
+                        data,
+                        ...fields,
+                    }, trx)
             } catch (error: any) {
                 // If there is an error (such as constraints,
                 // retry up to three times)
                 if (tries <= 0) throw error
-                return upsert(patch, --tries)
+                return upsert(patch, --tries, trx)
             }
         }
 
-        const user = await upsert(patch)
+        const user = await App.main.db.transaction(async (trx) => {
+            try {
+                return await upsert(patch, 1, trx)
+            } catch (error) {
+                trx.rollback()
+                throw error
+            }
+        })
 
         const {
             join_list,

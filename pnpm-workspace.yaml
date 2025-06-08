@@ -9,6 +9,8 @@ syncInjectedDepsAfterScripts:
 
 injectWorkspacePackages: true
 
+loglevel: debug
+
 onlyBuiltDependencies:
   - '@firebase/util'
   - core-js

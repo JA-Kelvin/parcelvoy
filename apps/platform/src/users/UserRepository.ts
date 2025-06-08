@@ -8,6 +8,7 @@ import { getRuleEventNames } from '../rules/RuleHelpers'
 import { UserEvent } from './UserEvent'
 import { Context } from 'koa'
 import { EventPostJob } from '../jobs'
+import { Transaction } from '../core/Model'
 
 export const getUser = async (id: number, projectId?: number): Promise<User | undefined> => {
     return await User.find(id, qb => {
@@ -24,13 +25,13 @@ export const getUserFromContext = async (ctx: Context): Promise<User | undefined
         : await getUser(parseInt(ctx.params.userId), ctx.state.project.id)
 }
 
-export const getUsersFromIdentity = async (projectId: number, identity: ClientIdentity) => {
+export const getUsersFromIdentity = async (projectId: number, identity: ClientIdentity, trx?: Transaction) => {
     const externalId = `${identity.external_id}`
     const anonymousId = `${identity.anonymous_id}`
 
     const users = await User.all(
-        qb => qb
-            .where(sqb => {
+        qb => {
+            qb.where(sqb => {
                 if (identity.external_id) {
                     sqb.where('external_id', externalId)
                 }
@@ -38,8 +39,14 @@ export const getUsersFromIdentity = async (projectId: number, identity: ClientId
                     sqb.orWhere('anonymous_id', anonymousId)
                 }
             })
-            .where('project_id', projectId)
-            .limit(2),
+                .where('project_id', projectId)
+                .limit(2)
+            if (trx) {
+                qb.forUpdate()
+            }
+            return qb
+        },
+        trx,
     )
 
     // Map each ID to a key so they are both available
@@ -106,7 +113,7 @@ export const aliasUser = async (projectId: number, {
     return await User.updateAndFetch(previous.id, { external_id })
 }
 
-export const createUser = async (projectId: number, { external_id, anonymous_id, data, created_at, ...fields }: UserInternalParams) => {
+export const createUser = async (projectId: number, { external_id, anonymous_id, data, created_at, ...fields }: UserInternalParams, trx?: Transaction) => {
     const user = await User.insertAndFetch({
         project_id: projectId,
         anonymous_id: anonymous_id ?? uuid(),
@@ -114,7 +121,7 @@ export const createUser = async (projectId: number, { external_id, anonymous_id,
         data: data ?? {},
         created_at: created_at ? new Date(created_at) : new Date(),
         ...fields,
-    })
+    }, trx)
 
     // Send user to ClickHouse as well
     await User.clickhouse().upsert(user)
@@ -134,7 +141,7 @@ export const createUser = async (projectId: number, { external_id, anonymous_id,
     return user
 }
 
-export const updateUser = async (existing: User, params: Partial<User>, anonymous?: User): Promise<User> => {
+export const updateUser = async (existing: User, params: Partial<User>, anonymous?: User, trx?: Transaction): Promise<User> => {
     const { external_id, anonymous_id, data, ...fields } = params
     const hasChanges = isUserDirty(existing, params)
     if (hasChanges) {
@@ -142,7 +149,7 @@ export const updateUser = async (existing: User, params: Partial<User>, anonymou
             data: data ? { ...existing.data, ...data } : undefined,
             ...fields,
             ...!anonymous ? { anonymous_id } : {},
-        })
+        }, trx)
         await User.clickhouse().upsert(after, existing)
         return after
     }

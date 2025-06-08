@@ -97,15 +97,17 @@ const migrateLists = async () => {
     logger.info('parcelvoy:migration lists start')
     const lists = await List.all(qb => qb.whereNull('deleted_at'))
     for (const list of lists) {
-        const rule = list.type === 'dynamic' && list.rule_id
-            ? await fetchAndCompileRule(list.rule_id)
-            : staticListRule(list)
-        await List.update(qb => qb.where('id', list.id), {
-            rule,
-        })
+        if (!list.rule) {
+            const rule = list.type === 'dynamic' && list.rule_id
+                ? await fetchAndCompileRule(list.rule_id)
+                : staticListRule(list)
+            await List.update(qb => qb.where('id', list.id), {
+                rule,
+            })
 
-        if (list.type === 'static') {
-            await migrateStaticList(list)
+            if (list.type === 'static') {
+                await migrateStaticList(list)
+            }
         }
     }
 

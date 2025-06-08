@@ -5,7 +5,7 @@
     "apps/*"
   ],
   "scripts": {
-    "start": "pnpm --filter \"@parcelvoy/*\" start",
+    "start": "pnpm --filter \"@parcelvoy/*\" --stream start",
     "build": "pnpm --filter \"@parcelvoy/*\" build",
     "lint": "pnpm --filter \"@parcelvoy/*\" lint",
     "test": "pnpm --filter \"@parcelvoy/*\" run test",
