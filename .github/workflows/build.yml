@@ -42,10 +42,13 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       
-      # - name: Build the Prod Docker Image
-      #   if: github.ref == 'refs/heads/main'
-      #   run: |
-      #     npm run docker:build:push --tag=$(echo ${GITHUB_REF_NAME:1})
+      - name: Build the Prod Docker Image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          TAG="${GITHUB_REF_NAME:1}"
+          echo "Using tag: $TAG"
+          export TAG
+          pnpm run docker:build:push
       - name: Build the Beta Docker Image
         if: github.ref != 'refs/heads/main'
         run: |

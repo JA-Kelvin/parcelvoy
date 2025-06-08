@@ -174,7 +174,7 @@ export default function ListDetail() {
                 columns={[
                     { key: 'full_name', title: t('name') },
                     { key: 'external_id', title: t('external_id') },
-                    { key: 'email', title: t('email'), sortable: true },
+                    { key: 'email', title: t('email') },
                     { key: 'phone', title: t('phone') },
                 ]}
                 onSelectRow={({ id }) => route(`users/${id}`)} />

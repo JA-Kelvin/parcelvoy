@@ -32,6 +32,7 @@ export default function ProjectApiKeys() {
 
     const handleCopy = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, value: string) => {
         await navigator.clipboard.writeText(value)
+        event.preventDefault()
         event.stopPropagation()
         toast.success('Copied API Key')
     }
