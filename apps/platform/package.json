@@ -7,7 +7,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.171.0",
     "@aws-sdk/client-ses": "^3.121.0",
-    "@aws-sdk/client-sns": "^3.121.0",
     "@aws-sdk/client-sqs": "^3.171.0",
     "@aws-sdk/lib-storage": "^3.171.0",
     "@bugsnag/js": "^8.2.0",
@@ -41,7 +40,6 @@
     "knex": "^2.3.0",
     "koa": "^2.13.4",
     "koa-body": "5.0.0",
-    "koa-jwt": "^4.0.3",
     "koa-send": "^5.0.1",
     "koa-static": "^5.0.0",
     "libphonenumber-js": "^1.10.24",

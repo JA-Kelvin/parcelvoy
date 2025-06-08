@@ -362,7 +362,7 @@ export const failStalledSends = async (campaign: Campaign) => {
     }, ({ user_id, campaign_id }: CampaignSend) => ([user_id, campaign_id]))
 }
 
-export const recipientClickhouseQuery = async (campaign: Campaign) => {
+const recipientClickhouseQuery = async (campaign: Campaign) => {
 
     const listQueries = async (ids: number[]) => {
         const queries = []

@@ -243,7 +243,7 @@ export const getUserEventsForRules = async (
     )
 }
 
-export const isUserDirty = (existing: User, patch: Partial<User>) => {
+const isUserDirty = (existing: User, patch: Partial<User>) => {
     const newData = { ...existing.data, ...patch.data }
     const fields: Array<keyof UserInternalParams> = ['external_id', 'anonymous_id', 'email', 'phone', 'timezone', 'locale']
     const hasDataChanged = !deepEqual(existing.data, newData)

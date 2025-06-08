@@ -32,7 +32,7 @@ router.get('/', async ctx => {
     ctx.body = await pagedCampaigns(params, ctx.state.project.id)
 })
 
-export const campaignCreateParams: JSONSchemaType<CampaignCreateParams> = {
+const campaignCreateParams: JSONSchemaType<CampaignCreateParams> = {
     $id: 'campaignCreate',
     type: 'object',
     required: ['type', 'subscription_id', 'provider_id'],
