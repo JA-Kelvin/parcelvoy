@@ -9,11 +9,19 @@ import { UserEvent } from '../users/UserEvent'
 import { logger } from '../config/logger'
 import { cacheDel, cacheGet } from '../config/redis'
 import { raw } from '../core/Model'
+import { acquireLock } from '../core/Lock'
 
 export const migrateToClickhouse = async () => {
-    await migrateUsers()
-    await migrateEvents()
-    await migrateLists()
+    const lock = await acquireLock({
+        key: 'clickhouse:migration',
+        owner: App.main.uuid,
+        timeout: 60 * 60,
+    })
+    if (lock) {
+        await migrateUsers()
+        await migrateEvents()
+        await migrateLists()
+    }
 }
 
 const migrateUsers = async () => {
@@ -29,7 +37,7 @@ const migrateUsers = async () => {
         .groupBy('users.id')
         .stream()
 
-    const size = 500
+    const size = 1000
     const chunker = new Chunker<User>(async users => {
         await User.clickhouse().insert(users.map(user => ({ ...user, sign: 1 })))
     }, size)
@@ -50,7 +58,7 @@ const migrateEvents = async () => {
     logger.info('parcelvoy:migration events start')
     const events = await App.main.db('user_events').stream()
 
-    const size = 500
+    const size = 1000
     const chunker = new Chunker<UserEvent>(async events => {
         await UserEvent.insert(events.map(event => ({ ...event, uuid: randomUUID() })))
     }, size)
@@ -67,7 +75,7 @@ const migrateEvents = async () => {
 const migrateStaticList = async ({ id, project_id }: List) => {
     const users = await App.main.db('user_list').where('list_id', id).stream()
 
-    const size = 500
+    const size = 1000
     const chunker = new Chunker<{ user_id: number, list_id: number, created_at: number, version: number }>(async users => {
         await UserEvent.insert(
             users.map(user => ({
