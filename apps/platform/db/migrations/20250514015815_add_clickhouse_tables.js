@@ -55,6 +55,7 @@ exports.up = async function(knex) {
             PRIMARY KEY (project_id, user_id, name)
             ORDER BY (project_id, user_id, name, created_at)
             ${isTest ? '' : 'PARTITION BY project_id'}
+            SETTINGS enable_json_type = 1
         `,
     })
 
@@ -85,6 +86,7 @@ exports.up = async function(knex) {
             ENGINE = VersionedCollapsingMergeTree(sign, version)
             ORDER BY (project_id, id, created_at)
             ${isTest ? '' : 'PARTITION BY project_id'}
+            SETTINGS enable_json_type = 1
         `,
     })
 
