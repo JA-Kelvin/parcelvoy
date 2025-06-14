@@ -49,7 +49,8 @@ exports.up = async function(knex) {
                 user_id UInt32,
                 uuid UUID,
                 created_at DateTime64(3, 'UTC'),
-                data JSON
+                data JSON,
+                INDEX user_id_idx user_id TYPE set(1000) GRANULARITY 1
             )
             ENGINE MergeTree()
             PRIMARY KEY (project_id, name, user_id)
