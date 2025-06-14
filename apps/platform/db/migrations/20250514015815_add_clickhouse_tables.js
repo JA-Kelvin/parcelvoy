@@ -52,8 +52,8 @@ exports.up = async function(knex) {
                 data JSON
             )
             ENGINE MergeTree()
-            PRIMARY KEY (project_id, user_id, name)
-            ORDER BY (project_id, user_id, name, created_at)
+            PRIMARY KEY (project_id, name, user_id)
+            ORDER BY (project_id, name, user_id, created_at)
             ${isTest ? '' : 'PARTITION BY project_id'}
             SETTINGS enable_json_type = 1
         `,
