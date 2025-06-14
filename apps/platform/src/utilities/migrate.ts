@@ -24,9 +24,10 @@ export const migrateToClickhouse = async () => {
     }
 }
 
-const migrateUsers = async () => {
+export const migrateUsers = async (since?: Date, id?: number) => {
     const migrate = await cacheGet<boolean>(App.main.redis, 'migration:users') ?? false
     if (!migrate) return
+
     logger.info('parcelvoy:migration users start')
     const users = await User.query()
         .select('users.*', raw("CONCAT('[', GROUP_CONCAT(user_subscription.subscription_id), ']') AS unsubscribe_ids"))
@@ -34,12 +35,25 @@ const migrateUsers = async () => {
             qb.on('user_subscription.user_id', '=', 'users.id')
                 .andOn('user_subscription.state', raw('0'))
         })
+        .where(sqb => {
+            if (id) {
+                sqb.where('id', '>', id)
+            }
+            if (since) {
+                sqb.where('users.created_at', '>', since)
+            }
+        })
         .groupBy('users.id')
         .stream()
 
     const size = 1000
     const chunker = new Chunker<User>(async users => {
-        await User.clickhouse().insert(users.map(user => ({ ...user, sign: 1 })))
+        const data = []
+        for (const user of users) {
+            if (since || id) data.push({ ...user, sign: -1 })
+            data.push({ ...user, sign: 1 })
+        }
+        await User.clickhouse().insert(data)
     }, size)
 
     for await (const user of users) {
@@ -52,11 +66,18 @@ const migrateUsers = async () => {
     await cacheDel(App.main.redis, 'migration:users')
 }
 
-const migrateEvents = async () => {
+export const migrateEvents = async (since?: Date) => {
     const migrate = await cacheGet<boolean>(App.main.redis, 'migration:events') ?? false
     if (!migrate) return
     logger.info('parcelvoy:migration events start')
-    const events = await App.main.db('user_events').stream()
+    const events = await App.main
+        .db('user_events')
+        .where((sqb) => {
+            if (since) {
+                sqb.where('created_at', '>', since)
+            }
+        })
+        .stream()
 
     const size = 1000
     const chunker = new Chunker<UserEvent>(async events => {
@@ -72,7 +93,7 @@ const migrateEvents = async () => {
     await cacheDel(App.main.redis, 'migration:events')
 }
 
-const migrateStaticList = async ({ id, project_id }: List) => {
+export const migrateStaticList = async ({ id, project_id }: List) => {
     const users = await App.main.db('user_list').where('list_id', id).stream()
 
     const size = 1000
@@ -99,7 +120,7 @@ const migrateStaticList = async ({ id, project_id }: List) => {
     await chunker.flush()
 }
 
-const migrateLists = async () => {
+export const migrateLists = async () => {
     const migrate = await cacheGet<boolean>(App.main.redis, 'migration:lists') ?? false
     if (!migrate) return
     logger.info('parcelvoy:migration lists start')

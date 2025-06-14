@@ -85,7 +85,7 @@ exports.up = async function(knex) {
                 version UInt64 MATERIALIZED toUnixTimestamp64Nano(updated_at)
             )
             ENGINE = VersionedCollapsingMergeTree(sign, version)
-            ORDER BY (project_id, id, created_at)
+            ORDER BY (project_id, id)
             ${isTest ? '' : 'PARTITION BY project_id'}
             SETTINGS enable_json_type = 1
         `,
