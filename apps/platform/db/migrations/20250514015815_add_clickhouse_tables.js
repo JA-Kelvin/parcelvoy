@@ -80,9 +80,8 @@ exports.up = async function(knex) {
                 data JSON,
                 unsubscribe_ids Array(UInt32),
                 created_at DateTime64(3, 'UTC'),
-                updated_at DateTime64(3, 'UTC'),
                 sign Int8,
-                version UInt64 MATERIALIZED toUnixTimestamp64Nano(updated_at)
+                version UInt64
             )
             ENGINE = VersionedCollapsingMergeTree(sign, version)
             ORDER BY (project_id, id)
@@ -96,6 +95,7 @@ exports.up = async function(knex) {
     if (hasColumn[0].length <= 0) {
         await knex.schema.table('users', function(table) {
             table.json('unsubscribe_ids').nullable()
+            table.bigint('version').defaultTo(0).notNullable()
         })
     }
 

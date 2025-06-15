@@ -2,6 +2,7 @@ import { ClientIdentity } from '../client/Client'
 import { ModelFormatOptions, ModelParams, UniversalModel } from '../core/Model'
 import parsePhoneNumber from 'libphonenumber-js'
 import { SubscriptionState } from '../subscriptions/Subscription'
+import { getTime } from 'date-fns'
 
 export interface TemplateUser extends Record<string, any> {
     id: string
@@ -105,7 +106,10 @@ export class User extends UniversalModel {
                 }
             }
         }
-        return super.formatJson(json, options)
+
+        const formatted = super.formatJson(json, options)
+        formatted.version = getTime(formatted.updated_at as Date ?? new Date())
+        return formatted
     }
 
     toJSON() {

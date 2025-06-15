@@ -121,6 +121,20 @@ export default class SQSQueueProvider implements QueueProvider {
         this.app = app
     }
 
+    pause(): Promise<void> {
+        this.app?.stop()
+        return Promise.resolve()
+    }
+
+    resume(): Promise<void> {
+        this.app?.start()
+        return Promise.resolve()
+    }
+
+    isRunning(): Promise<boolean> {
+        return Promise.resolve(this.app?.isRunning ?? false)
+    }
+
     close(): void {
         this.app?.stop()
     }

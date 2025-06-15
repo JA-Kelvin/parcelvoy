@@ -238,6 +238,8 @@
     "publish": "Publish",
     "published": "Published",
     "push": "Push",
+    "queue_start": "Start Queue",
+    "queue_pause": "Pause Queue",
     "rate_interval": "Rate Interval",
     "rate_limit": "Rate Limit",
     "raw_json": "Raw JSON",
