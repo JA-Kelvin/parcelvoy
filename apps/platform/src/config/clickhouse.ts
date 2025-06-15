@@ -17,7 +17,7 @@ export default (config: ClickhouseConfig) => {
             date_time_input_format: 'best_effort',
             output_format_json_quote_64bit_integers: 0, // Disable quoting of 64-bit integers
             async_insert: process.env.NODE_ENV === 'test' ? 0 : 1,
-            wait_for_async_insert: 1,
+            wait_for_async_insert: 0,
             async_insert_deduplicate: 1,
             async_insert_busy_timeout_ms: 1000,
         },

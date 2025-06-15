@@ -95,7 +95,7 @@ exports.up = async function(knex) {
     const hasColumn = await knex.raw('SHOW COLUMNS FROM `users` LIKE \'unsubscribe_ids\'')
     if (hasColumn[0].length <= 0) {
         await knex.schema.table('users', function(table) {
-            table.json('unsubscribe_ids').defaultTo('[]')
+            table.json('unsubscribe_ids').nullable()
         })
     }
 
