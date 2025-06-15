@@ -195,6 +195,7 @@ export const saveDevice = async (projectId: number, { external_id, anonymous_id,
         const newDevice = { ...device, ...params }
         const isDirty = !deepEqual(device, newDevice)
         if (!isDirty) return device
+        Object.assign(device, params)
     } else {
         device = {
             ...params,
