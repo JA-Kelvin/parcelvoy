@@ -20,6 +20,19 @@ export class SQLModel extends RawModel {
     created_at: Date = new Date()
     updated_at: Date = new Date()
 
+    static formatDb(json: any): Record<string, unknown> {
+
+        // All models have an updated timestamp, trigger value
+        json.updated_at = new Date()
+
+        // Take JSON attributes and stringify before insertion
+        for (const attribute of this.jsonAttributes) {
+            json[attribute] = JSON.stringify(json[attribute])
+        }
+
+        return super.formatJson(json)
+    }
+
     static query<T extends typeof SQLModel>(this: T, db: Database = App.main.db): Database.QueryBuilder<InstanceType<T>> {
         return this.table(db)
     }
@@ -186,7 +199,7 @@ export class SQLModel extends RawModel {
         data: Partial<InstanceType<T>> | Partial<InstanceType<T>>[] = {},
         db: Database = App.main.db,
     ): Promise<number | number[]> {
-        const formattedData = Array.isArray(data) ? data.map(o => this.formatJson(o)) : this.formatJson(data)
+        const formattedData = Array.isArray(data) ? data.map(o => this.formatDb(o)) : this.formatDb(data)
         const value = await this.table(db).insert(formattedData)
         if (Array.isArray(data)) return value
         return value[0]
@@ -209,7 +222,7 @@ export class SQLModel extends RawModel {
         data: Partial<InstanceType<T>> = {},
         db: Database = App.main.db,
     ): Promise<number> {
-        const formattedData = this.formatJson(data)
+        const formattedData = this.formatDb(data)
         return await query(this.table(db)).update(formattedData)
     }
 
@@ -219,7 +232,7 @@ export class SQLModel extends RawModel {
         data: Partial<InstanceType<T>> = {},
         db: Database = App.main.db,
     ): Promise<InstanceType<T>> {
-        const formattedData = this.formatJson(data)
+        const formattedData = this.formatDb(data)
         await this.table(db).where('id', id).update(formattedData)
         const model = await this.find(id, b => b, db) as InstanceType<T>
         this.emit('updated', model)

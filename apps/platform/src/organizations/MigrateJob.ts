@@ -4,7 +4,7 @@ import { migrateEvents, migrateLists, migrateUsers } from '../utilities/migrate'
 
 interface MigrateJobParams {
     type: 'lists' | 'events' | 'users'
-    since: string | Date | undefined
+    since?: string | Date | undefined
     user_id?: number
 }
 

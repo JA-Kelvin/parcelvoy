@@ -106,8 +106,11 @@ export class User extends UniversalModel {
                 }
             }
         }
+        return super.formatJson(json, options)
+    }
 
-        const formatted = super.formatJson(json, options)
+    static formatDb(json: any): Record<string, unknown> {
+        const formatted = super.formatJson(json)
         formatted.version = getTime(formatted.updated_at as Date ?? new Date())
         return formatted
     }

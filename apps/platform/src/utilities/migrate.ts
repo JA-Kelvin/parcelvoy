@@ -9,19 +9,14 @@ import { UserEvent } from '../users/UserEvent'
 import { logger } from '../config/logger'
 import { cacheDel, cacheGet } from '../config/redis'
 import { raw } from '../core/Model'
-import { acquireLock } from '../core/Lock'
+import MigrateJob from '../organizations/MigrateJob'
 
 export const migrateToClickhouse = async () => {
-    const lock = await acquireLock({
-        key: 'clickhouse:migration',
-        owner: App.main.uuid,
-        timeout: 60 * 60,
-    })
-    if (lock) {
-        await migrateUsers()
-        await migrateEvents()
-        await migrateLists()
-    }
+    await App.main.queue.enqueueBatch([
+        MigrateJob.from({ type: 'users' }).jobId('migrate_users'),
+        MigrateJob.from({ type: 'events' }).jobId('migrate_events'),
+        MigrateJob.from({ type: 'lists' }).jobId('migrate_lists'),
+    ])
 }
 
 export const migrateUsers = async (since?: Date, id?: number) => {
