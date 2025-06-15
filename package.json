@@ -8,7 +8,7 @@
     "start": "pnpm --filter \"@parcelvoy/*\" --stream start",
     "build": "pnpm --filter \"@parcelvoy/*\" build",
     "lint": "pnpm --filter \"@parcelvoy/*\" lint",
-    "test": "pnpm --filter \"@parcelvoy/*\" run test",
+    "test": "pnpm --filter \"@parcelvoy/*\" --stream test",
     "docker:build": "pnpm --filter \"@parcelvoy/*\" docker:build",
     "docker:build-beta": "pnpm --filter \"@parcelvoy/*\" docker:build-beta",
     "docker:build:push": "pnpm --filter \"@parcelvoy/*\" docker:build:push",

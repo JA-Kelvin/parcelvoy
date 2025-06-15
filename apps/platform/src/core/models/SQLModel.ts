@@ -30,7 +30,7 @@ export class SQLModel extends RawModel {
             json[attribute] = JSON.stringify(json[attribute])
         }
 
-        return super.formatJson(json)
+        return this.formatJson(json)
     }
 
     static query<T extends typeof SQLModel>(this: T, db: Database = App.main.db): Database.QueryBuilder<InstanceType<T>> {

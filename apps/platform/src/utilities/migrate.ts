@@ -12,17 +12,20 @@ import { raw } from '../core/Model'
 import MigrateJob from '../organizations/MigrateJob'
 
 export const migrateToClickhouse = async () => {
-    await App.main.queue.enqueueBatch([
-        MigrateJob.from({ type: 'users' }).jobId('migrate_users'),
-        MigrateJob.from({ type: 'events' }).jobId('migrate_events'),
-        MigrateJob.from({ type: 'lists' }).jobId('migrate_lists'),
-    ])
+    const jobs = []
+    const shouldMigrateUsers = await cacheGet<boolean>(App.main.redis, 'migration:users') ?? false
+    if (shouldMigrateUsers) jobs.push(MigrateJob.from({ type: 'users' }).jobId('migrate_users'))
+
+    const shouldMigrateEvents = await cacheGet<boolean>(App.main.redis, 'migration:events') ?? false
+    if (shouldMigrateEvents) jobs.push(MigrateJob.from({ type: 'events' }).jobId('migrate_events'))
+
+    const shouldMigrateLists = await cacheGet<boolean>(App.main.redis, 'migration:lists') ?? false
+    if (shouldMigrateLists) jobs.push(MigrateJob.from({ type: 'lists' }).jobId('migrate_lists'))
+
+    await App.main.queue.enqueueBatch(jobs)
 }
 
 export const migrateUsers = async (since?: Date, id?: number) => {
-    const migrate = await cacheGet<boolean>(App.main.redis, 'migration:users') ?? false
-    if (!migrate) return
-
     logger.info('parcelvoy:migration users start')
     const users = await User.query()
         .select('users.*', raw("CONCAT('[', GROUP_CONCAT(user_subscription.subscription_id), ']') AS unsubscribe_ids"))
@@ -62,8 +65,6 @@ export const migrateUsers = async (since?: Date, id?: number) => {
 }
 
 export const migrateEvents = async (since?: Date) => {
-    const migrate = await cacheGet<boolean>(App.main.redis, 'migration:events') ?? false
-    if (!migrate) return
     logger.info('parcelvoy:migration events start')
     const events = await App.main
         .db('user_events')
@@ -116,8 +117,6 @@ export const migrateStaticList = async ({ id, project_id }: List) => {
 }
 
 export const migrateLists = async () => {
-    const migrate = await cacheGet<boolean>(App.main.redis, 'migration:lists') ?? false
-    if (!migrate) return
     logger.info('parcelvoy:migration lists start')
     const lists = await List.all(qb => qb.whereNull('deleted_at'))
     for (const list of lists) {

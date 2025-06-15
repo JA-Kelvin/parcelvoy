@@ -7,10 +7,9 @@ export const clickhouseInsert = async <T extends typeof RawModel>(
     data: Partial<InstanceType<T>> | Partial<InstanceType<T>>[] = {},
     clickhouse = App.main.clickhouse,
 ) => {
-    const options = { stringify: false, timestamps: false }
     const formattedData = Array.isArray(data)
-        ? data.map(o => model.formatJson(o, options))
-        : [model.formatJson(data, options)]
+        ? data.map(o => model.formatJson(o))
+        : [model.formatJson(data)]
     return await clickhouse.insert({
         table: model.tableName,
         values: formattedData,

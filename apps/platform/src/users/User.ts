@@ -1,5 +1,5 @@
 import { ClientIdentity } from '../client/Client'
-import { ModelFormatOptions, ModelParams, UniversalModel } from '../core/Model'
+import { ModelParams, UniversalModel } from '../core/Model'
 import parsePhoneNumber from 'libphonenumber-js'
 import { SubscriptionState } from '../subscriptions/Subscription'
 import { getTime } from 'date-fns'
@@ -95,7 +95,7 @@ export class User extends UniversalModel {
             : SubscriptionState.subscribed
     }
 
-    static formatJson(json: Record<string, any>, options: ModelFormatOptions): Record<string, unknown> {
+    static formatDb(json: any): Record<string, unknown> {
         if (json.phone) {
             const parsedNumber = parsePhoneNumber(json.phone)
             if (parsedNumber) {
@@ -106,11 +106,7 @@ export class User extends UniversalModel {
                 }
             }
         }
-        return super.formatJson(json, options)
-    }
-
-    static formatDb(json: any): Record<string, unknown> {
-        const formatted = super.formatJson(json)
+        const formatted = super.formatDb(json)
         formatted.version = getTime(formatted.updated_at as Date ?? new Date())
         return formatted
     }

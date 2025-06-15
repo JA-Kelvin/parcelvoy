@@ -1,10 +1,5 @@
 import { pluralize, snakeCase } from '../../utilities'
 
-export type ModelFormatOptions = {
-    stringify: boolean
-    timestamps: boolean
-}
-
 export class RawModel {
     static jsonAttributes: string[] = []
     static virtualAttributes: string[] = []
@@ -40,17 +35,7 @@ export class RawModel {
     }
 
     // Format JSON before inserting into DB
-    static formatJson(json: any, options: ModelFormatOptions = { stringify: true, timestamps: true }): Record<string, unknown> {
-
-        // All models have an updated timestamp, trigger value
-        if (options.timestamps) json.updated_at = new Date()
-
-        // Take JSON attributes and stringify before insertion
-        if (options.stringify) {
-            for (const attribute of this.jsonAttributes) {
-                json[attribute] = JSON.stringify(json[attribute])
-            }
-        }
+    static formatJson(json: any): Record<string, unknown> {
 
         // remove any virtual attributes that have been set
         for (const attribute of this.virtualAttributes) {
