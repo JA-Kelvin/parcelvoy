@@ -121,6 +121,7 @@ export const createUser = async (projectId: number, { external_id, anonymous_id,
         data: data ?? {},
         created_at: created_at ? new Date(created_at) : new Date(),
         ...fields,
+        version: Date.now(),
     }, trx)
 
     // Send user to ClickHouse as well
@@ -145,13 +146,13 @@ export const updateUser = async (existing: User, params: Partial<User>, anonymou
     const { external_id, anonymous_id, data, ...fields } = params
     const hasChanges = isUserDirty(existing, params)
     if (hasChanges) {
-        const existingClone = structuredClone(existing)
-        const after = await User.updateAndFetch(existingClone.id, {
-            data: data ? { ...existingClone.data, ...data } : undefined,
+        const after = await User.updateAndFetch(existing.id, {
+            data: data ? { ...existing.data, ...data } : undefined,
             ...fields,
             ...!anonymous ? { anonymous_id } : {},
+            version: Date.now(),
         }, trx)
-        await User.clickhouse().upsert(after, existingClone)
+        await User.clickhouse().upsert(after, existing)
         return after
     }
     return existing
@@ -200,7 +201,7 @@ export const saveDevice = async (projectId: number, { external_id, anonymous_id,
         }
         user.devices.push(device)
     }
-    await User.updateAndFetch(user.id, { devices: user.devices })
+    await User.update(qb => qb.where('id', user.id), { devices: user.devices })
     return device
 }
 

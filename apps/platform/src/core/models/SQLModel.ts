@@ -18,7 +18,7 @@ export const ref = (ref: string, db: Database = App.main.db) => {
 export class SQLModel extends RawModel {
 
     created_at: Date = new Date()
-    updated_at: Date = new Date()
+    updated_at!: Date
 
     static formatDb(json: any): Record<string, unknown> {
 
