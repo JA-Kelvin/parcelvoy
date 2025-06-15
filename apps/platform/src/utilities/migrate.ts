@@ -21,7 +21,6 @@ export const migrateToClickhouse = async () => {
 
     const shouldMigrateLists = await cacheGet<boolean>(App.main.redis, 'migration:lists') ?? false
     if (shouldMigrateLists) jobs.push(MigrateJob.from({ type: 'lists' }).jobId('migrate_lists'))
-
     await App.main.queue.enqueueBatch(jobs)
 }
 

@@ -1,6 +1,7 @@
 import { Job } from '../queue'
 import { saveDevice } from './UserRepository'
 import { DeviceParams } from './User'
+import App from '../app'
 
 type UserDeviceTrigger = DeviceParams & {
     project_id: number
@@ -17,10 +18,12 @@ export default class UserDeviceJob extends Job {
         const attempts = job.options.attempts ?? 1
         const attemptsMade = job.state.attemptsMade ?? 0
 
-        try {
-            await saveDevice(project_id, device)
-        } catch (error) {
-            if (attemptsMade < (attempts - 1)) throw error
-        }
+        await App.main.db.transaction(async (trx) => {
+            try {
+                await saveDevice(project_id, device, trx)
+            } catch (error) {
+                if (attemptsMade < (attempts - 1)) throw error
+            }
+        })
     }
 }

@@ -78,6 +78,7 @@ exports.up = async function(knex) {
                 timezone String,
                 locale String,
                 data JSON,
+                devices Array(JSON),
                 unsubscribe_ids Array(UInt32),
                 created_at DateTime64(3, 'UTC'),
                 sign Int8,

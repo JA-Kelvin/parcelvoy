@@ -51,12 +51,7 @@ export default class UserPatchJob extends Job {
         }
 
         const user = await App.main.db.transaction(async (trx) => {
-            try {
-                return await upsert(patch, 1, trx)
-            } catch (error) {
-                trx.rollback()
-                throw error
-            }
+            return await upsert(patch, 1, trx)
         })
 
         const {

@@ -9,6 +9,7 @@ import { UserEvent } from './UserEvent'
 import { Context } from 'koa'
 import { EventPostJob } from '../jobs'
 import { Transaction } from '../core/Model'
+import App from '../app'
 
 export const getUser = async (id: number, projectId?: number): Promise<User | undefined> => {
     return await User.find(id, qb => {
@@ -56,8 +57,8 @@ export const getUsersFromIdentity = async (projectId: number, identity: ClientId
     }
 }
 
-export const getUserFromClientId = async (projectId: number, identity: ClientIdentity): Promise<User | undefined> => {
-    const users = await getUsersFromIdentity(projectId, identity)
+export const getUserFromClientId = async (projectId: number, identity: ClientIdentity, trx?: Transaction): Promise<User | undefined> => {
+    const users = await getUsersFromIdentity(projectId, identity, trx)
 
     // There are circumstances in which both the external ID and
     // the anonymous ID match but match different records in
@@ -180,38 +181,53 @@ export const deleteUser = async (projectId: number, externalId: string): Promise
     )
 }
 
-export const saveDevice = async (projectId: number, { external_id, anonymous_id, ...params }: DeviceParams): Promise<Device | undefined> => {
+export const saveDevice = async (projectId: number, { external_id, anonymous_id, ...params }: DeviceParams, trx?: Transaction): Promise<Device | undefined> => {
 
-    const user = await getUserFromClientId(projectId, { external_id, anonymous_id } as ClientIdentity)
+    const user = await getUserFromClientId(projectId, { external_id, anonymous_id } as ClientIdentity, trx)
     if (!user) throw new RetryError()
 
-    if (!user.devices) {
-        user.devices = []
-    }
-    let device = user.devices?.find(device => {
+    const devices = user.devices ? [...user.devices] : []
+    let device = devices?.find(device => {
         return device.device_id === params.device_id
             || (device.token === params.token && device.token != null)
     })
     if (device) {
-        Object.assign(device, params)
+        const newDevice = { ...device, ...params }
+        const isDirty = !deepEqual(device, newDevice)
+        if (!isDirty) return device
     } else {
         device = {
             ...params,
             device_id: params.device_id,
         }
-        user.devices.push(device)
+        devices.push(device)
     }
-    await User.update(qb => qb.where('id', user.id), { devices: user.devices })
+
+    const after = await User.updateAndFetch(user.id, {
+        devices,
+        version: Date.now(),
+    }, trx)
+    await User.clickhouse().upsert(after, user)
+
     return device
 }
 
 export const disableNotifications = async (userId: number, tokens: string[]): Promise<boolean> => {
-    const user = await User.find(userId)
-    if (!user) return false
-    const device = user.devices?.find(device => device.token && tokens.includes(device.token))
-    if (device) device.token = undefined
-    await User.update(qb => qb.where('id', userId), {
-        devices: user.devices,
+
+    await App.main.db.transaction(async (trx) => {
+        const user = await User.find(userId, undefined, trx)
+        if (!user) return false
+        if (!user.devices?.length) return false
+
+        const devices = [...user.devices]
+        const device = devices?.find(device => device.token && tokens.includes(device.token))
+        if (device) device.token = undefined
+
+        const after = await User.updateAndFetch(user.id, {
+            devices,
+            version: Date.now(),
+        }, trx)
+        await User.clickhouse().upsert(after, user)
     })
     return true
 }
