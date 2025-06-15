@@ -64,7 +64,7 @@ export const getListUsers = async (list: List, params: PageParams, projectId: nu
     const offset = parseInt(params.cursor ?? '0') ?? 0
     const subquery = getRuleQuery(projectId, list.rule)
     const query = `
-        SELECT id FROM (${subquery})
+        SELECT DISTINCT id FROM (${subquery})
         ORDER BY id DESC
         LIMIT {limit: UInt32}
         OFFSET {offset: UInt32}
