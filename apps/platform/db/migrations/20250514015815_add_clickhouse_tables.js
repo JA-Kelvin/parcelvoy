@@ -45,8 +45,8 @@ exports.up = async function(knex) {
             CREATE TABLE user_events
             (
                 name String,
-                project_id UInt32,
-                user_id UInt32,
+                project_id UInt16,
+                user_id UInt64,
                 uuid UUID,
                 created_at DateTime64(3, 'UTC'),
                 data JSON,
@@ -69,8 +69,8 @@ exports.up = async function(knex) {
         query: `
             CREATE TABLE users
             (
-                id UInt32,
-                project_id UInt32,
+                id UInt64,
+                project_id UInt16,
                 anonymous_id String,
                 external_id String,
                 email String,
@@ -95,7 +95,7 @@ exports.up = async function(knex) {
     const hasColumn = await knex.raw('SHOW COLUMNS FROM `users` LIKE \'unsubscribe_ids\'')
     if (hasColumn[0].length <= 0) {
         await knex.schema.table('users', function(table) {
-            table.json('unsubscribe_ids').nullable()
+            table.json('unsubscribe_ids').defaultTo('[]')
         })
     }
 
