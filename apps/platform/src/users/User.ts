@@ -44,6 +44,7 @@ export class User extends UniversalModel {
     unsubscribe_ids?: number[]
     timezone?: string
     locale?: string
+    version!: number
 
     static jsonAttributes = ['data', 'devices', 'unsubscribe_ids']
     static virtualAttributes = ['firstName', 'lastName', 'fullName']
@@ -107,7 +108,7 @@ export class User extends UniversalModel {
             }
         }
         const formatted = super.formatDb(json)
-        formatted.version = getTime(formatted.updated_at as Date ?? new Date())
+        formatted.version = getTime(formatted.updated_at as Date)
         return formatted
     }
 

@@ -22,15 +22,17 @@ export class SQLModel extends RawModel {
 
     static formatDb(json: any): Record<string, unknown> {
 
+        const obj = { ...json }
+
         // All models have an updated timestamp, trigger value
-        json.updated_at = new Date()
+        obj.updated_at = new Date()
 
         // Take JSON attributes and stringify before insertion
         for (const attribute of this.jsonAttributes) {
-            json[attribute] = JSON.stringify(json[attribute])
+            obj[attribute] = JSON.stringify(obj[attribute])
         }
 
-        return this.formatJson(json)
+        return this.formatJson(obj)
     }
 
     static query<T extends typeof SQLModel>(this: T, db: Database = App.main.db): Database.QueryBuilder<InstanceType<T>> {

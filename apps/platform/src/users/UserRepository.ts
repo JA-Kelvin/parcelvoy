@@ -145,12 +145,13 @@ export const updateUser = async (existing: User, params: Partial<User>, anonymou
     const { external_id, anonymous_id, data, ...fields } = params
     const hasChanges = isUserDirty(existing, params)
     if (hasChanges) {
-        const after = await User.updateAndFetch(existing.id, {
-            data: data ? { ...existing.data, ...data } : undefined,
+        const existingClone = structuredClone(existing)
+        const after = await User.updateAndFetch(existingClone.id, {
+            data: data ? { ...existingClone.data, ...data } : undefined,
             ...fields,
             ...!anonymous ? { anonymous_id } : {},
         }, trx)
-        await User.clickhouse().upsert(after, existing)
+        await User.clickhouse().upsert(after, existingClone)
         return after
     }
     return existing
