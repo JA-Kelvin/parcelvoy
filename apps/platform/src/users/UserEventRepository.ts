@@ -3,6 +3,7 @@ import { PageParams } from '../core/searchParams'
 import { loadAnalytics } from '../providers/analytics'
 import { User } from '../users/User'
 import { UserEvent, UserEventParams } from './UserEvent'
+import App from '../app'
 
 export const createEvent = async (
     user: User,
@@ -19,6 +20,16 @@ export const createEvent = async (
         created_at: new Date(),
     }
     await UserEvent.insert(eventData)
+
+    // TODO: Remove, temporary during transition to new event system
+    await App.main.db('user_events').insert({
+        name,
+        data: JSON.stringify(data),
+        project_id: user.project_id,
+        user_id: user.id,
+        created_at: new Date(),
+        updated_at: new Date(),
+    })
 
     if (forward) {
         const analytics = await loadAnalytics(user.project_id)
