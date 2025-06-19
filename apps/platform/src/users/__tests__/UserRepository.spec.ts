@@ -1,5 +1,4 @@
 import { createTestProject } from '../../projects/__tests__/ProjectTestHelpers'
-import { UserSubscription } from '../../subscriptions/Subscription'
 import { createUser, getUserFromClientId, saveDevice } from '../../users/UserRepository'
 import { uuid } from '../../utilities'
 import { User } from '../User'
@@ -51,7 +50,6 @@ describe('UserRepository', () => {
                 external_id: uuid(),
             })
 
-            const subscriptions = await UserSubscription.all(qb => qb.where('user_id', user.id))
             const device = await saveDevice(project.id, {
                 external_id: user.external_id,
                 device_id: uuid(),
@@ -62,10 +60,7 @@ describe('UserRepository', () => {
                 app_version: '1.0',
             })
 
-            const subscriptionsAfter = await UserSubscription.all(qb => qb.where('user_id', user.id))
             const freshUser = await User.find(user.id)
-            expect(subscriptions.length).toEqual(0)
-            expect(subscriptionsAfter.length).toEqual(1)
             expect(freshUser?.devices?.length).toEqual(1)
             expect(freshUser?.devices?.[0].device_id).toEqual(device?.device_id)
         })

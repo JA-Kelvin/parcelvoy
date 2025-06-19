@@ -77,18 +77,18 @@ export default function Campaigns() {
     const state = useSearchTableQueryState(useCallback(async params => await api.campaigns.search(project.id, params), [project.id]))
     const [isCreateOpen, setIsCreateOpen] = useState(false)
 
-    const handleCreateCampaign = (campaign: Campaign) => {
+    const handleCreateCampaign = async (campaign: Campaign) => {
         setIsCreateOpen(false)
-        navigate(`${campaign.id}/design`)
+        await navigate(`${campaign.id}/design`)
     }
 
-    const handleEditCampaign = (id: number) => {
-        navigate(id.toString())
+    const handleEditCampaign = async (id: number) => {
+        await navigate(id.toString())
     }
 
     const handleDuplicateCampaign = async (id: number) => {
         const campaign = await api.campaigns.duplicate(project.id, id)
-        navigate(campaign.id.toString())
+        await navigate(campaign.id.toString())
     }
 
     const handleArchiveCampaign = async (id: number) => {
@@ -187,7 +187,7 @@ export default function Campaigns() {
                             title: t('options'),
                             cell: ({ item: { id } }) => (
                                 <Menu size="small">
-                                    <MenuItem onClick={() => handleEditCampaign(id)}>
+                                    <MenuItem onClick={async () => await handleEditCampaign(id)}>
                                         <EditIcon />{t('edit')}
                                     </MenuItem>
                                     <MenuItem onClick={async () => await handleDuplicateCampaign(id)}>
@@ -200,7 +200,7 @@ export default function Campaigns() {
                             ),
                         },
                     ]}
-                    onSelectRow={({ id }) => navigate(id.toString())}
+                    onSelectRow={async ({ id }) => { await navigate(id.toString()) }}
                     enableSearch
                     tagEntity="campaigns"
                 />

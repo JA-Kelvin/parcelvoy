@@ -1,5 +1,5 @@
 import { Context } from 'react'
-import { RouteObject } from 'react-router-dom'
+import { RouteObject } from 'react-router'
 import { ProjectEntityPath } from '../api'
 import { UseStateContext } from '../types'
 import ErrorPage from './ErrorPage'

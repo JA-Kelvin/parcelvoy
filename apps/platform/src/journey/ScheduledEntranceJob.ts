@@ -1,10 +1,12 @@
 import { Job } from '../queue'
 import { JourneyEntrance, JourneyUserStep } from './JourneyStep'
-import { chunk, uuid } from '../utilities'
+import { chunk, Chunker, uuid } from '../utilities'
 import App from '../app'
 import JourneyProcessJob from './JourneyProcessJob'
 import Journey from './Journey'
 import List from '../lists/List'
+import { getRuleQuery } from '../rules/RuleEngine'
+import { User } from '../users/User'
 
 interface ScheduledEntranceTrigger {
     entranceId: number
@@ -36,13 +38,31 @@ export default class ScheduledEntranceJob extends Job {
         }
 
         const ref = uuid()
+        const result = await User.clickhouse().query(
+            getRuleQuery(list.project_id, list.rule),
+        )
 
-        await App.main.db.raw(`
-            insert into journey_user_step (user_id, type, journey_id, step_id, ref)
-            select user_id, 'completed', ?, ?, ?
-            from user_list
-            where list_id = ?
-        `, [entrance.journey_id, entrance.id, ref, list.id])
+        const chunker = new Chunker<Partial<JourneyUserStep>>(async items => {
+            await App.main.db.transaction(async (trx) => {
+                await JourneyUserStep.query(trx)
+                    .insert(items)
+            })
+        }, 500)
+
+        for await (const chunk of result.stream() as any) {
+            for (const result of chunk) {
+                const user = result.json()
+                chunker.add({
+                    user_id: user.id,
+                    type: 'completed',
+                    journey_id: entrance.journey_id,
+                    step_id: entrance.id,
+                    ref,
+                })
+            }
+        }
+
+        await chunker.flush()
 
         const query = JourneyUserStep.query().select('id').where('ref', ref)
 

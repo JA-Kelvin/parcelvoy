@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router'
 import PageContent from '../../ui/PageContent'
 import { NavigationTabs } from '../../ui/Tabs'
 import { ProjectRoleRequired } from '../project/ProjectRoleRequired'

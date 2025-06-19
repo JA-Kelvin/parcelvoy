@@ -228,6 +228,18 @@ export function shallowEqual(object1: any, object2: any) {
     return keys1.every(key => object1[key] === object2[key])
 }
 
+export function deepEqual<T>(a: T, b: T): boolean {
+    if (a === b) return true
+
+    const bothAreObjects = a && b && typeof a === 'object' && typeof b === 'object'
+
+    return Boolean(
+        bothAreObjects
+          && Object.keys(a).length === Object.keys(b).length
+          && Object.entries(a).every(([k, v]) => deepEqual(v, b[k as keyof T])),
+    )
+}
+
 type ChunkCallback<T> = (chunk: T[]) => Promise<void>
 
 export const chunk = async <T>(

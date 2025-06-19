@@ -4,6 +4,7 @@ import loadStorage from './config/storage'
 import loadError, { logger } from './config/logger'
 import loadRateLimit, { RateLimiter } from './config/rateLimit'
 import loadStats, { Stats } from './config/stats'
+import loadClickhouse, { ClickHouse } from './config/clickhouse'
 import type { Env } from './config/env'
 import type Queue from './queue'
 import Storage from './storage'
@@ -13,6 +14,7 @@ import Worker from './worker'
 import ErrorHandler from './error/ErrorHandler'
 import { DefaultRedis, Redis } from './config/redis'
 import EventEmitter from 'eventemitter2'
+import { migrateToClickhouse } from './utilities/migrate'
 
 export default class App {
     private static $main: App
@@ -47,7 +49,11 @@ export default class App {
             error,
         ) as any
 
-        return this.setMain(app)
+        this.setMain(app)
+
+        await migrateToClickhouse()
+
+        return app
     }
 
     static setMain<T extends typeof App>(this: T, app: InstanceType<T>) {
@@ -61,6 +67,7 @@ export default class App {
     rateLimiter: RateLimiter
     redis: Redis
     stats: Stats
+    clickhouse: ClickHouse
     events = new EventEmitter({ wildcard: true, delimiter: ':' })
     #registered: { [key: string | number]: unknown }
 
@@ -74,6 +81,7 @@ export default class App {
         this.#registered = {}
         this.rateLimiter = loadRateLimit(env.redis)
         this.redis = DefaultRedis(env.redis)
+        this.clickhouse = loadClickhouse(env.clickhouse)
         this.stats = loadStats(env.redis)
         this.unhandledErrorListener()
     }

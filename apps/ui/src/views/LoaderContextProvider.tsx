@@ -1,5 +1,5 @@
 import { Context, Dispatch, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react'
-import { useLoaderData } from 'react-router-dom'
+import { useLoaderData } from 'react-router'
 
 interface LoaderContextProviderProps<T> {
     children: ReactNode | ((value: T) => ReactNode)

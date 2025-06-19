@@ -191,7 +191,7 @@ router.get('/:listId/users', async ctx => {
         direction: 'desc',
     })
     const params = extractQueryParams(ctx.query, searchSchema)
-    ctx.body = await getListUsers(ctx.state.list!.id, params, ctx.state.project.id)
+    ctx.body = await getListUsers(ctx.state.list!, params, ctx.state.project.id)
 })
 
 router.post('/:listId/users', async ctx => {
@@ -206,7 +206,6 @@ router.post('/:listId/recount', async ctx => {
     await ListStatsJob.from(
         ctx.state.list!.id,
         ctx.state.project.id,
-        true,
     ).queue()
     ctx.status = 204
 })

@@ -1,6 +1,6 @@
 import { isAfter, isBefore, isEqual } from 'date-fns'
 import { RuleCheck, RuleEvalException } from './RuleEngine'
-import { compile, queryValue } from './RuleHelpers'
+import { compile, queryPath, queryValue, whereQuery, whereQueryNullable } from './RuleHelpers'
 import Rule, { RuleTree } from './Rule'
 
 export const dateCompile = (rule: Rule | RuleTree) => compile(rule, item => {
@@ -42,5 +42,24 @@ export default {
                 throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
             }
         })
+    },
+    query({ rule }) {
+        const path = queryPath(rule)
+
+        if (rule.operator === 'is set') {
+            return whereQueryNullable(path, false)
+        }
+
+        if (rule.operator === 'is not set') {
+            return whereQueryNullable(path, true)
+        }
+
+        const ruleValue = dateCompile(rule)
+
+        if (['=', '!=', '<', '<=', '>', '>='].includes(rule.operator)) {
+            return whereQuery(path, rule.operator, ruleValue.getTime())
+        }
+
+        throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
     },
 } satisfies RuleCheck

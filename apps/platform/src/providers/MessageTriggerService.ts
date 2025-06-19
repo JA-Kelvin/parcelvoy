@@ -11,7 +11,6 @@ import { RenderContext } from '../render'
 import Template, { TemplateType } from '../render/Template'
 import { templateInUserLocale } from '../render/TemplateService'
 import { User } from '../users/User'
-import { UserEvent } from '../users/UserEvent'
 import { randomInt } from '../utilities'
 import { MessageTrigger } from './MessageTrigger'
 import JourneyProcessJob from '../journey/JourneyProcessJob'
@@ -22,7 +21,6 @@ import { SubscriptionState } from '../subscriptions/Subscription'
 
 interface MessageTriggerHydrated<T> {
     user: User
-    event?: UserEvent
     journey: Record<string, unknown> // step.data_key -> user step data
     campaign: Campaign
     template: T
@@ -30,10 +28,9 @@ interface MessageTriggerHydrated<T> {
     context: RenderContext
 }
 
-export async function loadSendJob<T extends TemplateType>({ campaign_id, user_id, event_id, reference_type, reference_id }: MessageTrigger): Promise<MessageTriggerHydrated<T> | undefined> {
+export async function loadSendJob<T extends TemplateType>({ campaign_id, user_id, reference_type, reference_id }: MessageTrigger): Promise<MessageTriggerHydrated<T> | undefined> {
 
     const user = await User.find(user_id)
-    const event = await UserEvent.find(event_id)
     const project = await Project.find(user?.project_id)
     const send = await getCampaignSend(campaign_id, user_id, reference_id)
 
@@ -100,7 +97,6 @@ export async function loadSendJob<T extends TemplateType>({ campaign_id, user_id
     const response = {
         campaign,
         context,
-        event,
         journey,
         template: template.map() as T,
         project,

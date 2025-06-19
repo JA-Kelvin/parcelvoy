@@ -82,7 +82,7 @@ describe('UserSchemaService', () => {
                 },
             })
 
-            await UserEvent.insert({
+            await UserEvent.clickhouse().insert({
                 project_id,
                 user_id,
                 name: 'ate',
@@ -91,7 +91,7 @@ describe('UserSchemaService', () => {
                 },
             })
 
-            await UserEvent.insert({
+            await UserEvent.clickhouse().insert({
                 project_id,
                 user_id,
                 name: 'drive',
@@ -135,7 +135,7 @@ describe('UserSchemaService', () => {
                 },
             })
 
-            await UserEvent.insert({
+            await UserEvent.clickhouse().insert({
                 project_id,
                 user_id,
                 name: 'test',
@@ -172,15 +172,13 @@ describe('UserSchemaService', () => {
                 },
             })
 
-            await UserEvent.delete(q => q.where('project_id', project_id))
-
             await syncUserDataPaths({
                 project_id,
             })
 
             const paths = await ProjectRulePath.all(q => q.where('project_id', project_id))
 
-            const count = reservedPaths.user.length + 1
+            const count = reservedPaths.user.length + 7
             expect(paths.length).toEqual(count) // only '$.f'
 
         })

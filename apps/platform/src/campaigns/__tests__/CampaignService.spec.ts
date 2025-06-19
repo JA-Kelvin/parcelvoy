@@ -1,13 +1,14 @@
 import { RequestError } from '../../core/errors'
 import { addUserToList, createList } from '../../lists/ListService'
-import { createSubscription, subscribe, subscribeAll } from '../../subscriptions/SubscriptionService'
+import { createSubscription, subscribe } from '../../subscriptions/SubscriptionService'
 import { User } from '../../users/User'
 import { uuid } from '../../utilities'
 import Campaign, { CampaignSend, SentCampaign } from '../Campaign'
-import { allCampaigns, createCampaign, getCampaign, generateSendList, estimatedSendSize, updateCampaignSendEnrollment } from '../CampaignService'
+import { allCampaigns, createCampaign, getCampaign, generateSendList, estimatedSendSize } from '../CampaignService'
 import { createProvider } from '../../providers/ProviderRepository'
 import { createTestProject } from '../../projects/__tests__/ProjectTestHelpers'
 import ListStatsJob from '../../lists/ListStatsJob'
+import { createUser } from '../../users/UserRepository'
 
 afterEach(() => {
     jest.clearAllMocks()
@@ -57,9 +58,8 @@ describe('CampaignService', () => {
         return campaign
     }
 
-    const createUser = async (project_id: number): Promise<User> => {
-        return await User.insertAndFetch({
-            project_id,
+    const createEmptyUser = async (project_id: number): Promise<User> => {
+        return createUser(project_id, {
             external_id: uuid(),
             email: `${uuid()}@test.com`,
             data: {},
@@ -167,7 +167,7 @@ describe('CampaignService', () => {
             }) as SentCampaign
 
             for (let i = 0; i < 20; i++) {
-                const user = await createUser(params.project_id)
+                const user = await createEmptyUser(params.project_id)
                 await addUserToList(user, list)
                 await subscribe(user.id, params.subscription_id)
             }
@@ -202,14 +202,14 @@ describe('CampaignService', () => {
 
             const inclusiveIds: number[] = []
             for (let i = 0; i < 20; i++) {
-                const user = await createUser(params.project_id)
+                const user = await createEmptyUser(params.project_id)
                 await addUserToList(user, list)
                 await subscribe(user.id, params.subscription_id)
                 inclusiveIds.push(user.id)
             }
 
             for (let i = 0; i < 20; i++) {
-                const user = await createUser(params.project_id)
+                const user = await createEmptyUser(params.project_id)
                 await addUserToList(user, list2)
                 await subscribe(user.id, params.subscription_id)
             }
@@ -245,7 +245,7 @@ describe('CampaignService', () => {
             }) as SentCampaign
 
             for (let i = 0; i < 20; i++) {
-                const user = await createUser(params.project_id)
+                const user = await createEmptyUser(params.project_id)
                 await addUserToList(user, list1)
                 await addUserToList(user, list2)
                 await subscribe(user.id, params.subscription_id)
@@ -256,77 +256,6 @@ describe('CampaignService', () => {
 
             const sendSize = await estimatedSendSize(campaign)
             expect(sendSize).toEqual(40)
-        })
-    })
-
-    describe('updateCampaignSendEnrollment', () => {
-        test('join a user to a scheduled campaign', async () => {
-            const params = await createCampaignDependencies()
-            const list = await createList(params.project_id, {
-                name: uuid(),
-                type: 'static',
-                is_visible: true,
-            })
-            const campaign = await createTestCampaign(params, {
-                list_ids: [list.id],
-            }) as SentCampaign
-            await Campaign.updateAndFetch(campaign.id, { state: 'scheduled' })
-
-            const user = await createUser(campaign.project_id)
-            await subscribeAll(user)
-            await addUserToList(user, list)
-
-            await updateCampaignSendEnrollment(user)
-
-            const updated = await CampaignSend.first(qb => qb.where('campaign_id', campaign.id).where('user_id', user.id))
-
-            expect(updated).not.toBeUndefined()
-        })
-
-        test('do not join a user to a draft campaign', async () => {
-            const params = await createCampaignDependencies()
-            const list = await createList(params.project_id, {
-                name: uuid(),
-                type: 'static',
-                is_visible: true,
-            })
-            const campaign = await createTestCampaign(params, {
-                list_ids: [list.id],
-            }) as SentCampaign
-
-            const user = await createUser(campaign.project_id)
-            await subscribeAll(user)
-            await addUserToList(user, list)
-
-            await updateCampaignSendEnrollment(user)
-
-            const updated = await CampaignSend.first(qb => qb.where('campaign_id', campaign.id).where('user_id', user.id))
-
-            expect(updated).toBeUndefined()
-        })
-
-        test('remove a user who no longer matches list', async () => {
-            const params = await createCampaignDependencies()
-            const list = await createList(params.project_id, {
-                name: uuid(),
-                type: 'static',
-                is_visible: true,
-            })
-            const campaign = await createTestCampaign(params, {
-                list_ids: [list.id],
-            }) as SentCampaign
-            await Campaign.updateAndFetch(campaign.id, { state: 'scheduled' })
-
-            const user = await createUser(campaign.project_id)
-            await subscribeAll(user)
-
-            await CampaignSend.insert({ campaign_id: campaign.id, user_id: user.id, state: 'pending' })
-
-            await updateCampaignSendEnrollment(user)
-
-            const updated = await CampaignSend.first(qb => qb.where('campaign_id', campaign.id).where('user_id', user.id))
-
-            expect(updated).toBeUndefined()
         })
     })
 })

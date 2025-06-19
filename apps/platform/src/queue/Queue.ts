@@ -92,6 +92,20 @@ export default class Queue {
         this.provider.start()
     }
 
+    async pause() {
+        logger.info('queue:paused')
+        await this.provider.pause()
+    }
+
+    async resume() {
+        logger.info('queue:resumed')
+        await this.provider.resume()
+    }
+
+    async isRunning(): Promise<boolean> {
+        return await this.provider.isRunning()
+    }
+
     async close() {
         this.provider.close()
     }

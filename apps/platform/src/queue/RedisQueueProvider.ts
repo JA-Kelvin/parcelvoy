@@ -117,6 +117,18 @@ export default class RedisQueueProvider implements QueueProvider {
         })
     }
 
+    async isRunning(): Promise<boolean> {
+        return !(await this.bull.isPaused())
+    }
+
+    async pause(): Promise<void> {
+        return this.bull.pause()
+    }
+
+    async resume(): Promise<void> {
+        return this.bull.resume()
+    }
+
     close(): void {
         this.bull.close()
         this.worker?.close()

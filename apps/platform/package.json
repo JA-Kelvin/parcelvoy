@@ -7,11 +7,11 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.171.0",
     "@aws-sdk/client-ses": "^3.121.0",
-    "@aws-sdk/client-sns": "^3.121.0",
     "@aws-sdk/client-sqs": "^3.171.0",
     "@aws-sdk/lib-storage": "^3.171.0",
-    "@bugsnag/js": "^7.20.0",
-    "@bugsnag/plugin-koa": "^7.19.0",
+    "@bugsnag/js": "^8.2.0",
+    "@bugsnag/plugin-koa": "^8.2.0",
+    "@clickhouse/client": "~1.11.1",
     "@koa/cors": "^5.0.0",
     "@koa/router": "^11.0.1",
     "@ladjs/country-language": "^1.0.3",
@@ -40,7 +40,6 @@
     "knex": "^2.3.0",
     "koa": "^2.13.4",
     "koa-body": "5.0.0",
-    "koa-jwt": "^4.0.3",
     "koa-send": "^5.0.1",
     "koa-static": "^5.0.0",
     "libphonenumber-js": "^1.10.24",
@@ -62,11 +61,12 @@
     "build": "tsc --build",
     "lint": "eslint --ext .ts --max-warnings 0 src/",
     "test": "jest --forceExit --runInBand --testTimeout 10000",
-    "docker:build": "docker buildx build -f ./Dockerfile -t ghcr.io/parcelvoy/api:latest -t ghcr.io/parcelvoy/api:$npm_config_tag ../../",
-    "docker:build:push": "npm run docker:build -- --push",
+    "docker:build": "docker buildx build -f ./Dockerfile -t ghcr.io/parcelvoy/api:latest -t ghcr.io/parcelvoy/api:$TAG ../../",
+    "docker:build-beta": "docker buildx build -f ./Dockerfile -t ghcr.io/parcelvoy/api:$TAG ../../",
+    "docker:build:push": "pnpm docker:build --push",
+    "docker:build-beta:push": "pnpm docker:build-beta --push",
     "migration:create": "node ./scripts/create-migration.mjs",
-    "migration:output": "node ./scripts/output-migration.mjs",
-    "package:publish": "npm run build && npm version $npm_config_tag --no-git-tag-version && npm pack && npm publish --access public"
+    "migration:output": "node ./scripts/output-migration.mjs"
   },
   "devDependencies": {
     "@types/busboy": "^1.5.0",
@@ -74,9 +74,11 @@
     "@types/jest": "^28.1.6",
     "@types/jsonpath": "^0.2.0",
     "@types/jsonwebtoken": "^9.0.5",
+    "@types/koa": "^2.15.0",
+    "@types/koa-send": "^4.1.6",
+    "@types/koa-static": "^4.0.2",
     "@types/koa__cors": "^3.3.0",
     "@types/koa__router": "^8.0.11",
-    "@types/koa-static": "^4.0.2",
     "@types/node": "^18.15.11",
     "@types/node-pushnotifications": "^1.0.4",
     "@types/node-schedule": "^2.1.0",
@@ -96,8 +98,5 @@
     "ts-node": "^10.8.2",
     "typescript": "^4.9.3"
   },
-  "files": [
-    "/build",
-    "/db"
-  ]
+  "packageManager": "pnpm@10.8.0+sha512.0e82714d1b5b43c74610193cb20734897c1d00de89d0e18420aebc5977fa13d780a9cb05734624e81ebd81cc876cd464794850641c48b9544326b5622ca29971"
 }

@@ -336,6 +336,12 @@ const api = {
         metrics: async () => await client
             .get<QueueMetric>('/admin/organizations/performance/queue')
             .then(r => r.data),
+        getQueueState: async () => await client
+            .get<boolean>('/admin/organizations/performance/queue/state')
+            .then(r => r.data),
+        setQueueState: async () => await client
+            .put<boolean>('/admin/organizations/performance/queue/state')
+            .then(r => r.data),
         jobs: async () => await client
             .get<string[]>('/admin/organizations/performance/jobs')
             .then(r => r.data),

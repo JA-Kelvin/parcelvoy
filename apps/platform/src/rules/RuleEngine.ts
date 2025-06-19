@@ -1,5 +1,5 @@
 import { TemplateEvent } from '../users/UserEvent'
-import { TemplateUser } from '../users/User'
+import { TemplateUser, User } from '../users/User'
 import Rule, { AnyJson, RuleTree, Operator, RuleGroup, RuleType } from './Rule'
 import NumberRule from './NumberRule'
 import StringRule from './StringRule'
@@ -8,6 +8,7 @@ import DateRule from './DateRule'
 import ArrayRule from './ArrayRule'
 import WrapperRule from './WrapperRule'
 import { uuid } from '../utilities'
+import App from '../app'
 
 class Registry<T> {
     #registered: { [key: string]: T } = {}
@@ -27,15 +28,23 @@ export interface RuleCheckInput {
     events: TemplateEvent[] // all of this user's events
 }
 
-export interface RuleCheckParams {
+export interface RuleBaseParams {
     registry: typeof ruleRegistry
-    input: RuleCheckInput // all contextual input data
     rule: RuleTree // current rule to use
+}
+
+export interface RuleQueryParams extends RuleBaseParams {
+    projectId: number
+}
+
+export interface RuleCheckParams extends RuleBaseParams {
+    input: RuleCheckInput // all contextual input data
     value: Record<string, unknown> // current value to evaluate against
 }
 
 export interface RuleCheck {
     check(params: RuleCheckParams): boolean
+    query(params: RuleQueryParams): string
 }
 
 const ruleRegistry = new Registry<RuleCheck>()
@@ -64,6 +73,28 @@ export const check = (input: RuleCheckInput, rule: RuleTree | RuleTree[]) => {
     return ruleRegistry.get(rule.type).check({ registry: ruleRegistry, input, rule, value: input.user })
 }
 
+export const checkQuery = async (user: User, rule: RuleTree | RuleTree[]) => {
+    const subquery = getRuleQuery(user.project_id, rule)
+    const query = `select exists(${subquery}) as check`
+    const result = await App.main.clickhouse.query({
+        query,
+        format: 'JSONEachRow',
+    })
+    const data = await result.json() as { check: boolean }[]
+    return data[0].check
+}
+
+export const getRuleQuery = (projectId: number, rule: RuleTree | RuleTree[]) => {
+    if (Array.isArray(rule)) {
+        rule = make({
+            type: 'wrapper',
+            operator: 'and',
+            children: rule,
+        })
+    }
+    return ruleRegistry.get(rule.type).query({ projectId, registry: ruleRegistry, rule })
+}
+
 interface RuleMake {
     type: RuleType
     group?: RuleGroup
@@ -74,7 +105,7 @@ interface RuleMake {
 }
 
 export const make = ({ type, group = 'user', path = '$', operator = '=', value, children }: RuleMake): RuleTree => {
-    return {
+    const rule = {
         uuid: uuid(),
         type,
         group,
@@ -83,4 +114,10 @@ export const make = ({ type, group = 'user', path = '$', operator = '=', value, 
         value,
         children,
     }
+
+    children?.forEach(child => {
+        child.parent_uuid = rule.uuid
+    })
+
+    return rule
 }

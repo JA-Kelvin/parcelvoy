@@ -1,6 +1,6 @@
 import { RuleTree } from './Rule'
 import { RuleCheck, RuleCheckParams, RuleEvalException } from './RuleEngine'
-import { isEventWrapper } from './RuleHelpers'
+import { isEventWrapper, whereQuery } from './RuleHelpers'
 
 const checkWrapper = ({ input, registry, rule, value }: RuleCheckParams) => {
 
@@ -39,5 +39,53 @@ export default {
             })
         }
         return checkWrapper(params)
+    },
+    query({ rule, registry, projectId }) {
+        const operator = rule.operator
+        if (operator !== 'and' && operator !== 'or') {
+            throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
+        }
+
+        // Need to wrap the query to get latest version of data
+        const baseQuery = 'SELECT id FROM users FINAL'
+
+        const children = rule.children ?? []
+        if (isEventWrapper(rule)) {
+            return `SELECT DISTINCT user_id AS id FROM user_events WHERE project_id = ${projectId} AND `
+                + [
+                    whereQuery('name', '=', rule.value),
+                    ...children
+                        .map(child => registry
+                            .get(child.type)
+                            ?.query({ registry, rule: child, projectId }),
+                        ),
+                ].join(` ${operator} `)
+        } else if (!children.length) {
+            return baseQuery + ' WHERE project_id = ' + projectId
+        }
+
+        const parentOperator = rule.operator === 'and' ? 'INTERSECT' : 'UNION DISTINCT'
+        const userRules = children.filter(child => child.group === 'user')
+        const eventRules = children.filter(child => child.group === 'event')
+
+        const queries = []
+        if (userRules.length) {
+            const userQuery = `${baseQuery} PREWHERE `
+                + userRules
+                    .map(child => registry.get(child.type)?.query({ registry, rule: child, projectId }))
+                    .join(` ${operator} `)
+                + ` WHERE project_id = ${projectId}`
+            queries.push(userQuery)
+        }
+
+        if (eventRules.length) {
+            const eventQuery = ''
+                + eventRules
+                    .map(child => registry.get(child.type)?.query({ registry, rule: child, projectId }))
+                    .join(` ${parentOperator} `)
+            queries.push(eventQuery)
+        }
+
+        return queries.join(` ${parentOperator} `)
     },
 } satisfies RuleCheck

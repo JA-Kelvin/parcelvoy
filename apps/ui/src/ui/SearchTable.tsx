@@ -1,5 +1,5 @@
 import { useState, ReactNode, useCallback, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router'
 import { useDebounceControl, useResolver } from '../hooks'
 import { SearchParams, SearchResult } from '../types'
 import { prune } from '../utils'

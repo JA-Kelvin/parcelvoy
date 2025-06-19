@@ -12,7 +12,7 @@ import { formatDate } from '../../utils'
 import { useRoute } from '../router'
 import { Translation, useTranslation } from 'react-i18next'
 
-export const CampaignSendTag = ({ state }: { state: CampaignSendState }) => {
+const CampaignSendTag = ({ state }: { state: CampaignSendState }) => {
     const variant: Record<CampaignSendState, TagVariant | undefined> = {
         pending: 'info',
         throttled: 'warn',

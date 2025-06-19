@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet, redirect, RouteObject, useNavigate, useParams } from 'react-router-dom'
+import { createBrowserRouter, Outlet, redirect, RouteObject, useNavigate, useParams } from 'react-router'
 import api from '../api'
 
 import ErrorPage from './ErrorPage'
@@ -16,7 +16,6 @@ import UserDetail from './users/UserDetail'
 import { createStatefulRoute } from './createStatefulRoute'
 import UserDetailAttrs from './users/UserDetailAttrs'
 import UserDetailEvents from './users/UserDetailEvents'
-import UserDetailLists from './users/UserDetailLists'
 import UserDetailSubscriptions from './users/UserDetailSubscriptions'
 import CampaignDetail from './campaign/CampaignDetail'
 import Campaigns from './campaign/Campaigns'
@@ -57,7 +56,9 @@ export const useRoute = (includeProject = true) => {
     }
     return (path: string) => {
         parts.push(path)
-        navigate('/' + parts.join('/'))
+        navigate('/' + parts.join('/'))?.catch(e => {
+            console.error('Failed to navigate to:', e)
+        })
     }
 }
 
@@ -272,10 +273,6 @@ export const createRouter = ({
                             {
                                 path: 'events',
                                 element: <UserDetailEvents />,
-                            },
-                            {
-                                path: 'lists',
-                                element: <UserDetailLists />,
                             },
                             {
                                 path: 'subscriptions',

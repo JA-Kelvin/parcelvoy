@@ -195,7 +195,7 @@ export class JourneyState {
     }
 
     public async events() {
-        // lazy load, only grab the specific event types that we need for gates in this journey.
+        // TODO: Find a way to not have to pull in all events, better discern
         if (!this._events) {
             this._events = await getUserEventsForRules(
                 [this.user.id],

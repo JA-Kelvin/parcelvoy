@@ -5,7 +5,7 @@ import Button from '../../ui/Button'
 import ButtonGroup from '../../ui/ButtonGroup'
 import { SingleSelect } from '../../ui/form/SingleSelect'
 import LocaleEditModal from './LocaleEditModal'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import TemplateCreateModal from './TemplateCreateModal'
 import { useTranslation } from 'react-i18next'
 
@@ -26,13 +26,13 @@ export default function LocaleSelector({
 
     const [{ currentLocale, allLocales }, setLocale] = useContext(LocaleContext)
 
-    function handleTemplateCreate(campaign: Campaign, locale: LocaleOption) {
+    const handleTemplateCreate = async (campaign: Campaign, locale: LocaleOption) => {
         setCampaign(campaign)
         const locales = [...allLocales, locale]
         setLocale({ currentLocale: locale, allLocales: locales })
 
         if (campaign.templates.length === 1 && campaign.channel === 'email') {
-            navigate('../editor')
+            await navigate('../editor')
         } else {
             setAddOpen(false)
         }

@@ -4,16 +4,15 @@ import TextJob from '../providers/text/TextJob'
 import EmailJob from '../providers/email/EmailJob'
 import { logger } from '../config/logger'
 import { User } from '../users/User'
-import { UserEvent } from '../users/UserEvent'
 import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendParams, CampaignSendReferenceType, CampaignSendState, SentCampaign } from './Campaign'
-import List, { UserList } from '../lists/List'
-import Subscription, { SubscriptionState, UserSubscription } from '../subscriptions/Subscription'
+import List from '../lists/List'
+import Subscription, { SubscriptionState } from '../subscriptions/Subscription'
 import { RequestError } from '../core/errors'
 import { PageParams } from '../core/searchParams'
 import { allLists } from '../lists/ListService'
 import { allTemplates, duplicateTemplate, screenshotHtml, templateInUserLocale, validateTemplates } from '../render/TemplateService'
 import { getSubscription, getUserSubscriptionState } from '../subscriptions/SubscriptionService'
-import { chunk, pick, shallowEqual } from '../utilities'
+import { chunk, Chunker, pick, shallowEqual } from '../utilities'
 import { getProvider } from '../providers/ProviderRepository'
 import { createTagSubquery, getTags, setTags } from '../tags/TagService'
 import { getProject } from '../projects/ProjectService'
@@ -22,11 +21,11 @@ import CampaignGenerateListJob from './CampaignGenerateListJob'
 import Project from '../projects/Project'
 import Template from '../render/Template'
 import { differenceInDays, subDays } from 'date-fns'
-import Model, { raw, ref } from '../core/Model'
 import { cacheGet, cacheIncr } from '../config/redis'
 import App from '../app'
 import { releaseLock } from '../core/Lock'
 import CampaignAbortJob from './CampaignAbortJob'
+import { getRuleQuery } from '../rules/RuleEngine'
 
 export const CacheKeys = {
     pendingStats: 'campaigns:pending_stats',
@@ -195,15 +194,13 @@ export const getCampaignUsers = async (id: number, params: PageParams, projectId
 interface SendCampaign {
     campaign: Campaign
     user: User | number
-    event?: UserEvent | number
     exists?: boolean
     reference_type?: CampaignSendReferenceType
     reference_id?: string
 }
 
-export const triggerCampaignSend = async ({ campaign, user, event, exists, reference_type, reference_id }: SendCampaign) => {
+export const triggerCampaignSend = async ({ campaign, user, exists, reference_type, reference_id }: SendCampaign) => {
     const userId = user instanceof User ? user.id : user
-    const eventId = event instanceof UserEvent ? event?.id : event
 
     const subscriptionState = await getUserSubscriptionState(userId, campaign.subscription_id)
     if (subscriptionState === SubscriptionState.unsubscribed) return
@@ -222,17 +219,15 @@ export const triggerCampaignSend = async ({ campaign, user, event, exists, refer
     return sendCampaignJob({
         campaign,
         user: userId,
-        event: eventId,
         ...reference,
     })
 }
 
-export const sendCampaignJob = ({ campaign, user, event, reference_type, reference_id }: SendCampaign): EmailJob | TextJob | PushJob | WebhookJob => {
+export const sendCampaignJob = ({ campaign, user, reference_type, reference_id }: SendCampaign): EmailJob | TextJob | PushJob | WebhookJob => {
 
     const body = {
         campaign_id: campaign.id,
         user_id: user instanceof User ? user.id : user,
-        event_id: event instanceof UserEvent ? event?.id : event,
         reference_type,
         reference_id,
     }
@@ -299,8 +294,11 @@ export const generateSendList = async (campaign: SentCampaign) => {
     logger.info({ campaignId: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress:started')
 
     // Generate the initial send list
-    const query = recipientQuery(campaign)
-    await chunk<CampaignSendParams>(query, 500, async (items) => {
+    const result = await User.clickhouse().query(
+        await recipientClickhouseQuery(campaign),
+    )
+
+    const chunker = new Chunker<CampaignSendParams>(async items => {
         await App.main.db.transaction(async (trx) => {
             await CampaignSend.query(trx)
                 .insert(items)
@@ -308,10 +306,16 @@ export const generateSendList = async (campaign: SentCampaign) => {
                 .merge(['state', 'send_at'])
         })
         await cacheIncr(App.main.redis, cacheKey, items.length, 300)
-        logger.info({ campaign: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress')
-    }, ({ user_id, timezone }: { user_id: number, timezone: string }) =>
-        CampaignSend.create(campaign, project, User.fromJson({ id: user_id, timezone })),
-    )
+    }, 500)
+
+    for await (const chunk of result.stream() as any) {
+        for (const result of chunk) {
+            const user = result.json()
+            await chunker.add(CampaignSend.create(campaign, project, user))
+        }
+    }
+
+    await chunker.flush()
 
     logger.info({ campaignId: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress:finished')
 
@@ -358,49 +362,46 @@ export const failStalledSends = async (campaign: Campaign) => {
     }, ({ user_id, campaign_id }: CampaignSend) => ([user_id, campaign_id]))
 }
 
-export const recipientQuery = (campaign: Campaign) => {
+const recipientClickhouseQuery = async (campaign: Campaign) => {
 
-    // Only include users who are in matching lists
-    const inListQuery = UserList.query()
-        .select('user_id')
-        .whereIn('list_id', campaign.list_ids ?? [])
+    const listQueries = async (ids: number[]) => {
+        const queries = []
+        const lists = await List.query()
+            .select('rule')
+            .whereIn('id', ids)
+        for (const list of lists) {
+            queries.push(getRuleQuery(campaign.project_id, list.rule))
+        }
+        return queries.join(' union distinct ')
+    }
 
-    // Filter out anyone in the exlusion list
-    const notInListQuery = UserList.query()
-        .select('user_id')
-        .whereIn('list_id', campaign.exclusion_list_ids ?? [])
+    const channelClause = () => {
+        if (campaign.channel === 'email') {
+            return "(users.email != '' AND users.email IS NOT NULL)"
+        } else if (campaign.channel === 'text') {
+            return "(users.phone != '' AND users.phone IS NOT NULL)"
+        } else if (campaign.channel === 'push') {
+            return '(users.devices IS NOT NULL AND NOT empty(users.devices))'
+        }
+        return ''
+    }
 
-    // Filter out anyone who has already been sent to (but allow for
-    // regenerating for aborts & reschedules)
-    const hasSendQuery = CampaignSend.query()
-        .select('user_id')
-        .where('campaign_id', campaign.id)
-        .where('state', 'sent')
-
-    // Filter out anyone who has unsubscribed
-    const unsubscribesQuery = UserSubscription.query()
-        .select('user_id')
-        .where('subscription_id', campaign.subscription_id)
-        .where('state', SubscriptionState.unsubscribed)
-
-    return User.query()
-        .select('users.id AS user_id', 'users.timezone')
-        .whereIn('users.id', inListQuery)
-        .whereNotIn('users.id', notInListQuery)
-        .whereNotIn('users.id', hasSendQuery)
-        .whereNotIn('users.id', unsubscribesQuery)
-        .where('users.project_id', campaign.project_id)
-
-        // Reduce to only users with appropriate send parameters
-        .where(qb => {
-            if (campaign.channel === 'email') {
-                qb.whereNotNull('users.email')
-            } else if (campaign.channel === 'text') {
-                qb.whereNotNull('users.phone')
-            } else if (campaign.channel === 'push') {
-                qb.whereNotNull('users.devices')
-            }
-        })
+    const parts = [
+        channelClause(),
+        `NOT has(unsubscribe_ids, ${campaign.subscription_id})`,
+    ]
+    if (campaign.exclusion_list_ids?.length) {
+        parts.push(`id NOT IN (${await listQueries(campaign.exclusion_list_ids)})`)
+    }
+    if (campaign.list_ids?.length) {
+        parts.push(`id IN (${await listQueries(campaign.list_ids)})`)
+    }
+    return `
+        SELECT distinct id, argMax(timezone, version) AS timezone
+        FROM users
+        WHERE ${parts.join(' AND ')}
+        GROUP BY id
+    `
 }
 
 export const abortCampaign = async (campaign: Campaign) => {
@@ -506,122 +507,4 @@ export const canSendCampaignToUser = async (campaign: Campaign, user: Pick<User,
     if (campaign.channel === 'text' && !user.phone) return false
     if (campaign.channel === 'push' && !user.devices) return false
     return true
-}
-
-export const updateCampaignSendEnrollment = async (user: User) => {
-    const campaigns = await Campaign.query()
-        .leftJoin('campaign_sends', (qb) =>
-            qb.on('campaign_sends.campaign_id', 'campaigns.id')
-                .andOn('campaign_sends.user_id', raw(user.id)),
-        )
-        .leftJoin('projects', 'projects.id', 'campaigns.project_id')
-        .where('campaigns.project_id', user.project_id)
-        .where('campaigns.state', 'scheduled')
-        .select('campaigns.*', 'campaign_sends.user_id', 'campaign_sends.state AS send_state', 'projects.timezone') as Array<SentCampaign & { user_id: number, send_state: CampaignSendState, timezone: string }>
-
-    const join = []
-    const leave = []
-    for (const campaign of campaigns) {
-        const match = await recipientQuery(campaign)
-            .where('users.id', user.id)
-            .first()
-
-        // If user matches recipient query and they aren't already in the
-        // list, add to send list
-        if (match && !campaign.user_id) {
-            join.push(CampaignSend.create(campaign, Project.fromJson({ timezone: campaign.timezone }), user))
-        }
-
-        // If user is not in recipient list but we have a record, remove from
-        // send list
-        if (!match && campaign.send_state === 'pending') {
-            leave.push([campaign.id, campaign.user_id])
-        }
-    }
-
-    if (leave.length) {
-        await CampaignSend.query().whereIn(['campaign_id', 'user_id'], leave).delete()
-    }
-    if (join.length) {
-        await CampaignSend.query()
-            .insert(join)
-            .onConflict(['campaign_id', 'user_id', 'reference_id'])
-            .merge(['state', 'send_at'])
-    }
-}
-
-interface RecipientQueryParams {
-    campaign: SentCampaign
-    project: Project
-    sinceId: number
-    callback: (chunk: CampaignSendParams[]) => Promise<void>
-    limit: number
-}
-export const recipientPartialQuery = async ({ campaign, project, sinceId, callback, limit }: RecipientQueryParams) => {
-
-    const lists = campaign.list_ids ?? []
-    const exclusionLists = campaign.exclusion_list_ids ?? []
-
-    const table = `tmp_inclusive_${campaign.id}`
-    await raw(`drop temporary table if exists ${table}`)
-    await raw(`
-        create temporary table ${table} 
-        select 
-            users.id, 
-            users.timezone,
-            users.phone,
-            users.email,
-            users.project_id,
-            user_list.id AS user_list_id
-        from users 
-        inner join user_list 
-            on users.id = user_list.user_id 
-                and user_list.list_id IN (${lists.join(',')}) 
-        where user_list.id > ${sinceId}
-        order by user_list.id 
-        limit ${limit}
-    `)
-
-    const rawMaxResult = await raw(`select max(user_list_id) as last_id from ${table}`)
-    const lastId: number | null = rawMaxResult[0]?.[0]?.last_id ?? null
-
-    const query = Model.query()
-        .select('users.id AS user_id', 'users.timezone')
-        .from(`${table} AS users`)
-        .where('users.project_id', campaign.project_id)
-        .where(qb => {
-            if (campaign.channel === 'email') {
-                qb.whereNotNull('users.email')
-            } else if (campaign.channel === 'text') {
-                qb.whereNotNull('users.phone')
-            } else if (campaign.channel === 'push') {
-                qb.whereNotNull('users.devices')
-            }
-        })
-        .whereNotExists(
-            UserList.query()
-                .whereIn('list_id', exclusionLists)
-                .where('user_id', ref('users.id')),
-        )
-        .whereNotExists(
-            UserSubscription.query()
-                .where('subscription_id', campaign.subscription_id)
-                .where('user_id', ref('users.id'))
-                .where('state', SubscriptionState.unsubscribed),
-        )
-
-    await chunk<CampaignSendParams>(query, 1000, async (items) => {
-        await App.main.db.transaction(async (trx) => {
-            await CampaignSend.query(trx)
-                .insert(items)
-                .onConflict()
-                .ignore()
-        }, { isolationLevel: 'read committed' })
-        await callback(items)
-    }, ({ user_id, timezone }: { user_id: number, timezone: string }) => {
-        return CampaignSend.create(campaign, project, User.fromJson({ id: user_id, timezone }))
-    })
-    await raw(`drop temporary table if exists ${table}`)
-
-    return { isExhausted: lastId == null, lastId: lastId ?? 0 }
 }

@@ -1,18 +1,17 @@
 import { User, UserInternalParams } from './User'
 import { Job } from '../queue'
-import { createUser, getUsersFromIdentity, isUserDirty } from './UserRepository'
-import { addUserToList } from '../lists/ListService'
+import { createUser, getUsersFromIdentity, updateUser } from './UserRepository'
 import { ClientIdentity } from '../client/Client'
-import UserListMatchJob from '../lists/UserListMatchJob'
+import { ListVersion } from '../lists/List'
+import { addUserToList } from '../lists/ListService'
+import App from '../app'
+import { Transaction } from '../core/Model'
 
 interface UserPatchTrigger {
     project_id: number
     user: UserInternalParams
     options?: {
-        join_list?: {
-            id: number
-            version: number
-        }
+        join_list?: ListVersion
         skip_list_updating?: boolean
     }
 }
@@ -25,49 +24,44 @@ export default class UserPatchJob extends Job {
     }
 
     static async handler(patch: UserPatchTrigger): Promise<User> {
-        const upsert = async (patch: UserPatchTrigger, tries = 3): Promise<User> => {
+
+        const upsert = async (patch: UserPatchTrigger, tries = 3, trx: Transaction): Promise<User> => {
             const { project_id, user: { external_id, anonymous_id, data, ...fields } } = patch
             const identity = { external_id, anonymous_id } as ClientIdentity
 
             // Check for existing user
-            const { anonymous, external } = await getUsersFromIdentity(project_id, identity)
+            const { anonymous, external } = await getUsersFromIdentity(project_id, identity, trx)
             const existing = external ?? anonymous
 
             // If user, update otherwise insert
             try {
                 return existing
-                    ? await User.updateAndFetch(existing.id, {
-                        data: data ? { ...existing.data, ...data } : undefined,
-                        ...fields,
-                        ...!anonymous ? { anonymous_id } : {},
-                    })
+                    ? await updateUser(existing, patch.user, anonymous, trx)
                     : await createUser(project_id, {
                         ...identity,
                         data,
                         ...fields,
-                    })
+                    }, trx)
             } catch (error: any) {
                 // If there is an error (such as constraints,
                 // retry up to three times)
                 if (tries <= 0) throw error
-                return upsert(patch, --tries)
+                return upsert(patch, --tries, trx)
             }
         }
 
-        const user = await upsert(patch)
+        const user = await App.main.db.transaction(async (trx) => {
+            return await upsert(patch, 1, trx)
+        })
 
         const {
             join_list,
-            skip_list_updating = false,
         } = patch.options ?? {}
 
-        // Use updated user to check for dynamic list membership
-        if (!skip_list_updating && isUserDirty(patch.user)) {
-            await UserListMatchJob.from(user.id, user.project_id).queue()
-        }
-
         // If provided a list to join, add user to it
-        if (join_list) await addUserToList(user, join_list)
+        if (join_list) {
+            await addUserToList(user, join_list)
+        }
 
         return user
     }

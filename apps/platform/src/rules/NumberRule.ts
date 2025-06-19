@@ -1,5 +1,5 @@
 import { RuleCheck, RuleEvalException } from './RuleEngine'
-import { compile, queryValue as queryValues } from './RuleHelpers'
+import { compile, queryPath, queryValue as queryValues, whereQuery, whereQueryNullable } from './RuleHelpers'
 
 export default {
     check({ rule, value }) {
@@ -33,5 +33,25 @@ export default {
                 throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
             }
         })
+    },
+
+    query({ rule }) {
+        const path = queryPath(rule)
+
+        if (rule.operator === 'is set') {
+            return whereQueryNullable(path, false)
+        }
+
+        if (rule.operator === 'is not set') {
+            return whereQueryNullable(path, true)
+        }
+
+        const ruleValue = compile(rule, item => Number(item))
+
+        if (['=', '!=', '<', '<=', '>', '>=', 'any', 'none'].includes(rule.operator)) {
+            return whereQuery(path, rule.operator, ruleValue)
+        }
+
+        throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
     },
 } satisfies RuleCheck

@@ -13,14 +13,11 @@ export enum SubscriptionState {
     optedIn = 2,
 }
 
-export class UserSubscription extends Model {
-    subscription_id!: number
-    user_id!: number
-    state!: SubscriptionState
-    name?: string
-    channel?: string
-
-    static tableName = 'user_subscription'
+export type UserSubscription = {
+    subscription_id: number
+    state: SubscriptionState
+    name: string
+    channel: string
 }
 
 export type SubscriptionParams = Omit<Subscription, ModelParams>

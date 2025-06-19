@@ -1,6 +1,6 @@
 import Provider from '../providers/Provider'
 import { ChannelType } from '../config/channels'
-import Model, { BaseModel, ModelParams } from '../core/Model'
+import Model, { ModelParams, SQLModel } from '../core/Model'
 import List from '../lists/List'
 import Template from '../render/Template'
 import Subscription from '../subscriptions/Subscription'
@@ -64,7 +64,7 @@ export type CampaignUpdateParams = Omit<CampaignParams, 'channel' | 'type'>
 
 export type CampaignSendState = 'pending' | 'sent' | 'throttled' | 'failed' | 'bounced' | 'aborted'
 export type CampaignSendReferenceType = 'journey' | 'trigger'
-export class CampaignSend extends BaseModel {
+export class CampaignSend extends SQLModel {
     campaign_id!: number
     user_id!: number
     state!: CampaignSendState

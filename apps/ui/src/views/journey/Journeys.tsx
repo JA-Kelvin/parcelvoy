@@ -1,5 +1,5 @@
 import { useCallback, useContext, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import api from '../../api'
 import Button from '../../ui/Button'
 import Modal from '../../ui/Modal'
@@ -25,13 +25,13 @@ export default function Journeys() {
     const [open, setOpen] = useState<null | 'create'>(null)
     const state = useSearchTableQueryState(useCallback(async params => await api.journeys.search(project.id, params), [project.id]))
 
-    const handleEditJourney = (id: number) => {
-        navigate(id.toString())
+    const handleEditJourney = async (id: number) => {
+        await navigate(id.toString())
     }
 
     const handleDuplicateJourney = async (id: number) => {
         const journey = await api.journeys.duplicate(project.id, id)
-        navigate(journey.id.toString())
+        await navigate(journey.id.toString())
     }
 
     const handleArchiveJourney = async (id: number) => {
@@ -76,7 +76,7 @@ export default function Journeys() {
                         title: t('options'),
                         cell: ({ item: { id } }) => (
                             <Menu size="small">
-                                <MenuItem onClick={() => handleEditJourney(id)}>
+                                <MenuItem onClick={async () => await handleEditJourney(id)}>
                                     <EditIcon />{t('edit')}
                                 </MenuItem>
                                 <MenuItem onClick={async () => await handleDuplicateJourney(id)}>
@@ -89,7 +89,7 @@ export default function Journeys() {
                         ),
                     },
                 ]}
-                onSelectRow={r => navigate(r.id.toString())}
+                onSelectRow={async r => { await navigate(r.id.toString()) }}
                 enableSearch
                 tagEntity="journeys"
             />
@@ -99,9 +99,9 @@ export default function Journeys() {
                 title={t('create_journey')}
             >
                 <JourneyForm
-                    onSaved={journey => {
+                    onSaved={async journey => {
                         setOpen(null)
-                        navigate(journey.id.toString())
+                        await navigate(journey.id.toString())
                     }}
                 />
             </Modal>
