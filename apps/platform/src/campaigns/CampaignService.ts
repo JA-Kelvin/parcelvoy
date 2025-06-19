@@ -379,7 +379,7 @@ const recipientClickhouseQuery = async (campaign: Campaign) => {
             .select('rule')
             .whereIn('id', ids)
         for (const list of lists) {
-            queries.push(getRuleQuery(campaign.project_id, list.rule))
+            queries.push('(' + getRuleQuery(campaign.project_id, list.rule) + ')')
         }
         return queries.join(' union distinct ')
     }
