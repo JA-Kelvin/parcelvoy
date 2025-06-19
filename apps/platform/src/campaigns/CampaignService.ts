@@ -77,7 +77,7 @@ export const getCampaign = async (id: number, projectId: number): Promise<Campai
             campaign.progress = await campaignPopulationProgress(campaign)
         }
 
-        logger.info({
+        logger.warn({
             query: await recipientClickhouseQuery(campaign),
             campaignId: campaign.id,
         }, 'campaign:generate:query')

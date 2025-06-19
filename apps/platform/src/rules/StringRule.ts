@@ -63,7 +63,7 @@ export default {
 
         const ruleValue = compile(rule, item => String(item))
 
-        if (['=', '!=', 'contains', 'any', 'none', 'starts with', 'not start with'].includes(rule.operator)) {
+        if (['=', '!=', 'contains', 'not contain', 'any', 'none', 'starts with', 'not start with'].includes(rule.operator)) {
             return whereQuery(path, rule.operator, ruleValue, 'String')
         }
 

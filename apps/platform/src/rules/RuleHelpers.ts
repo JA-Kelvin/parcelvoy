@@ -40,6 +40,7 @@ export const whereQuery = <T extends AnyJson | undefined>(path: string, operator
     }
 
     if (operator === 'contains') return `${path} LIKE '%${value}%'`
+    if (operator === 'not contain') return `${path} NOT LIKE '%${value}%'`
     if (operator === 'starts with') return `${path} LIKE '${value}%'`
     if (operator === 'not start with') return `${path} NOT LIKE '${value}%'`
 
