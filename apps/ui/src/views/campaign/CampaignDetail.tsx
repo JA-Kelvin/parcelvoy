@@ -42,7 +42,6 @@ export const localeState = (templates: Template[]) => {
 }
 
 export const createLocale = async ({ locale, data }: LocaleParams, campaign: Campaign): Promise<Template> => {
-    // TODO: Get base locale from user preferences
     const baseLocale = 'en'
     const template = campaign.templates.find(template => template.locale === baseLocale) ?? campaign.templates[0]
     return await api.templates.create(campaign.project_id, {

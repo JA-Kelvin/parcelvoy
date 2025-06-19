@@ -14,6 +14,7 @@ import ChannelTag from './ChannelTag'
 import CodeExample from '../../ui/CodeExample'
 import { env } from '../../config/env'
 import { useTranslation } from 'react-i18next'
+import { Tag } from '../../ui'
 
 export default function CampaignOverview() {
     const [project] = useContext(ProjectContext)
@@ -22,12 +23,15 @@ export default function CampaignOverview() {
     const [campaign, setCampaign] = useContext(CampaignContext)
     const [isEditOpen, setIsEditOpen] = useState(false)
 
-    const DelimitedLists = ({ lists }: { lists?: List[] }) => {
-        return lists?.map<ReactNode>(
-            list => (
-                <Link to={`/projects/${campaign.project_id}/lists/${list.id}`} key={list.id}>{list.name}</Link>
-            ),
-        )?.reduce((prev, curr) => prev ? [prev, ', ', curr] : curr, '') ?? '&#8211;'
+    const DelimitedLists = ({ lists, delimiter = ' ' }: { lists?: List[], delimiter?: ReactNode }) => {
+        if (!lists || lists?.length === 0) return <>&#8211;</>
+        return <div className="tag-list">
+            {lists?.map<ReactNode>(
+                list => (
+                    <Tag variant="plain" key={list.id}><Link to={`/projects/${campaign.project_id}/lists/${list.id}`}>{list.name}</Link></Tag>
+                ),
+            )?.reduce((prev, curr) => prev ? [prev, delimiter, curr] : curr, '')}
+        </div>
     }
 
     const canEdit = campaign.type === 'trigger' || campaign.state === 'draft' || campaign.state === 'aborted'

@@ -27,6 +27,15 @@
     margin-bottom: -5px;
 }
 
+.ui-info-table .info-value .tag-list {
+    margin-bottom: -15px;
+}
+
+.ui-info-table .info-value .tag-list .ui-tag {
+    margin-top: -5px;
+    margin-bottom: 10px;
+}
+
 .ui-info-table .info-row:last-child {
     border-bottom-width: 0px;
 }

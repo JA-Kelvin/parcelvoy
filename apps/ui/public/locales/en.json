@@ -207,6 +207,7 @@
     "message": "Message",
     "message_settings": "Message Settings",
     "method": "Method",
+    "migrate": "Migrate",
     "minute": "Minute",
     "minute_one": "{{count}} Minute",
     "minute_other": "{{count}} Minutes",
