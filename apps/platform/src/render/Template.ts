@@ -170,7 +170,7 @@ export interface CompiledPush {
 export class PushTemplate extends Template {
     declare type: 'push'
     title!: string
-    topic!: string
+    topic?: string
     body!: string
     url!: string
     custom!: Record<string, any>
@@ -226,7 +226,7 @@ export class PushTemplate extends Template {
             required: ['title', 'topic', 'body'],
             properties: {
                 title: { type: 'string' },
-                topic: { type: 'string' },
+                topic: { type: 'string', nullable: true },
                 body: { type: 'string' },
                 url: { type: 'string', nullable: true },
             },
