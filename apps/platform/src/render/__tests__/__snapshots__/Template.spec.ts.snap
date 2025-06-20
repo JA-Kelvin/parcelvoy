@@ -26,7 +26,6 @@ Object {
     "url": "https://google.com",
   },
   "title": "title",
-  "topic": "topic",
 }
 `;
 
@@ -38,6 +37,5 @@ Object {
     "url": "https://parcelvoy.com/c?u=M8LRMWZ645&c=M8LRMWZ645&s=1&r=https%253A%252F%252Fgoogle.com",
   },
   "title": "title",
-  "topic": "topic",
 }
 `;
