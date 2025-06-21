@@ -8,6 +8,7 @@ import { ProjectState } from '../auth/AuthMiddleware'
 import parse from '../storage/FileStream'
 import { projectRoleMiddleware } from '../projects/ProjectService'
 import ListStatsJob from './ListStatsJob'
+import { migrateStaticList } from '../utilities/migrate'
 
 const router = new Router<
     ProjectState & { list?: List }
@@ -216,6 +217,11 @@ router.post('/:listId/recount', async ctx => {
         ctx.state.list!.id,
         ctx.state.project.id,
     ).queue()
+    ctx.status = 204
+})
+
+router.post('/:listId/migrate', async ctx => {
+    await migrateStaticList(ctx.state.list!)
     ctx.status = 204
 })
 

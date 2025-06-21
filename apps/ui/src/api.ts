@@ -243,6 +243,9 @@ const api = {
         recount: async (projectId: number | string, listId: number | string) => await client
             .post<List>(`${projectUrl(projectId)}/lists/${listId}/recount`)
             .then(r => r.data),
+        migrate: async (projectId: number | string, listId: number | string) => await client
+            .post<List>(`${projectUrl(projectId)}/lists/${listId}/migrate`)
+            .then(r => r.data),
     },
 
     projectAdmins: {

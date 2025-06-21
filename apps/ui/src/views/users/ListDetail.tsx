@@ -120,6 +120,11 @@ export default function ListDetail() {
         window.location.reload()
     }
 
+    const handleMigrateList = async () => {
+        await api.lists.migrate(project.id, list.id)
+        window.location.reload()
+    }
+
     const handleArchiveList = async () => {
         await api.lists.delete(project.id, list.id)
         window.location.href = `/projects/${project.id}/lists`
@@ -154,6 +159,9 @@ export default function ListDetail() {
                         </MenuItem>
                         <MenuItem onClick={async () => await handleArchiveList()}>
                             <ArchiveIcon />{t('archive')}
+                        </MenuItem>
+                        <MenuItem onClick={async () => await handleMigrateList()}>
+                            <SendIcon />{t('migrate')}
                         </MenuItem>
                     </Menu>
                 </>

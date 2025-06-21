@@ -162,7 +162,6 @@ export class TextTemplate extends Template {
 
 export interface CompiledPush {
     title: string
-    topic: string
     body: string
     custom: Record<string, any>
 }
@@ -170,7 +169,6 @@ export interface CompiledPush {
 export class PushTemplate extends Template {
     declare type: 'push'
     title!: string
-    topic!: string
     body!: string
     url!: string
     custom!: Record<string, any>
@@ -179,7 +177,6 @@ export class PushTemplate extends Template {
         super.parseJson(json)
 
         this.title = json?.data.title
-        this.topic = json?.data.topic
         this.body = json?.data.body
         this.url = json?.data.url
         this.custom = json?.data.custom ?? {}
@@ -194,7 +191,6 @@ export class PushTemplate extends Template {
         const url = this.compileUrl(variables)
 
         return {
-            topic: this.topic,
             title: Render(this.title, variables),
             body: Render(this.body, variables),
             custom: { ...custom, url },
@@ -223,16 +219,15 @@ export class PushTemplate extends Template {
     validate() {
         return isValid({
             type: 'object',
-            required: ['title', 'topic', 'body'],
+            required: ['title', 'body'],
             properties: {
                 title: { type: 'string' },
-                topic: { type: 'string' },
                 body: { type: 'string' },
                 url: { type: 'string', nullable: true },
             },
             additionalProperties: true,
             errorMessage: {
-                required: this.requiredErrors('title', 'topic', 'body'),
+                required: this.requiredErrors('title', 'body'),
             },
         }, this.data)
     }

@@ -76,6 +76,11 @@ export const getCampaign = async (id: number, projectId: number): Promise<Campai
         if (campaign.state === 'loading') {
             campaign.progress = await campaignPopulationProgress(campaign)
         }
+
+        logger.warn({
+            query: await recipientClickhouseQuery(campaign),
+            campaignId: campaign.id,
+        }, 'campaign:generate:query')
     }
 
     return campaign
@@ -291,12 +296,16 @@ export const generateSendList = async (campaign: SentCampaign) => {
     const now = Date.now()
     const cacheKey = CacheKeys.populationProgress(campaign)
 
-    logger.info({ campaignId: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress:started')
+    const query = await recipientClickhouseQuery(campaign)
+
+    logger.info({
+        campaignId: campaign.id,
+        elapsed: Date.now() - now,
+        query,
+    }, 'campaign:generate:progress:started')
 
     // Generate the initial send list
-    const result = await User.clickhouse().query(
-        await recipientClickhouseQuery(campaign),
-    )
+    const result = await User.clickhouse().query(query)
 
     const chunker = new Chunker<CampaignSendParams>(async items => {
         await App.main.db.transaction(async (trx) => {
@@ -370,7 +379,7 @@ const recipientClickhouseQuery = async (campaign: Campaign) => {
             .select('rule')
             .whereIn('id', ids)
         for (const list of lists) {
-            queries.push(getRuleQuery(campaign.project_id, list.rule))
+            queries.push('(' + getRuleQuery(campaign.project_id, list.rule) + ')')
         }
         return queries.join(' union distinct ')
     }

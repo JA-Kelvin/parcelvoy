@@ -67,7 +67,6 @@ describe('Template', () => {
                 type: 'push',
                 data: {
                     title: 'title',
-                    topic: 'topic',
                     body: 'body',
                     url,
                     custom: {
@@ -99,7 +98,6 @@ describe('Template', () => {
                 type: 'push',
                 data: {
                     title: 'title',
-                    topic: 'topic',
                     body: 'body',
                     url,
                     custom: {

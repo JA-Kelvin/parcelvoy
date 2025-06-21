@@ -435,7 +435,6 @@ export interface TextTemplateData {
 
 export interface PushTemplateData {
     title: string
-    topic: string
     body: string
     url: string
     custom: Record<string, unknown>

@@ -14,6 +14,8 @@ import { getUserFromEmail, getUserFromPhone } from '../users/UserRepository'
 import { loadWebhookChannel } from '../providers/webhook'
 import Project from '../projects/Project'
 import { getProject } from '../projects/ProjectService'
+import { logger } from '../config/logger'
+import EventPostJob from '../client/EventPostJob'
 
 export const pagedTemplates = async (params: PageParams, projectId: number) => {
     return await Template.search(
@@ -72,7 +74,7 @@ export const screenshotHtml = (template: TemplateType) => {
     } else if (template.type === 'text') {
         return template.text
     } else if (template.type === 'push') {
-        return `${template.title}<br/>${template.body}`
+        return `<html style="font-size:36px;padding:10px">${template.title}<br/>${template.body}</html>`
     }
     return ''
 }
@@ -106,25 +108,39 @@ export const sendProof = async (template: TemplateType, variables: Variables, re
     user.data = { ...user?.data, ...variables.user }
     variables = { user, event, context, project }
 
+    let response: any
     if (template.type === 'email') {
         const channel = await loadEmailChannel(campaign.provider_id, project.id)
-        await channel?.send(template, variables)
-
+        response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:email:result')
     } else if (template.type === 'text') {
         const channel = await loadTextChannel(campaign.provider_id, project.id)
-        await channel?.send(template, variables)
-
+        response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:text:result')
     } else if (template.type === 'push') {
         const channel = await loadPushChannel(campaign.provider_id, project.id)
         if (!user.id) throw new RequestError('Unable to find a user matching the criteria.')
-        await channel?.send(template, variables)
-
+        response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:push:result')
     } else if (template.type === 'webhook') {
         const channel = await loadWebhookChannel(campaign.provider_id, project.id)
         await channel?.send(template, variables)
     } else {
         throw new RequestError('Sending template proofs is only supported for email and text message types as this time.')
     }
+
+    await EventPostJob.from({
+        project_id: project.id,
+        user_id: user.id,
+        event: {
+            name: 'proof_sent',
+            external_id: user.external_id,
+            data: {
+                context,
+                response,
+            },
+        },
+    }).queue()
 }
 
 // Determine what template to send to the user based on the following:

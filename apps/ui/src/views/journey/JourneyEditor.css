@@ -307,6 +307,9 @@
 .journey-step-body-name {
     margin-bottom: 10px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .journey-step-edge {
@@ -347,4 +350,30 @@
 
 .react-flow__attribution {
     display: none;
+}
+
+.journey-step-action-preview {
+    background: var(--color-background-soft);
+    height: 200px;
+    width: 250px;
+    border-radius: var(--border-radius-inner);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.journey-step-action-preview-placeholder {
+    color: var(--color-grey);
+    font-weight: 500;
+}
+
+.journey-step-action-type {
+    background: var(--color-background-soft);
+    border-radius: var(--border-radius-inner);
+    padding: 5px;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }

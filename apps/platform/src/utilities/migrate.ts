@@ -76,7 +76,7 @@ export const migrateEvents = async (since?: Date) => {
 
     const size = 1000
     const chunker = new Chunker<UserEvent>(async events => {
-        await UserEvent.insert(events.map(event => ({ ...event, uuid: randomUUID() })))
+        await UserEvent.clickhouse().insert(events.map(event => ({ ...event, uuid: randomUUID() })))
     }, size)
 
     for await (const event of events) {
@@ -93,7 +93,7 @@ export const migrateStaticList = async ({ id, project_id }: List) => {
 
     const size = 1000
     const chunker = new Chunker<{ user_id: number, list_id: number, created_at: number, version: number }>(async users => {
-        await UserEvent.insert(
+        await UserEvent.clickhouse().insert(
             users.map(user => ({
                 name: 'user_imported_to_list',
                 user_id: user.user_id,
