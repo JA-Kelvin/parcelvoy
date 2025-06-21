@@ -74,7 +74,7 @@ export const screenshotHtml = (template: TemplateType) => {
     } else if (template.type === 'text') {
         return template.text
     } else if (template.type === 'push') {
-        return `${template.title}<br/>${template.body}`
+        return `<html style="font-size:36px;padding:10px">${template.title}<br/>${template.body}</html>`
     }
     return ''
 }
