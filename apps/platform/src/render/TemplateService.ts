@@ -14,6 +14,7 @@ import { getUserFromEmail, getUserFromPhone } from '../users/UserRepository'
 import { loadWebhookChannel } from '../providers/webhook'
 import Project from '../projects/Project'
 import { getProject } from '../projects/ProjectService'
+import { logger } from '../config/logger'
 
 export const pagedTemplates = async (params: PageParams, projectId: number) => {
     return await Template.search(
@@ -108,17 +109,17 @@ export const sendProof = async (template: TemplateType, variables: Variables, re
 
     if (template.type === 'email') {
         const channel = await loadEmailChannel(campaign.provider_id, project.id)
-        await channel?.send(template, variables)
-
+        const response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:email:result')
     } else if (template.type === 'text') {
         const channel = await loadTextChannel(campaign.provider_id, project.id)
-        await channel?.send(template, variables)
-
+        const response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:text:result')
     } else if (template.type === 'push') {
         const channel = await loadPushChannel(campaign.provider_id, project.id)
         if (!user.id) throw new RequestError('Unable to find a user matching the criteria.')
-        await channel?.send(template, variables)
-
+        const response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:push:result')
     } else if (template.type === 'webhook') {
         const channel = await loadWebhookChannel(campaign.provider_id, project.id)
         await channel?.send(template, variables)
