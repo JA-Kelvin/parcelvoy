@@ -19,12 +19,19 @@ export default class PushChannel {
         // Find tokens from active devices with push enabled
         const tokens = variables.user.pushEnabledDevices.map(device => device.token)
 
-        // If no tokens, don't send
-        if (tokens?.length <= 0) return
-
         const push = {
             tokens,
             ...template.compile(variables),
+        }
+
+        // If no tokens, don't send
+        if (tokens?.length <= 0) {
+            return {
+                push,
+                success: false,
+                invalidTokens: [],
+                response: 'No active devices with push enabled found.',
+            }
         }
 
         return await this.provider.send(push)
