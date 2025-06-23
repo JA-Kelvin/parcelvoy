@@ -65,6 +65,7 @@ export const actionStep: JourneyStepType<ActionConfig> = {
             }
             return null
         }, [projectId, campaign_id]))
+        const template = campaign?.templates?.[0]
 
         return (
             <>
@@ -75,8 +76,8 @@ export const actionStep: JourneyStepType<ActionConfig> = {
                     {campaign?.name ?? <>&#8211;</>}
                 </div>
                 <div className="journey-step-action-preview">
-                    { campaign
-                        ? <Preview template={campaign.templates[0]} size="small" />
+                    { campaign && template
+                        ? <Preview template={template} size="small" />
                         : (
                             <div className="journey-step-action-preview-placeholder">{t('journey_campaign_create_preview')}</div>
                         )}
