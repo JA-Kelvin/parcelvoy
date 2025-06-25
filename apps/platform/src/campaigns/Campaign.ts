@@ -7,6 +7,7 @@ import Subscription from '../subscriptions/Subscription'
 import { crossTimezoneCopy } from '../utilities'
 import Project from '../projects/Project'
 import { User } from '../users/User'
+import type Journey from '../journey/Journey'
 
 export type CampaignState = 'draft' | 'scheduled' | 'loading' | 'running' | 'finished' | 'aborting' | 'aborted'
 export interface CampaignDelivery {
@@ -37,6 +38,7 @@ export default class Campaign extends Model {
     state!: CampaignState
     delivery!: CampaignDelivery
     tags?: string[]
+    journeys?: Journey[]
     progress?: CampaignPopulationProgress
 
     send_in_user_timezone?: boolean
@@ -58,7 +60,7 @@ export type CampaignPopulationProgress = {
 
 export type SentCampaign = Campaign & { send_at: Date }
 
-export type CampaignParams = Omit<Campaign, ModelParams | 'delivery' | 'eventName' | 'templates' | 'lists' | 'exclusion_lists' | 'subscription' | 'provider' | 'deleted_at' | 'progress'>
+export type CampaignParams = Omit<Campaign, ModelParams | 'delivery' | 'eventName' | 'templates' | 'lists' | 'exclusion_lists' | 'subscription' | 'provider' | 'journeys' | 'deleted_at' | 'progress'>
 export type CampaignCreateParams = Omit<CampaignParams, 'state'>
 export type CampaignUpdateParams = Omit<CampaignParams, 'channel' | 'type'>
 
