@@ -5,10 +5,11 @@ import { LocaleParams, createLocale, localeOption } from './CampaignDetail'
 import RadioInput from '../../ui/form/RadioInput'
 import { useContext, useEffect, useState } from 'react'
 import api from '../../api'
-import { ProjectContext } from '../../contexts'
+import { AdminContext, ProjectContext } from '../../contexts'
 import { SingleSelect } from '../../ui/form/SingleSelect'
 import { LinkButton } from '../../ui'
 import { useTranslation } from 'react-i18next'
+import { checkOrganizationRole } from '../../utils'
 
 interface CreateTemplateParams {
     open: boolean
@@ -21,6 +22,7 @@ export default function CreateTemplateModal({ open, setIsOpen, campaign, onCreat
 
     const { t } = useTranslation()
     const [project] = useContext(ProjectContext)
+    const admin = useContext(AdminContext)
     const [locales, setLocales] = useState<LocaleOption[]>([])
     useEffect(() => {
         api.locales.search(project.id, { limit: 100 })
@@ -53,12 +55,12 @@ export default function CreateTemplateModal({ open, setIsOpen, campaign, onCreat
                         options={locales}
                         toValue={option => option.key}
                         required />
-                    <div className="label">
+                    {checkOrganizationRole('admin', admin?.role) && <div className="label">
                         <LinkButton
                             size="small"
                             variant="secondary"
                             to={`/projects/${project.id}/settings/locales`}>{t('create_locale')}</LinkButton>
-                    </div>
+                    </div>}
                     { campaign.channel === 'email' && (
                         <RadioInput.Field
                             form={form}
