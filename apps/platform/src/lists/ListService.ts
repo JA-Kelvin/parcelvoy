@@ -124,7 +124,7 @@ export const updateList = async (list: List, { tags, published, ...params }: Lis
             : list.state,
         users_count: await listUserCount({
             project_id: list.project_id,
-            rule: params.rule,
+            rule: params.rule ?? list.rule,
         }),
     })
 
