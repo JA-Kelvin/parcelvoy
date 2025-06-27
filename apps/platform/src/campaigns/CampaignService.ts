@@ -317,7 +317,14 @@ export const generateSendList = async (campaign: SentCampaign) => {
     for await (const chunk of result.stream() as any) {
         for (const result of chunk) {
             const user = result.json()
-            await chunker.add(CampaignSend.create(campaign, project, user))
+
+            // If we fail to add a user, it should not stop the entire process
+            try {
+                await chunker.add(CampaignSend.create(campaign, project, user))
+            } catch (error: any) {
+                logger.error({ error, user, campaignId: campaign.id }, 'campaign:generate:progress:error')
+
+            }
         }
     }
 

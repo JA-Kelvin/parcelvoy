@@ -156,6 +156,10 @@ export const crossTimezoneCopy = (
     fromTimezone: string,
     toTimezone: string,
 ) => {
+    if (!isValidIANATimezone(toTimezone)) {
+        toTimezone = fromTimezone
+    }
+
     const baseDate = utcToZonedTime(date, fromTimezone)
 
     const utcDate = new Date(baseDate.toLocaleString('en-US', { timeZone: 'UTC' }))
