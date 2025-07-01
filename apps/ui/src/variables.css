@@ -61,8 +61,8 @@
     --color-on-primary: var(--color-black);
     --color-on-background: var(--color-white);
 
-    --color-shadow: var(--color-grey);
-    --color-shadow-soft: var(--color-grey-soft);
+    --color-shadow: var(--color-grey-soft);
+    --color-shadow-soft: var(--color-black);
 
     --color-purple-soft: #4e0c77;
     --color-purple-hard: #d1a7ea;
