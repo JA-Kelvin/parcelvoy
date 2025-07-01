@@ -763,7 +763,6 @@ export default function JourneyEditor() {
                                 setNodes(nds => nds.map(n => n.data.editing ? { ...n, data: { ...n.data, editing: false } } : n))
                             }
                         }}
-                        elementsSelectable={isDraft}
                         nodesDraggable={isDraft}
                         nodesConnectable={isDraft}
                         onDragOver={onDragOver}
@@ -783,7 +782,7 @@ export default function JourneyEditor() {
                                     <MiniMap
                                         nodeClassName={({ data }: Node<JourneyStep>) => `journey-minimap ${getStepType(data.type)?.category ?? 'unknown'}`}
                                     />
-                                    <Panel position="top-left">
+                                    {isDraft && <Panel position="top-left">
                                         {
                                             selected.length
                                                 ? (
@@ -803,7 +802,7 @@ export default function JourneyEditor() {
                                                     'Shift+Drag to Multi Select'
                                                 )
                                         }
-                                    </Panel>
+                                    </Panel>}
                                 </>
                             )
                         }
