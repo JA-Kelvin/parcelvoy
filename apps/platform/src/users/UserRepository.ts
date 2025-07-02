@@ -170,21 +170,21 @@ export const deleteUser = async (projectId: number, externalId: string): Promise
         id: user.id,
     })
 
-    // Delete the user events from ClickHouse
-    await UserEvent.clickhouse().delete('project_id = {projectId: UInt32} AND user_id = {userId: UInt32}', {
-        projectId,
-        userId: user.id,
-    })
+    // Delete the user events from the database
+    await UserEvent.delete(qb => qb.where('project_id', projectId)
+        .where('user_id', user.id),
+    )
 
     // Delete the user from the database
     await User.delete(qb => qb.where('project_id', projectId)
         .where('id', user.id),
     )
 
-    // Delete the user events from the database
-    await UserEvent.delete(qb => qb.where('project_id', projectId)
-        .where('user_id', user.id),
-    )
+    // Delete the user events from ClickHouse
+    await UserEvent.clickhouse().delete('project_id = {projectId: UInt32} AND user_id = {userId: UInt32}', {
+        projectId,
+        userId: user.id,
+    })
 }
 
 export const saveDevice = async (projectId: number, { external_id, anonymous_id, ...params }: DeviceParams, trx?: Transaction): Promise<Device | undefined> => {
