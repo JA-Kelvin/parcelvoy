@@ -35,12 +35,20 @@ export const randomInt = (min = 0, max = 100): number => {
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-export const prune = (obj: Record<string, any>): Record<string, any> => {
-    return Object.fromEntries(
-        Object.entries(obj)
-            .filter(([_, v]) => v != null && v !== '')
-            .map(([k, v]) => [k, v === Object(v) ? prune(v) : v]),
-    )
+export const prune = (value: Record<string, any>): any => {
+    if (Array.isArray(value)) {
+        return value
+            .map(prune)
+            .filter((v) => v != null && v !== '')
+    } else if (value !== null && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value)
+                .map(([k, v]) => [k, prune(v)])
+                .filter(([_, v]) => v != null && v !== ''),
+        )
+    } else {
+        return value
+    }
 }
 
 export const isValidUrl = (url: string) => {
@@ -307,5 +315,39 @@ export function visit<T>(item: T, children: (item: T) => undefined | T[], callba
         for (const item of items) {
             visit(item, children, callback)
         }
+    }
+}
+
+export class KeyedSet<T> implements Iterable<T> {
+    private keys = new Set<string>()
+    private items: T[] = []
+    private lookup: (item: T) => string
+
+    constructor(lookup: (item: T) => string) {
+        this.lookup = lookup
+    }
+
+    add(item: T) {
+        const key = this.lookup(item)
+        if (!this.keys.has(key)) {
+            this.keys.add(key)
+            this.items.push(item)
+        }
+    }
+
+    getAll(): T[] {
+        return this.items
+    }
+
+    has(id: string): boolean {
+        return this.keys.has(id)
+    }
+
+    [Symbol.iterator](): Iterator<T> {
+        return this.items[Symbol.iterator]()
+    }
+
+    toJSON() {
+        return this.items
     }
 }

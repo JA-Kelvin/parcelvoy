@@ -1,4 +1,4 @@
-import { SetStateAction, Suspense, lazy, useContext, useEffect, useState } from 'react'
+import { SetStateAction, Suspense, lazy, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { CampaignContext, LocaleContext, LocaleSelection, ProjectContext } from '../../../contexts'
 import './EmailEditor.css'
 import Button, { LinkButton } from '../../../ui/Button'
@@ -13,8 +13,11 @@ import { toast } from 'react-hot-toast/headless'
 import { QuestionIcon } from '../../../ui/icons'
 import { useTranslation } from 'react-i18next'
 import ResourceModal from '../ResourceModal'
+import { useResolver } from '../../../hooks'
+import { emptySuggestions, VariablesContext } from '../../users/rules/RuleHelpers'
 
-const VisualEditor = lazy(async () => await import('./VisualEditor'))
+// const VisualEditor = lazy(async () => await import('./VisualEditor'))
+const MailyEditor = lazy(async () => await import('./MailyEditor'))
 
 export default function EmailEditor() {
     const navigate = useNavigate()
@@ -27,6 +30,7 @@ export default function EmailEditor() {
     const [resources, setResources] = useState<Resource[]>([])
 
     const [template, setTemplate] = useState<Template | undefined>(templates[0])
+    const [suggestions] = useResolver(useCallback(async () => await api.projects.pathSuggestions(1), [template]))
     const [isSaving, setIsSaving] = useState(false)
     const [showConfig, setShowConfig] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -77,65 +81,72 @@ export default function EmailEditor() {
     return (
         <>
             <LocaleContext.Provider value={[locale, setLocale]}>
-                <Modal
-                    size="fullscreen"
-                    title={campaign.name}
-                    open
-                    onClose={async () => {
-                        await navigate(`../campaigns/${campaign.id}/design?locale=${locale.currentLocale?.key}`)
-                    }}
-                    actions={
-                        <>
-                            <Button
-                                size="small"
-                                variant="secondary"
-                                onClick={() => setShowConfig(true)}
-                            >Config</Button>
-                            <LinkButton
-                                icon={<QuestionIcon />}
-                                variant="secondary"
-                                size="small"
-                                to="https://docs.parcelvoy.com/how-to/campaigns/templates"
-                                target="_blank" />
-                            <LocaleSelector campaignState={[campaign, campaignChange]} />
-                            {template && (
+                <VariablesContext.Provider value={useMemo(() => ({ suggestions: suggestions ?? emptySuggestions }), [suggestions])}>
+                    <Modal
+                        size="fullscreen"
+                        title={campaign.name}
+                        open
+                        onClose={async () => {
+                            await navigate(`../campaigns/${campaign.id}/design?locale=${locale.currentLocale?.key}`)
+                        }}
+                        actions={
+                            <>
                                 <Button
                                     size="small"
-                                    isLoading={isSaving}
-                                    onClick={async () => await handleTemplateSave(template)}
-                                >{t('template_save')}</Button>
-                            )}
-                        </>
-                    }
-                >
-                    <section className="email-editor">
-                        {templates.filter(template => template.locale === locale.currentLocale?.key)
-                            .map(template => (
-                                template.data.editor === 'visual'
-                                    ? (
-                                        <Suspense key={template.id} fallback={null}>
-                                            <VisualEditor
-                                                template={template}
-                                                setTemplate={handleTemplateChange}
-                                                resources={resources}
-                                            />
-                                        </Suspense>
-                                    )
-                                    : <HtmlEditor
-                                        template={template}
-                                        key={template.id}
-                                        setTemplate={handleTemplateChange} />
-                            ))
+                                    variant="secondary"
+                                    onClick={() => setShowConfig(true)}
+                                >Config</Button>
+                                <LinkButton
+                                    icon={<QuestionIcon />}
+                                    variant="secondary"
+                                    size="small"
+                                    to="https://docs.parcelvoy.com/how-to/campaigns/templates"
+                                    target="_blank" />
+                                <LocaleSelector campaignState={[campaign, campaignChange]} />
+                                {template && (
+                                    <Button
+                                        size="small"
+                                        isLoading={isSaving}
+                                        onClick={async () => await handleTemplateSave(template)}
+                                    >{t('template_save')}</Button>
+                                )}
+                            </>
                         }
-                    </section>
+                    >
+                        <section className="email-editor">
+                            {templates.filter(template => template.locale === locale.currentLocale?.key)
+                                .map(template => (
+                                    template.data.editor === 'visual'
+                                        ? (
+                                            <Suspense key={template.id} fallback={null}>
+                                                <MailyEditor
+                                                    template={template}
+                                                    setTemplate={handleTemplateChange}
+                                                    resources={resources}
+                                                />
+                                                {/* <VisualEditor
+                                                    template={template}
+                                                    setTemplate={handleTemplateChange}
+                                                    resources={resources}
+                                                /> */}
+                                            </Suspense>
+                                        )
+                                        : <HtmlEditor
+                                            template={template}
+                                            key={template.id}
+                                            setTemplate={handleTemplateChange} />
+                                ))
+                            }
+                        </section>
 
-                    <ResourceModal
-                        open={showConfig}
-                        onClose={() => setShowConfig(false)}
-                        resources={resources}
-                        setResources={setResources}
-                    />
-                </Modal>
+                        <ResourceModal
+                            open={showConfig}
+                            onClose={() => setShowConfig(false)}
+                            resources={resources}
+                            setResources={setResources}
+                        />
+                    </Modal>
+                </VariablesContext.Provider>
             </LocaleContext.Provider>
         </>
     )
