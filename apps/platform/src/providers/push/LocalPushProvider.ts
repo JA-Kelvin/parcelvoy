@@ -160,6 +160,7 @@ export default class LocalPushProvider extends PushProvider {
                 success: true,
                 response: response[0].message[0].messageId,
                 invalidTokens,
+                count: tokens.length - invalidTokens.length,
             }
         }
     }

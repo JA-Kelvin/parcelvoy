@@ -44,15 +44,10 @@ export const createEvent = async (
 }
 
 export const getUserEvents = async (id: number, params: PageParams, projectId: number) => {
-    const searchClause = params.q ? ` AND \`name\` LIKE '%${params.q}%' ` : ''
-    return await UserEvent.clickhouse().search(
-        `
-        SELECT * FROM user_events 
-        WHERE project_id = ${projectId}
-            AND user_id = ${id}
-            ${searchClause}
-        ORDER BY created_at DESC
-        `,
-        params,
+    return await UserEvent.search(
+        { ...params, fields: ['name'] },
+        b => b.where('project_id', projectId)
+            .where('user_id', id)
+            .orderBy('id', 'desc'),
     )
 }

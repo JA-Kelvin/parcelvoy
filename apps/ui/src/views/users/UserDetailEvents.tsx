@@ -32,7 +32,7 @@ export default function UserDetailEvents() {
             params={params}
             setParams={setParams}
             title={t('events')}
-            itemKey={({ item }) => item.uuid}
+            itemKey={({ item }) => item.id}
             columns={[
                 { key: 'name', title: t('name') },
                 { key: 'created_at', title: t('created_at') },

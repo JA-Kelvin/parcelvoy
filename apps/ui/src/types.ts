@@ -236,7 +236,7 @@ export interface Device {
 }
 
 export interface UserEvent {
-    uuid: string
+    id: number
     name: string
     data: Record<string, any>
     created_at: string

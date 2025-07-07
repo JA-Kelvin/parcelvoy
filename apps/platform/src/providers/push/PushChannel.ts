@@ -29,8 +29,9 @@ export default class PushChannel {
             return {
                 push,
                 success: false,
-                invalidTokens: [],
                 response: 'No active devices with push enabled found.',
+                invalidTokens: [],
+                count: 0,
             }
         }
 

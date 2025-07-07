@@ -27,7 +27,7 @@ export default class App {
 
     static async init<T extends typeof App>(this: T, env: Env): Promise<InstanceType<T>> {
 
-        logger.info('parcelvoy initializing')
+        logger.info('parcelvoy:initializing')
 
         // Boot up error tracking
         const error = await loadError(env.error)
@@ -130,17 +130,25 @@ export default class App {
         delete this.#registered[key]
     }
 
+    async forceClose(signal: string, reason: string, error?: Error) {
+        logger.error({ signal, error }, reason)
+        await this.close()
+        process.exit()
+    }
+
     unhandledErrorListener() {
-        ['exit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM'].forEach((eventType) => {
+        ['exit', 'beforeExit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM'].forEach((eventType) => {
             process.on(eventType, async () => {
-                await this.close()
-                process.exit()
+                await this.forceClose(eventType, `received exit signal: ${eventType}`)
             })
         })
+
         process.on('uncaughtException', async (error) => {
-            logger.error(error, 'uncaught error')
-            await this.close()
-            process.exit()
+            await this.forceClose('uncaughtException', 'uncaught error', error)
+        })
+
+        process.on('unhandledRejection', async (error, promise) => {
+            await this.forceClose('unhandledRejection', `uncaught error: ${promise}, reason: ${error}`)
         })
     }
 }
