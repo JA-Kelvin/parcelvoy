@@ -5,7 +5,7 @@ import { searchParamsSchema } from '../core/searchParams'
 import { JSONSchemaType, validate } from '../core/validate'
 import { extractQueryParams } from '../utilities'
 import Journey, { JourneyEntranceTriggerParams, JourneyParams } from './Journey'
-import { createJourney, getJourneyStepMap, getJourney, pagedJourneys, setJourneyStepMap, updateJourney, pagedEntrancesByJourney, getEntranceLog, pagedUsersByStep, archiveJourney, deleteJourney, exitUserFromJourney, publishJourney } from './JourneyRepository'
+import { createJourney, getJourneyStepMap, getJourney, pagedJourneys, setJourneyStepMap, updateJourney, pagedEntrancesByJourney, getEntranceLog, pagedUsersByStep, archiveJourney, deleteJourney, exitUserFromJourney, publishJourney, getEntrancesForUser } from './JourneyRepository'
 import { JourneyStep, JourneyStepMapParams, journeyStepTypes, toJourneyStepMap } from './JourneyStep'
 import JourneyUserStep from './JourneyUserStep'
 import { User } from '../users/User'
@@ -193,7 +193,11 @@ router.get('/:journeyId/entrances', async ctx => {
 router.delete('/:journeyId/entrances/:entranceId/users/:userId', async ctx => {
     const user = await getUserFromContext(ctx)
     if (!user) return ctx.throw(404)
-    const results = await exitUserFromJourney(user.id, parseInt(ctx.params.entranceId), ctx.state.journey!.id)
+    const results = await exitUserFromJourney(
+        user.id,
+        parseInt(ctx.params.entranceId),
+        ctx.state.journey!.id,
+    )
     ctx.body = { exits: results }
 })
 
@@ -210,13 +214,12 @@ router.get('/:journeyId/steps/:stepId/users', async ctx => {
 router.delete('/:journeyId/users/:userId', async ctx => {
     const user = await getUserFromContext(ctx)
     if (!user) return ctx.throw(404)
-    const results = await JourneyUserStep.update(
-        q => q.where('user_id', user.id)
-            .whereNull('entrance_id')
-            .whereNull('ended_at')
-            .where('journey_id', ctx.state.journey!.id),
-        { ended_at: new Date() },
-    )
+
+    const entrances = await getEntrancesForUser(user.id, ctx.state.journey!.id)
+    let results = 0
+    for (const entrance of entrances) {
+        results += await exitUserFromJourney(user.id, entrance.id, ctx.state.journey!.id)
+    }
     ctx.body = { exits: results }
 })
 

@@ -3,6 +3,7 @@ import { Job } from '../queue'
 import Journey from './Journey'
 import App from '../app'
 import JourneyStatsJob from './JourneyStatsJob'
+import JourneyCleanupJob from './JourneyCleanupJob'
 
 export default class UpdateJourneysJob extends Job {
     static $name = 'update_journeys_job'
@@ -12,7 +13,14 @@ export default class UpdateJourneysJob extends Job {
         const { db, queue } = App.main
 
         await chunk<Journey>(Journey.query(db), queue.batchSize, async journeys => {
-            queue.enqueueBatch(journeys.map(({ id }) => JourneyStatsJob.from(id)))
+            const steps = []
+            for (const journey of journeys) {
+                steps.push(
+                    JourneyCleanupJob.from(journey.id),
+                    JourneyStatsJob.from(journey.id),
+                )
+            }
+            queue.enqueueBatch(steps)
         })
     }
 }

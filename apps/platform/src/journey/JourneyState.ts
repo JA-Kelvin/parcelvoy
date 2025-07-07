@@ -7,7 +7,7 @@ import { User } from '../users/User'
 import { UserEvent } from '../users/UserEvent'
 import { getUserEventsForRules } from '../users/UserRepository'
 import { shallowEqual } from '../utilities'
-import { getEntranceSubsequentSteps, getJourneyStepChildren, getJourneySteps } from './JourneyRepository'
+import { exitUserFromJourney, getEntranceSubsequentSteps, getJourneyStepChildren, getJourneySteps } from './JourneyRepository'
 import { JourneyGate, JourneyStep, JourneyStepChild, journeyStepTypes } from './JourneyStep'
 import JourneyUserStep from './JourneyUserStep'
 
@@ -182,9 +182,11 @@ export class JourneyState {
     }
 
     private async end() {
-        await JourneyUserStep.update(q => q.where('id', this.entrance.id), {
-            ended_at: new Date(),
-        })
+        await exitUserFromJourney(
+            this.user.id,
+            this.entrance.id,
+            this.entrance.journey_id,
+        )
     }
 
     public childrenOf(stepId: number) {

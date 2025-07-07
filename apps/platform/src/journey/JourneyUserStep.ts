@@ -1,6 +1,8 @@
 import Model from '../core/Model'
 import { type JourneyStep } from './JourneyStep'
 
+type JourneyUserStepDataState = 'active' | 'available' | 'cleared'
+
 export default class JourneyUserStep extends Model {
     user_id!: number
     type!: string
@@ -11,6 +13,7 @@ export default class JourneyUserStep extends Model {
     ended_at?: Date
     data?: Record<string, unknown> | null
     ref?: string
+    data_state?: JourneyUserStepDataState
 
     step?: JourneyStep
 

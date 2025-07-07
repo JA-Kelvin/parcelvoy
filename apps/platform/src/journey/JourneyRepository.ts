@@ -247,6 +247,14 @@ export const setJourneyStepMap = async (journey: Journey, stepMap: JourneyStepMa
     })
 }
 
+export const getEntrancesForUser = async (userId: number, journeyId: number) => {
+    return await JourneyUserStep.all(q => q
+        .where('journey_id', journeyId)
+        .where('user_id', userId)
+        .whereNull('entrance_id'),
+    )
+}
+
 export const getEntranceSubsequentSteps = async (entranceId: number) => {
     return JourneyUserStep.all(q => q
         .where('entrance_id', entranceId)
@@ -347,11 +355,28 @@ export const getJourneyUserStepByExternalId = async (journeyId: number, userId: 
 }
 
 export const exitUserFromJourney = async (userId: number, entranceId: number, journeyId: number) => {
-    await JourneyUserStep.update(
+
+    // Exit the entrance itself
+    const results = await JourneyUserStep.update(
         q => q.where('user_id', userId)
             .where('id', entranceId)
-            .whereNull('ended_at')
-            .where('journey_id', journeyId),
-        { ended_at: new Date() },
+            .where('journey_id', journeyId)
+            .whereNull('ended_at'),
+        {
+            ended_at: new Date(),
+            data_state: 'available',
+        },
     )
+
+    // Exit all steps referencing the entrance
+    await JourneyUserStep.update(
+        q => q.where('user_id', userId)
+            .where('entrance_id', entranceId)
+            .where('journey_id', journeyId),
+        {
+            data_state: 'available',
+        },
+    )
+
+    return results
 }
