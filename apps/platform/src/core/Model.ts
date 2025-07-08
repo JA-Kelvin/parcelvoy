@@ -2,6 +2,7 @@ import App from '../app'
 import { Database } from '../config/database'
 import { SQLModel } from './models/SQLModel'
 import { clickhouseAll, clickhouseDelete, clickhouseInsert, clickhouseQuery, clickhouseSearch } from './models/ClickHouseModel'
+import { ClickHouseSettings } from '@clickhouse/client'
 
 export interface SearchResult<T> {
     results: T[]
@@ -77,9 +78,10 @@ export class UniversalModel extends Model {
                 this: T,
                 query: string,
                 params: any = {},
+                settings?: ClickHouseSettings,
                 clickhouse = App.main.clickhouse,
             ) {
-                return clickhouseQuery(this, query, params, clickhouse)
+                return clickhouseQuery(this, query, params, settings, clickhouse)
             }.bind(this),
             count: async function(
                 query: string,

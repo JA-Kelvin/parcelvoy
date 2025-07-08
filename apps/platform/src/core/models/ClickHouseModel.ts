@@ -1,3 +1,4 @@
+import { ClickHouseSettings } from '@clickhouse/client'
 import App from '../../app'
 import { PageParams } from '../searchParams'
 import { RawModel } from './RawModel'
@@ -21,12 +22,14 @@ export const clickhouseQuery = async <T extends typeof RawModel>(
     model: T,
     query: string,
     params: any = {},
+    settings?: ClickHouseSettings,
     clickhouse = App.main.clickhouse,
 ) => {
     return await clickhouse.query({
         query,
         query_params: params,
         format: 'JSONEachRow',
+        clickhouse_settings: settings,
     })
 }
 
@@ -125,9 +128,10 @@ export class ClickHouseModel extends RawModel {
         this: T,
         query: string,
         params: any = {},
+        settings?: ClickHouseSettings,
         clickhouse = App.main.clickhouse,
     ) {
-        return clickhouseQuery(this, query, params, clickhouse)
+        return clickhouseQuery(this, query, params, settings, clickhouse)
     }
 
     static async search<T extends typeof RawModel>(

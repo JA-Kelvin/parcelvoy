@@ -302,7 +302,9 @@ export const generateSendList = async (campaign: SentCampaign) => {
     }, 'campaign:generate:progress:started')
 
     // Generate the initial send list
-    const result = await User.clickhouse().query(query)
+    const result = await User.clickhouse().query(query, {}, {
+        max_block_size: '16384',
+    })
 
     const chunker = new Chunker<CampaignSendParams>(async items => {
         await App.main.db.transaction(async (trx) => {
