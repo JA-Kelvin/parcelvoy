@@ -12,7 +12,7 @@ import { PageParams } from '../core/searchParams'
 import { allLists } from '../lists/ListService'
 import { allTemplates, duplicateTemplate, screenshotHtml, templateInUserLocale, validateTemplates } from '../render/TemplateService'
 import { getSubscription, getUserSubscriptionState } from '../subscriptions/SubscriptionService'
-import { chunk, Chunker, pick, shallowEqual } from '../utilities'
+import { AsyncChunker, chunk, pick, shallowEqual } from '../utilities'
 import { getProvider } from '../providers/ProviderRepository'
 import { createTagSubquery, getTags, setTags } from '../tags/TagService'
 import { getProject } from '../projects/ProjectService'
@@ -308,7 +308,7 @@ export const generateSendList = async (campaign: SentCampaign) => {
         http_headers_progress_interval_ms: '110000', // 110 seconds
     })
 
-    const chunker = new Chunker<CampaignSendParams>(async items => {
+    const chunker = new AsyncChunker<CampaignSendParams>(async items => {
         await App.main.db.transaction(async (trx) => {
             await CampaignSend.query(trx)
                 .insert(items)
@@ -331,6 +331,8 @@ export const generateSendList = async (campaign: SentCampaign) => {
         }
     }
 
+    // Most of the work will happen here since ClickHouse should return
+    // records fairly quickly
     await chunker.flush()
 
     logger.info({ campaignId: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress:finished')

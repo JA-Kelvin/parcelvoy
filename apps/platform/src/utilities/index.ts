@@ -279,7 +279,7 @@ export class Chunker<T> {
     #items: T[] = []
 
     constructor(
-        private callback: (batch: T[]) => Promise<void>,
+        private callback: ChunkCallback<T>,
         private size: number,
     ) {}
 
@@ -296,6 +296,53 @@ export class Chunker<T> {
         if (this.#items.length) {
             await this.callback(this.#items)
             this.#items = []
+        }
+    }
+}
+
+export class AsyncChunker<T> {
+
+    private buffer: T[] = []
+    private isProcessing = false
+
+    constructor(
+        private readonly callback: ChunkCallback<T>,
+        private readonly batchSize: number,
+    ) {}
+
+    add(item: T): void {
+        this.buffer.push(item)
+
+        if (this.buffer.length >= this.batchSize) {
+            this.triggerProcessing()
+        }
+    }
+
+    private triggerProcessing(): void {
+        if (this.isProcessing) return
+
+        this.isProcessing = true
+
+        setTimeout(async () => {
+            const batch = this.buffer.splice(0, this.batchSize)
+
+            try {
+                await this.callback(batch)
+            } finally {
+                this.isProcessing = false
+
+                if (this.buffer.length >= this.batchSize) {
+                    this.triggerProcessing()
+                }
+            }
+        }, 0)
+    }
+
+    async flush(): Promise<void> {
+        this.isProcessing = true
+        while (this.buffer.length > 0) {
+            const batch = this.buffer.splice(0, this.batchSize)
+            await this.callback(batch)
         }
     }
 }
