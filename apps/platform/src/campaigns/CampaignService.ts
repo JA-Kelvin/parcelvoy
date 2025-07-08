@@ -323,7 +323,6 @@ export const generateSendList = async (campaign: SentCampaign) => {
                 await chunker.add(CampaignSend.create(campaign, project, user))
             } catch (error: any) {
                 logger.error({ error, user, campaignId: campaign.id }, 'campaign:generate:progress:error')
-
             }
         }
     }

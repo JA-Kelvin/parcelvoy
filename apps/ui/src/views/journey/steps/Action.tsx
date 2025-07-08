@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import api from '../../../api'
-import { Campaign, JourneyStepType } from '../../../types'
+import { Campaign, JourneyStepType, LocaleOption } from '../../../types'
 import { EntityIdPicker } from '../../../ui/form/EntityIdPicker'
 import { ActionStepIcon } from '../../../ui/icons'
 import { CampaignForm } from '../../campaign/CampaignForm'
@@ -19,8 +19,8 @@ interface ActionConfig {
 const JourneyTemplatePreview = ({ campaign }: { campaign: Campaign }) => {
     const { t } = useTranslation()
     const allLocales = locales(campaign.templates)
-    const [locale, setLocale] = useState(allLocales[0])
-    const template = campaign.templates.find(value => value.locale === locale.key)
+    const [locale, setLocale] = useState<LocaleOption | undefined>(allLocales[0])
+    const template = campaign.templates.find(value => value.locale === locale?.key)
     return <>
         <Heading
             title={t('preview')}
