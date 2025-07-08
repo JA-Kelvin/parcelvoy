@@ -25,8 +25,6 @@ export default (config: ClickhouseConfig) => {
             async_insert_deduplicate: 1,
             async_insert_busy_timeout_ms: 1000,
             lightweight_deletes_sync: 0,
-            send_progress_in_http_headers: 1,
-            http_headers_progress_interval_ms: '110000', // 110 seconds
         },
     })
 }

@@ -304,6 +304,8 @@ export const generateSendList = async (campaign: SentCampaign) => {
     // Generate the initial send list
     const result = await User.clickhouse().query(query, {}, {
         max_block_size: '16384',
+        send_progress_in_http_headers: 1,
+        http_headers_progress_interval_ms: '110000', // 110 seconds
     })
 
     const chunker = new Chunker<CampaignSendParams>(async items => {
@@ -314,7 +316,7 @@ export const generateSendList = async (campaign: SentCampaign) => {
                 .merge(['state', 'send_at'])
         })
         await cacheIncr(App.main.redis, cacheKey, items.length, 300)
-    }, 500)
+    }, 2500)
 
     for await (const chunk of result.stream() as any) {
         for (const result of chunk) {
