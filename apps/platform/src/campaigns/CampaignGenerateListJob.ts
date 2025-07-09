@@ -5,13 +5,13 @@ import { acquireLock, releaseLock } from '../core/Lock'
 import { Job } from '../queue'
 import { CampaignJobParams, SentCampaign } from './Campaign'
 import CampaignEnqueueSendsJob from './CampaignEnqueueSendsJob'
-import { CacheKeys, estimatedSendSize, generateSendList, getCampaign } from './CampaignService'
+import { CacheKeys, estimatedSendSize, getCampaign, populateSendList } from './CampaignService'
 
 export default class CampaignGenerateListJob extends Job {
     static $name = 'campaign_generate_list_job'
 
     static from({ id, project_id }: CampaignJobParams): CampaignGenerateListJob {
-        return new this({ id, project_id }).jobId(`cid_${id}_generate`)
+        return new this({ id, project_id })
     }
 
     static async handler({ id, project_id }: CampaignJobParams) {
@@ -38,8 +38,8 @@ export default class CampaignGenerateListJob extends Job {
             await cacheSet<number>(App.main.redis, CacheKeys.populationTotal(campaign), estimatedSize, 86400)
             await cacheSet<number>(App.main.redis, CacheKeys.populationProgress(campaign), 0, 86400)
 
-            logger.info({ campaignId: id }, 'campaign:generate:querying')
-            await generateSendList(campaign)
+            logger.info({ campaignId: id }, 'campaign:generate:populating')
+            await populateSendList(campaign)
 
             logger.info({ campaignId: id }, 'campaign:generate:sending')
             await CampaignEnqueueSendsJob.from({

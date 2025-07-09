@@ -4,7 +4,7 @@ import TextJob from '../providers/text/TextJob'
 import EmailJob from '../providers/email/EmailJob'
 import { logger } from '../config/logger'
 import { User } from '../users/User'
-import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendParams, CampaignSendReferenceType, CampaignSendState, SentCampaign } from './Campaign'
+import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendReferenceType, CampaignSendState, SentCampaign } from './Campaign'
 import List from '../lists/List'
 import Subscription, { SubscriptionState } from '../subscriptions/Subscription'
 import { RequestError } from '../core/errors'
@@ -12,7 +12,7 @@ import { PageParams } from '../core/searchParams'
 import { allLists } from '../lists/ListService'
 import { allTemplates, duplicateTemplate, screenshotHtml, templateInUserLocale, validateTemplates } from '../render/TemplateService'
 import { getSubscription, getUserSubscriptionState } from '../subscriptions/SubscriptionService'
-import { AsyncChunker, chunk, pick, shallowEqual } from '../utilities'
+import { chunk, Chunker, cleanString, pick, shallowEqual } from '../utilities'
 import { getProvider } from '../providers/ProviderRepository'
 import { createTagSubquery, getTags, setTags } from '../tags/TagService'
 import { getProject } from '../projects/ProjectService'
@@ -21,7 +21,7 @@ import CampaignGenerateListJob from './CampaignGenerateListJob'
 import Project from '../projects/Project'
 import Template from '../render/Template'
 import { differenceInDays, subDays } from 'date-fns'
-import { cacheGet, cacheIncr } from '../config/redis'
+import { cacheBatchHash, cacheBatchReadHashAndDelete, cacheDel, cacheGet, cacheHashExists, cacheIncr, cacheSet, DataPair, HashScanCallback } from '../config/redis'
 import App from '../app'
 import { releaseLock } from '../core/Lock'
 import CampaignAbortJob from './CampaignAbortJob'
@@ -30,6 +30,8 @@ import { getJourneysForCampaign } from '../journey/JourneyService'
 
 export const CacheKeys = {
     pendingStats: 'campaigns:pending_stats',
+    generate: (campaign: Campaign) => `campaigns:${campaign.id}:generate:users`,
+    generateReady: (campaign: Campaign) => `campaigns:${campaign.id}:generate:ready`,
     populationProgress: (campaign: Campaign) => `campaigns:${campaign.id}:progress`,
     populationTotal: (campaign: Campaign) => `campaigns:${campaign.id}:total`,
 }
@@ -283,7 +285,67 @@ export const updateSendState = async ({ campaign, user, state = 'sent', referenc
     return records
 }
 
-export const generateSendList = async (campaign: SentCampaign) => {
+export const generateSendList = async (project: Project, campaign: SentCampaign, callback: HashScanCallback) => {
+
+    const redis = App.main.redis
+    const hashKey = CacheKeys.generate(campaign)
+    const hashExists = await cacheHashExists(redis, hashKey)
+    const isReady = await cacheGet(redis, CacheKeys.generateReady(campaign))
+
+    logger.info({
+        campaignId: campaign.id,
+        source: hashExists ? 'cache' : 'clickhouse',
+    }, 'campaign:generate:progress:started')
+
+    // Return users from the hash if they exist
+    if (hashExists && isReady) {
+        await cacheBatchReadHashAndDelete(redis, hashKey, callback)
+    }
+
+    const query = await recipientClickhouseQuery(campaign)
+
+    logger.info({
+        campaignId: campaign.id,
+        query,
+    }, 'campaign:generate:progress:querying')
+
+    // Generate the initial send list from ClickHouse
+    const result = await User.clickhouse().query(query, {}, {
+        max_block_size: '16384',
+        send_progress_in_http_headers: 1,
+        http_headers_progress_interval_ms: '110000', // 110 seconds
+    })
+
+    // Load the results into a Redis hash for easy retrieval
+    let count = 0
+    const chunker = new Chunker<DataPair>(async pairs => {
+        count += pairs.length
+        await cacheBatchHash(redis, hashKey, pairs)
+    }, 2500)
+
+    // Stream the data from ClickHouse and pass it to the Redis chunker
+    for await (const chunk of result.stream() as any) {
+        for (const result of chunk) {
+            const user = result.json()
+            await chunker.add({
+                key: user.id,
+                value: cleanString(user.timezone) ?? project.timezone,
+            })
+        }
+    }
+    await chunker.flush()
+
+    // Set the total since we now know it
+    await cacheSet(redis, CacheKeys.populationTotal(campaign), count)
+    await cacheSet(redis, CacheKeys.generateReady(campaign), 1, 60 * 60 * 24) // Set ready for 24 hours
+
+    // Now that we have results, pass them back to the callback
+    await cacheBatchReadHashAndDelete(redis, hashKey, callback)
+
+    await cacheDel(redis, CacheKeys.generateReady(campaign))
+}
+
+export const populateSendList = async (campaign: SentCampaign) => {
 
     const project = await getProject(campaign.project_id)
     if (!campaign.list_ids || !project) {
@@ -293,47 +355,20 @@ export const generateSendList = async (campaign: SentCampaign) => {
     const now = Date.now()
     const cacheKey = CacheKeys.populationProgress(campaign)
 
-    const query = await recipientClickhouseQuery(campaign)
-
-    logger.info({
-        campaignId: campaign.id,
-        elapsed: Date.now() - now,
-        query,
-    }, 'campaign:generate:progress:started')
-
-    // Generate the initial send list
-    const result = await User.clickhouse().query(query, {}, {
-        max_block_size: '16384',
-        send_progress_in_http_headers: 1,
-        http_headers_progress_interval_ms: '110000', // 110 seconds
-    })
-
-    const chunker = new AsyncChunker<CampaignSendParams>(async items => {
-        await App.main.db.transaction(async (trx) => {
-            await CampaignSend.query(trx)
-                .insert(items)
-                .onConflict(['campaign_id', 'user_id', 'reference_id'])
-                .merge(['state', 'send_at'])
-        })
-        await cacheIncr(App.main.redis, cacheKey, items.length, 300)
-    }, 2500)
-
-    for await (const chunk of result.stream() as any) {
-        for (const result of chunk) {
-            const user = result.json()
-
-            // If we fail to add a user, it should not stop the entire process
-            try {
-                await chunker.add(CampaignSend.create(campaign, project, user))
-            } catch (error: any) {
-                logger.error({ error, user, campaignId: campaign.id }, 'campaign:generate:progress:error')
-            }
+    await generateSendList(project, campaign, async (pairs: DataPair[]) => {
+        const items = pairs.map(({ key, value }) => CampaignSend.create(campaign, project, { id: parseInt(key), timezone: value }))
+        try {
+            await App.main.db.transaction(async (trx) => {
+                await CampaignSend.query(trx)
+                    .insert(items)
+                    .onConflict(['campaign_id', 'user_id', 'reference_id'])
+                    .merge(['state', 'send_at'])
+            })
+        } catch (error) {
+            logger.error({ error, campaignId: campaign.id }, 'campaign:generate:progress:error')
         }
-    }
-
-    // Most of the work will happen here since ClickHouse should return
-    // records fairly quickly
-    await chunker.flush()
+        await cacheIncr(App.main.redis, cacheKey, items.length, 300)
+    })
 
     logger.info({ campaignId: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress:finished')
 
