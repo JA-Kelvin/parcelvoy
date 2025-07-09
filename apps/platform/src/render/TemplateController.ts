@@ -278,15 +278,12 @@ router.post('/:templateId/preview', async ctx => {
         ctx.body = template.compile({
             user: User.fromJson({ ...payload.user, data: payload.user }),
             event: UserEvent.fromJson(payload.event || {}),
+            journey: payload.journey || {},
             context: payload.context || {},
             project: ctx.state.project,
         })
-    } catch (error) {
-        if (isHandlerbarsError(error)) {
-            throw new RequestError(error.message, 400)
-        } else {
-            throw error
-        }
+    } catch (error: any) {
+        throw new RequestError(error.message, 400)
     }
 })
 

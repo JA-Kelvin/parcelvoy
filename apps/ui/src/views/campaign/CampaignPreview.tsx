@@ -81,7 +81,7 @@ export default function CampaignPreview() {
             setTemplatePreviewError(undefined)
             setData(data)
         } catch (error: any) {
-            if (error.response.data.error) {
+            if (error?.response?.data.error) {
                 setTemplatePreviewError(error.response.data.error)
                 return
             }
@@ -97,7 +97,7 @@ export default function CampaignPreview() {
             })
             setProofResponse(response)
         } catch (error: any) {
-            if (error.response.data.error) {
+            if (error?.response?.data.error) {
                 toast.error(error.response.data.error)
                 return
             }
