@@ -50,6 +50,7 @@ export default function CampaignPreview() {
     const [{ currentLocale }] = useContext(LocaleContext)
     const showAddState = useState(false)
     const [isUserLookupOpen, setIsUserLookupOpen] = useState(false)
+    const [templatePreviewError, setTemplatePreviewError] = useState<string | undefined>(undefined)
     const [isSendProofOpen, setIsSendProofOpen] = useState(false)
     const template = campaignState[0].templates.find(template => template.locale === currentLocale?.key)
     const [proofResponse, setProofResponse] = useState<any>(undefined)
@@ -77,8 +78,15 @@ export default function CampaignPreview() {
     const handleEditorChange = useMemo(() => debounce(async (value?: string) => {
         try {
             const { data } = await api.templates.preview(project.id, template.id, JSON.parse(value ?? '{}'))
+            setTemplatePreviewError(undefined)
             setData(data)
-        } catch {}
+        } catch (error: any) {
+            if (error.response.data.error) {
+                setTemplatePreviewError(error.response.data.error)
+                return
+            }
+            setTemplatePreviewError(error.message)
+        }
     }), [template])
 
     const handleSendProof = async (recipient: string) => {
@@ -138,6 +146,11 @@ export default function CampaignPreview() {
                                 variant="secondary"
                                 onClick={() => setIsSendProofOpen(true)}>{t('send_proof')}</Button>
                     } />
+                    {templatePreviewError && <Alert
+                        variant="warn"
+                        title={t('template_error')}>
+                        {t('template_handlebars_error')}{templatePreviewError}
+                    </Alert>}
                     <Preview template={{ type: template.type, data }} response={proofResponse} />
                 </Column>
             </Columns>

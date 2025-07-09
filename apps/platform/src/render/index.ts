@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars'
+import Handlebars, { Exception as HandlebarsException } from 'handlebars'
 import * as CommonHelpers from './Helpers/Common'
 import * as StrHelpers from './Helpers/String'
 import * as NumHelpers from './Helpers/Number'
@@ -48,6 +48,10 @@ loadHelper(ArrayHelpers)
 
 export const compileTemplate = <T = any>(template: string) => {
     return Handlebars.compile<T>(template)
+}
+
+export const isHandlerbarsError = (error: any): error is HandlebarsException => {
+    return error instanceof HandlebarsException || (error && error.name === 'HandlebarsException')
 }
 
 interface WrapParams {

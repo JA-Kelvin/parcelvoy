@@ -5,9 +5,10 @@ import { searchParamsSchema } from '../core/searchParams'
 import { extractQueryParams } from '../utilities'
 import Template, { TemplateParams, TemplateUpdateParams } from './Template'
 import { createTemplate, deleteTemplate, getTemplate, pagedTemplates, sendProof, updateTemplate } from './TemplateService'
-import { Variables } from '.'
+import { isHandlerbarsError, Variables } from '.'
 import { User } from '../users/User'
 import { UserEvent } from '../users/UserEvent'
+import { RequestError } from '../core/errors'
 
 const router = new Router<
     ProjectState & { template?: Template }
@@ -273,12 +274,20 @@ router.post('/:templateId/preview', async ctx => {
     const payload = ctx.request.body as Variables
     const template = ctx.state.template!.map()
 
-    ctx.body = template.compile({
-        user: User.fromJson({ ...payload.user, data: payload.user }),
-        event: UserEvent.fromJson(payload.event || {}),
-        context: payload.context || {},
-        project: ctx.state.project,
-    })
+    try {
+        ctx.body = template.compile({
+            user: User.fromJson({ ...payload.user, data: payload.user }),
+            event: UserEvent.fromJson(payload.event || {}),
+            context: payload.context || {},
+            project: ctx.state.project,
+        })
+    } catch (error) {
+        if (isHandlerbarsError(error)) {
+            throw new RequestError(error.message, 400)
+        } else {
+            throw error
+        }
+    }
 })
 
 interface TemplateProofParams {
@@ -303,8 +312,15 @@ const templateProofParams: JSONSchemaType<TemplateProofParams> = {
 router.post('/:templateId/proof', async ctx => {
     const { variables, recipient } = validate(templateProofParams, ctx.request.body)
     const template = ctx.state.template!.map()
-
-    ctx.body = await sendProof(template, variables, recipient)
+    try {
+        ctx.body = await sendProof(template, variables, recipient)
+    } catch (error) {
+        if (isHandlerbarsError(error)) {
+            throw new RequestError('Failed to send proof, invalid Handlebars in template', 400)
+        } else {
+            throw error
+        }
+    }
 })
 
 export default router

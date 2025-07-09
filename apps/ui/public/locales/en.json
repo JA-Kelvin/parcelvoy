@@ -334,6 +334,8 @@
     "team_edit_description_update": "Update the permissions for this team member.",
     "template_save": "Save Template",
     "template_saved": "Template saved!",
+    "template_error": "Template Error",
+    "template_handlebars_error": "The server responded with the following error when trying to render your template: ",
     "test_webhook": "Test Webhook",
     "text": "Text",
     "throttled": "Throttled",
