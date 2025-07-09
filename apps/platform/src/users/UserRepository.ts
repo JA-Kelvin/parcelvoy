@@ -226,9 +226,17 @@ export const disableNotifications = async (userId: number, tokens: string[]): Pr
         if (!user) return false
         if (!user.devices?.length) return false
 
-        const devices = [...user.devices]
-        const device = devices?.find(device => device.token && tokens.includes(device.token))
-        if (device) device.token = undefined
+        const devices = []
+        for (const { token, ...device } of user.devices) {
+            if (token && tokens.includes(token)) {
+                devices.push(device)
+            } else {
+                devices.push({
+                    ...device,
+                    token,
+                })
+            }
+        }
 
         const after = await User.updateAndFetch(user.id, {
             devices,

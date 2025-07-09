@@ -10,7 +10,7 @@ import { loadTextChannel } from '../providers/text'
 import { RequestError } from '../core/errors'
 import CampaignError from '../campaigns/CampaignError'
 import { loadPushChannel } from '../providers/push'
-import { getUserFromEmail, getUserFromPhone } from '../users/UserRepository'
+import { disableNotifications, getUserFromEmail, getUserFromPhone } from '../users/UserRepository'
 import { loadWebhookChannel } from '../providers/webhook'
 import Project from '../projects/Project'
 import { getProject } from '../projects/ProjectService'
@@ -121,6 +121,11 @@ export const sendProof = async (template: TemplateType, variables: Variables, re
         const channel = await loadPushChannel(campaign.provider_id, project.id)
         if (!user.id) throw new RequestError('Unable to find a user matching the criteria.')
         response = await channel?.send(template, variables)
+
+        // Disable any tokens that we've discovered are invalid
+        if (response.invalidTokens.length) {
+            await disableNotifications(user.id, response.invalidTokens)
+        }
         logger.info(response, 'template:proof:push:result')
     } else if (template.type === 'webhook') {
         const channel = await loadWebhookChannel(campaign.provider_id, project.id)
