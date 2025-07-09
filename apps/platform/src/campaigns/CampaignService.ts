@@ -285,7 +285,18 @@ export const updateSendState = async ({ campaign, user, state = 'sent', referenc
     return records
 }
 
-export const generateSendList = async (project: Project, campaign: SentCampaign, callback: HashScanCallback) => {
+const readSendListFromCache = async (campaign: Campaign, callback: HashScanCallback) => {
+    const redis = App.main.redis
+    const hashKey = CacheKeys.generate(campaign)
+
+    await cacheBatchReadHashAndDelete(redis, hashKey, callback)
+
+    await cacheDel(redis, CacheKeys.generateReady(campaign))
+    await cacheDel(redis, CacheKeys.populationTotal(campaign))
+    await cacheDel(redis, CacheKeys.populationProgress(campaign))
+}
+
+const generateSendList = async (project: Project, campaign: SentCampaign, callback: HashScanCallback) => {
 
     const redis = App.main.redis
     const hashKey = CacheKeys.generate(campaign)
@@ -299,7 +310,7 @@ export const generateSendList = async (project: Project, campaign: SentCampaign,
 
     // Return users from the hash if they exist
     if (hashExists && isReady) {
-        await cacheBatchReadHashAndDelete(redis, hashKey, callback)
+        return readSendListFromCache(campaign, callback)
     }
 
     const query = await recipientClickhouseQuery(campaign)
@@ -336,13 +347,11 @@ export const generateSendList = async (project: Project, campaign: SentCampaign,
     await chunker.flush()
 
     // Set the total since we now know it
-    await cacheSet(redis, CacheKeys.populationTotal(campaign), count)
-    await cacheSet(redis, CacheKeys.generateReady(campaign), 1, 60 * 60 * 24) // Set ready for 24 hours
+    await cacheSet(redis, CacheKeys.populationTotal(campaign), count, 86400)
+    await cacheSet(redis, CacheKeys.generateReady(campaign), 1, 86400)
 
     // Now that we have results, pass them back to the callback
-    await cacheBatchReadHashAndDelete(redis, hashKey, callback)
-
-    await cacheDel(redis, CacheKeys.generateReady(campaign))
+    return await readSendListFromCache(campaign, callback)
 }
 
 export const populateSendList = async (campaign: SentCampaign) => {
@@ -372,7 +381,10 @@ export const populateSendList = async (campaign: SentCampaign) => {
 
     logger.info({ campaignId: campaign.id, elapsed: Date.now() - now }, 'campaign:generate:progress:finished')
 
+    // Update the count and state of the campaign
     await Campaign.update(qb => qb.where('id', campaign.id), { state: 'scheduled' })
+
+    await updateCampaignProgress(campaign)
 }
 
 export const campaignSendReadyQuery = (
