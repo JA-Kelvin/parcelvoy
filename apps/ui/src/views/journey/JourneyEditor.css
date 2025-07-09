@@ -320,12 +320,18 @@
     gap: 10px;
     background: var(--color-background-soft);
     border-radius: var(--border-radius-inner);
-    padding: 5px 10px;
+    padding: 6px 10px;
     cursor: pointer;
+    border: 1px solid var(--color-background-soft);
+}
+
+.journey-step-header .step-header-stats:hover {
+    border-color: var(--color-grey-hard);
 }
 
 .journey-step-header .step-header-stats:hover .stat {
-    color: var(--color-primary);
+    color: var(--color-grey-hard);
+    
 }
 
 .journey-step-header .step-header-stats .stat {

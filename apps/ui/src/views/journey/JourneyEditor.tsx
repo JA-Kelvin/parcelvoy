@@ -48,6 +48,7 @@ import Tag from '../../ui/Tag'
 import TextInput from '../../ui/form/TextInput'
 import { useTranslation } from 'react-i18next'
 import { JourneyStepUsers } from './JourneyStepUsers'
+import { Menu, MenuItem } from '../../ui'
 
 const getStepType = (type: string) => (type ? journeySteps[type as keyof typeof journeySteps] as JourneyStepType : null) ?? null
 
@@ -640,6 +641,10 @@ export default function JourneyEditor() {
                                 )
                             }
                         </div>
+                        <Menu size="small">
+                            <MenuItem onClick={() => handleSetNodes(nds => nds.filter(item => item.id !== editNode.id))
+                            }>{t('delete_step')}</MenuItem>
+                        </Menu>
                     </div>
                     <div className="journey-options-edit">
                         <TextInput
@@ -812,7 +817,7 @@ export default function JourneyEditor() {
                     {
                         stepEdit ?? (
                             <>
-                                <h4>Components</h4>
+                                <h4>{t('components')}</h4>
                                 {
                                     Object.entries(journeySteps).sort(createComparator(x => x[1].category)).map(([key, type]) => (
                                         <div
