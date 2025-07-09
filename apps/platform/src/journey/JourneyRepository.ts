@@ -9,6 +9,8 @@ import { createTagSubquery, getTags, setTags } from '../tags/TagService'
 import { User } from '../users/User'
 import { getProject } from '../projects/ProjectService'
 import { duplicateJourney } from './JourneyService'
+import { subSeconds } from 'date-fns'
+import { JourneyState } from './JourneyState'
 
 export const pagedJourneys = async (params: PageParams, projectId: number) => {
     const result = await Journey.search(
@@ -354,4 +356,14 @@ export const exitUserFromJourney = async (userId: number, entranceId: number, jo
             .where('journey_id', journeyId),
         { ended_at: new Date() },
     )
+}
+
+export const skipDelayStep = async (userStepId: number) => {
+    const step = await JourneyUserStep.find(userStepId)
+    if (!step || !step.entrance_id) return
+    await JourneyUserStep.update(
+        q => q.where('id', step.id),
+        { delay_until: subSeconds(Date.now(), 1) },
+    )
+    await JourneyState.resume(step.entrance_id)
 }

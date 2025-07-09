@@ -207,6 +207,9 @@ const api = {
             trigger: async (projectId: number | string, journeyId: number | string, entranceId: number | string, user: User) => await client
                 .post<JourneyEntranceDetail>(`${projectUrl(projectId)}/journeys/${journeyId}/trigger`, { entrance_id: entranceId, user: { external_id: user.external_id } })
                 .then(r => r.data),
+            skipDelay: async (projectId: number | string, journeyId: number | string, userId: number | string, stepId: number | string) => await client
+                .post<JourneyEntranceDetail>(`${projectUrl(projectId)}/journeys/${journeyId}/users/${userId}/steps/${stepId}/resume`)
+                .then(r => r.data),
         },
     },
 

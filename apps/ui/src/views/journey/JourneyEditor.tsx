@@ -131,7 +131,7 @@ function JourneyStepNode({
                     <h4 className="step-header-title">{name || t(type.name)}</h4>
                     {type.category !== 'info' && <div className="step-header-stats"
                         onClickCapture={stepId
-                            ? () => setViewUsersStep({ stepId, entrance: typeName === 'entrance' })
+                            ? () => setViewUsersStep({ stepId, stepType: typeName })
                             : undefined
                         }>
                         <span className="stat">
@@ -451,7 +451,7 @@ export default function JourneyEditor() {
 
     const [saving, setSaving] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-    const [viewUsersStep, setViewUsersStep] = useState<null | { stepId: number, entrance?: boolean }>(null)
+    const [viewUsersStep, setViewUsersStep] = useState<null | { stepId: number, stepType: string }>(null)
 
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) => hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname,
@@ -612,7 +612,7 @@ export default function JourneyEditor() {
                             className="step-header-stats"
                             role={editNode.data.stepId ? 'button' : undefined}
                             onClick={editNode.data.stepId
-                                ? () => setViewUsersStep({ stepId: editNode.data.stepId, entrance: editNode.data.type === 'entrance' })
+                                ? () => setViewUsersStep({ stepId: editNode.data.stepId, stepType: editNode.data.type })
                                 : undefined
                             }
                             style={{
@@ -858,8 +858,8 @@ export default function JourneyEditor() {
             {!!viewUsersStep && <JourneyStepUsers
                 open={!!viewUsersStep}
                 onClose={() => setViewUsersStep(null)}
-                entrance={viewUsersStep?.entrance ?? false}
-                stepId={viewUsersStep?.stepId ?? 0}
+                stepType={viewUsersStep.stepType}
+                stepId={viewUsersStep.stepId}
             />}
         </Modal>
     )
