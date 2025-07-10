@@ -26,7 +26,11 @@ export interface Env {
     port: number
     secret: string
     auth: AuthConfig
-    error: ErrorConfig
+    logger: {
+        level: string
+        prettyPrint: boolean
+        error: ErrorConfig
+    }
     redis: RedisConfig
 }
 
@@ -178,13 +182,17 @@ export default (type?: EnvType): Env => {
                 name: process.env.AUTH_MULTI_NAME!,
             },
         },
-        error: driver<ErrorConfig>(process.env.ERROR_DRIVER, {
-            bugsnag: () => ({
-                apiKey: process.env.ERROR_BUGSNAG_API_KEY,
+        logger: {
+            level: process.env.LOG_LEVEL || 'warn',
+            prettyPrint: process.env.LOG_PRETTY_PRINT === 'true',
+            error: driver<ErrorConfig>(process.env.ERROR_DRIVER, {
+                bugsnag: () => ({
+                    apiKey: process.env.ERROR_BUGSNAG_API_KEY,
+                }),
+                sentry: () => ({
+                    dsn: process.env.ERROR_SENTRY_DSN,
+                }),
             }),
-            sentry: () => ({
-                dsn: process.env.ERROR_SENTRY_DSN,
-            }),
-        }),
+        },
     }
 }

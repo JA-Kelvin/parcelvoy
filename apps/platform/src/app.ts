@@ -30,7 +30,7 @@ export default class App {
         logger.info('parcelvoy:initializing')
 
         // Boot up error tracking
-        const error = await loadError(env.error)
+        const error = await loadError(env.logger)
 
         // Load & migrate database
         const database = await loadDatabase(env.db)

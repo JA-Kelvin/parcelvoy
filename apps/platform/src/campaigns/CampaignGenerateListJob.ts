@@ -1,11 +1,9 @@
-import App from '../app'
 import { logger } from '../config/logger'
-import { cacheSet } from '../config/redis'
 import { acquireLock, releaseLock } from '../core/Lock'
 import { Job } from '../queue'
 import { CampaignJobParams, SentCampaign } from './Campaign'
 import CampaignEnqueueSendsJob from './CampaignEnqueueSendsJob'
-import { CacheKeys, estimatedSendSize, getCampaign, populateSendList } from './CampaignService'
+import { estimatedSendSize, getCampaign, populateSendList } from './CampaignService'
 
 export default class CampaignGenerateListJob extends Job {
     static $name = 'campaign_generate_list_job'
@@ -35,10 +33,6 @@ export default class CampaignGenerateListJob extends Job {
         if (!acquired) return
 
         try {
-            // Use approximate size for progress
-            await cacheSet<number>(App.main.redis, CacheKeys.populationTotal(campaign), estimatedSize, 86400)
-            await cacheSet<number>(App.main.redis, CacheKeys.populationProgress(campaign), 0, 86400)
-
             logger.info({ campaignId: id }, 'campaign:generate:populating')
             await populateSendList(campaign)
 
@@ -50,9 +44,10 @@ export default class CampaignGenerateListJob extends Job {
 
             await releaseLock(key)
         } catch (error) {
-            logger.info({ error }, 'campaign:generate:failed')
+            logger.info({ campaignId: id, error }, 'campaign:generate:failed')
             throw error
         } finally {
+            logger.info({ campaignId: id }, 'campaign:generate:lock_released')
             await releaseLock(key)
         }
     }

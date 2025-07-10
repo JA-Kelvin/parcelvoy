@@ -61,7 +61,7 @@ export type DataPair = {
 export const cacheBatchHash = async (
     redis: Redis,
     hashKey: string,
-    pairs: DataPair[]
+    pairs: DataPair[],
 ): Promise<void> => {
     const pipeline = redis.pipeline()
 
@@ -81,15 +81,15 @@ export const cacheBatchReadHashAndDelete = async (
     redis: Redis,
     hashKey: string,
     callback: HashScanCallback,
-    scanCount = 1000
+    scanCount = 2500,
 ): Promise<void> => {
-    let cursor = "0"
+    let cursor = '0'
 
     do {
-        const [nextCursor, result] = await redis.hscan(hashKey, cursor, "COUNT", scanCount)
+        const [nextCursor, result] = await redis.hscan(hashKey, cursor, 'COUNT', scanCount)
         cursor = nextCursor
 
-        const pairs: DataPair[] = [];
+        const pairs: DataPair[] = []
         for (let i = 0; i < result.length; i += 2) {
             pairs.push({
                 key: result[i],
@@ -107,7 +107,7 @@ export const cacheBatchReadHashAndDelete = async (
 
             await pipeline.exec()
         }
-    } while (cursor !== "0")
+    } while (cursor !== '0')
 
     await redis.del(hashKey)
 }
