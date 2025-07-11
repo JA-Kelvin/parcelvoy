@@ -58,6 +58,9 @@ export class User extends UniversalModel {
             created_at: this.created_at,
             locale: this.locale,
             timezone: this.timezone,
+            firstName: this.firstName,
+            lastName: this.lastName,
+            fullName: this.fullName,
         }
     }
 
