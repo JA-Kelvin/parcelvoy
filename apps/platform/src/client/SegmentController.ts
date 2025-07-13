@@ -9,6 +9,7 @@ import UserPatchJob from '../users/UserPatchJob'
 import { Job } from '../queue'
 import { parseLocale } from '../utilities'
 import UserAliasJob from '../users/UserAliasJob'
+import UserDeviceJob from '../users/UserDeviceJob'
 
 const router = new Router<ProjectState>()
 router.use(projectMiddleware)
@@ -106,6 +107,13 @@ router.post('/segment', async ctx => {
                     data: { ...event.properties, ...event.context },
                     created_at: new Date(event.timestamp),
                 },
+            }))
+        } else if (event.type === 'device') {
+
+            chunks.push(UserDeviceJob.from({
+                project_id: ctx.state.project.id,
+                ...identity,
+                ...event.properties as any,
             }))
         }
 

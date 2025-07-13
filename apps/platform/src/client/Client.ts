@@ -59,7 +59,7 @@ export type SegmentPostEvent = {
     context: Record<string, any> & SegmentContext
     properties: Record<string, any>
     traits?: Record<string, any>
-    type: 'track' | 'alias' | 'identify'
+    type: 'track' | 'alias' | 'identify' | 'device'
     timestamp: string
 } & (
     {
@@ -69,6 +69,10 @@ export type SegmentPostEvent = {
     | {
         type: 'identify' | 'alias'
         traits: Record<string, any>
+    }
+    | {
+        type: 'device'
+        properties: Record<string, any>
     }
 )
 
