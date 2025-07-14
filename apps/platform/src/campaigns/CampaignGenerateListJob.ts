@@ -1,15 +1,15 @@
 import { logger } from '../config/logger'
-import { acquireLock, releaseLock } from '../core/Lock'
+import { releaseLock } from '../core/Lock'
 import { Job } from '../queue'
 import { CampaignJobParams, SentCampaign } from './Campaign'
 import CampaignEnqueueSendsJob from './CampaignEnqueueSendsJob'
-import { estimatedSendSize, getCampaign, populateSendList } from './CampaignService'
+import { getCampaign, populateSendList } from './CampaignService'
 
 export default class CampaignGenerateListJob extends Job {
     static $name = 'campaign_generate_list_job'
 
     static from({ id, project_id }: CampaignJobParams): CampaignGenerateListJob {
-        return new this({ id, project_id })
+        return new this({ id, project_id }).deduplicationKey(`cid_${id}_generate`)
     }
 
     static async handler({ id, project_id }: CampaignJobParams) {
@@ -20,17 +20,6 @@ export default class CampaignGenerateListJob extends Job {
         const campaign = await getCampaign(id, project_id) as SentCampaign
         if (!campaign) return
         if (campaign.state === 'aborted' || campaign.state === 'draft') return
-
-        // Approximate the size of the send list
-        const estimatedSize = await estimatedSendSize(campaign)
-
-        // Increase lock duration based on estimated send size
-        const lockTime = Math.ceil(Math.max(estimatedSize / 500, 900))
-        logger.info({ campaignId: id, estimatedSize, lockTime }, 'campaign:generate:estimated_size')
-
-        const acquired = await acquireLock({ key, timeout: lockTime })
-        logger.info({ campaignId: id, acquired }, 'campaign:generate:lock')
-        if (!acquired) return
 
         try {
             logger.info({ campaignId: id }, 'campaign:generate:populating')

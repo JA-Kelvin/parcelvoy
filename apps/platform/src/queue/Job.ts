@@ -4,6 +4,7 @@ interface JobOptions {
     delay?: number // Milliseconds
     attempts?: number
     jobId?: string
+    deduplication?: { id: string }
 }
 
 interface JobState {
@@ -76,6 +77,11 @@ export default class Job implements EncodedJob {
 
     jobId(id: string) {
         this.options.jobId = id
+        return this
+    }
+
+    deduplicationKey(key: string) {
+        this.options.deduplication = { id: key }
         return this
     }
 

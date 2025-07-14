@@ -380,7 +380,7 @@ export const populateSendList = async (campaign: SentCampaign) => {
         } catch (error) {
             logger.error({ error, campaignId: campaign.id }, 'campaign:generate:progress:error')
         }
-        await cacheIncr(App.main.redis, cacheKey, items.length, 300)
+        await cacheIncr(App.main.redis, cacheKey, items.length, 86400)
     })
 
     await cleanupSendListGeneration(campaign)
