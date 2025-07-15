@@ -27,13 +27,13 @@ export const createWrapperRule = (): WrapperRule => ({
     children: [],
 })
 
-export const createEventRule = (parent?: Rule): EventRule => {
+export const createEventRule = (parent?: Rule, value = ''): EventRule => {
     const base: EventRule = {
         uuid: createUuid(),
         path: '$.name',
         type: 'wrapper',
         group: 'event',
-        value: '',
+        value,
         operator: 'and',
         children: [],
         frequency: {
@@ -116,6 +116,7 @@ export const operatorTypes: Record<RuleType, OperatorOption[]> = {
         { key: '<=', label: 'is on or before' },
         { key: '>', label: 'is after' },
         { key: '>=', label: 'is on or after' },
+        { key: 'is same day', label: 'is same day' },
     ],
     array: [
         ...baseOperators,
