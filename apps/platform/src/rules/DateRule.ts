@@ -1,6 +1,6 @@
-import { format, isAfter, isBefore, isEqual } from 'date-fns'
+import { format, isAfter, isBefore, isEqual, isSameDay } from 'date-fns'
 import { RuleCheck, RuleEvalException } from './RuleEngine'
-import { compile, queryPath, queryValue, whereQuery, whereQueryNullable } from './RuleHelpers'
+import { compile, queryPath, queryValue, whereQueryNullable } from './RuleHelpers'
 import { Rule, RuleTree } from './Rule'
 
 export const dateCompile = (rule: Rule | RuleTree) => compile(rule, item => {
@@ -38,6 +38,8 @@ export default {
                 return isAfter(d, ruleValue)
             case '>=':
                 return isEqual(d, ruleValue) || isAfter(d, ruleValue)
+            case 'is same day':
+                return isSameDay(d, ruleValue)
             default:
                 throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
             }
@@ -59,7 +61,7 @@ export default {
         const ruleValue = dateCompile(rule)
 
         if (['=', '!=', '<', '<=', '>', '>='].includes(rule.operator)) {
-            return whereQuery(path, rule.operator, ruleValue.getTime())
+            return `${path} ${rule.operator} parseDateTimeBestEffortOrNull('${ruleValue.getTime()}')`
         }
 
         if (rule.operator === 'is same day') {
