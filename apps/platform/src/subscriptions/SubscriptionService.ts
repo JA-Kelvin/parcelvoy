@@ -16,9 +16,13 @@ export const pagedSubscriptions = async (params: PageParams, projectId: number) 
     )
 }
 
-export const getUserSubscriptions = async (user: User, params?: PageParams): Promise<SearchResult<UserSubscription>> => {
+export const getUserSubscriptions = async (user: User, params?: PageParams, onlyPublic = true): Promise<SearchResult<UserSubscription>> => {
     const subscriptions = await Subscription.all(
-        qb => qb.where('project_id', user.project_id),
+        qb => {
+            qb.where('project_id', user.project_id)
+            if (onlyPublic) qb.where('is_public', true)
+            return qb
+        },
     )
     return {
         results: subscriptions.map(subscription => ({

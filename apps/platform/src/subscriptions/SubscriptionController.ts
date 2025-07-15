@@ -256,6 +256,10 @@ export const subscriptionCreateSchema: JSONSchemaType<SubscriptionParams> = {
             type: 'string',
             enum: ['email', 'text', 'push', 'webhook'],
         },
+        is_public: {
+            type: 'boolean',
+            required: false,
+        },
     },
     additionalProperties: false,
 }
@@ -281,16 +285,20 @@ router.get('/:subscriptionId', async ctx => {
 export const subscriptionUpdateSchema: JSONSchemaType<SubscriptionUpdateParams> = {
     $id: 'subscriptionUpdate',
     type: 'object',
-    required: ['name'],
+    required: ['name', 'is_public'],
     properties: {
         name: {
             type: 'string',
+        },
+        is_public: {
+            type: 'boolean',
         },
     },
     additionalProperties: false,
 }
 router.patch('/:subscriptionId', async ctx => {
     const payload = validate(subscriptionUpdateSchema, ctx.request.body)
+    console.log(payload)
     ctx.body = await updateSubscription(ctx.state.subscription!.id, payload)
 })
 

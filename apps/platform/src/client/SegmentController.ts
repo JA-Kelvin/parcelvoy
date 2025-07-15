@@ -10,6 +10,7 @@ import { Job } from '../queue'
 import { parseLocale } from '../utilities'
 import UserAliasJob from '../users/UserAliasJob'
 import UserDeviceJob from '../users/UserDeviceJob'
+import UnsubscribeJob from '../subscriptions/UnsubscribeJob'
 
 const router = new Router<ProjectState>()
 router.use(projectMiddleware)
@@ -65,7 +66,7 @@ const segmentEventsRequest: JSONSchemaType<SegmentPostEventsRequest> = {
         ],
     },
     minItems: 1,
-    maxItems: 1000,
+    maxItems: 2000,
 } as any
 router.post('/segment', async ctx => {
     const events = validate(segmentEventsRequest, ctx.request.body)
@@ -112,6 +113,12 @@ router.post('/segment', async ctx => {
 
             chunks.push(UserDeviceJob.from({
                 project_id: ctx.state.project.id,
+                ...identity,
+                ...event.properties as any,
+            }))
+        } else if (event.type === 'unsubscribe') {
+
+            chunks.push(UnsubscribeJob.from({
                 ...identity,
                 ...event.properties as any,
             }))

@@ -227,6 +227,7 @@
     "missing": "Missing",
     "name": "Name",
     "new_team_member": "New Team Member",
+    "no": "No",
     "no_providers": "No Providers",
     "no_template_alert_body": "There are no templates yet for this campaign. Add a locale above or use the button below to get started.",
     "now": "Now",
@@ -250,6 +251,8 @@
     "projects_description": "Projects are isolated workspaces with their own sets of users, events, lists, campaigns, and journeys.",
     "project_settings_saved": "Project settings saved!",
     "provider": "Provider",
+    "public": "Public",
+    "public_desc": "Should a user be able to see this channel in the preferences center?",
     "publish": "Publish",
     "published": "Published",
     "push": "Push",
@@ -385,5 +388,6 @@
     "wait": "Wait",
     "wait_until": "Wait until",
     "webhook": "Webhook",
-    "welcome": "Welcome!"
+    "welcome": "Welcome!",
+    "yes": "Yes"
 }

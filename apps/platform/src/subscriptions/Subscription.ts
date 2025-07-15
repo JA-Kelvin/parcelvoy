@@ -5,6 +5,7 @@ export default class Subscription extends Model {
     project_id!: number
     name!: string
     channel!: ChannelType
+    is_public!: boolean
 }
 
 export enum SubscriptionState {
@@ -21,4 +22,4 @@ export type UserSubscription = {
 }
 
 export type SubscriptionParams = Omit<Subscription, ModelParams>
-export type SubscriptionUpdateParams = Pick<SubscriptionParams, 'name'>
+export type SubscriptionUpdateParams = Pick<SubscriptionParams, 'name' | 'is_public'>

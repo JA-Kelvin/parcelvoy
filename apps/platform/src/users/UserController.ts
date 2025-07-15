@@ -177,7 +177,7 @@ router.get('/:userId/events', async ctx => {
 
 router.get('/:userId/subscriptions', async ctx => {
     const params = extractQueryParams(ctx.query, searchParamsSchema)
-    ctx.body = await getUserSubscriptions(ctx.state.user!, params)
+    ctx.body = await getUserSubscriptions(ctx.state.user!, params, false)
 })
 
 router.patch('/:userId/subscriptions', async ctx => {
