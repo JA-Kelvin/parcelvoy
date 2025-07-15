@@ -144,8 +144,8 @@ const subscriptionPreferencesTemplate = compileTemplate<SubscriptionPreferencesA
         <main>
             {{#if subscriptions}}
             <form action="{{url}}" method="post">
-                <h1>Subscription Preferences</h1>
-                <p>Choose which notifications you would like to continue to receive.</p>
+                <h1>Communication Preferences</h1>
+                <p>Choose which methods of communication you would like to continue to receive:</p>
                 {{#if showUpdatedMessage}}
                 <div class="alert-success">
                     Your preferences have been updated!
