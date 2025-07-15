@@ -1,4 +1,4 @@
-import { isAfter, isBefore, isEqual } from 'date-fns'
+import { format, isAfter, isBefore, isEqual } from 'date-fns'
 import { RuleCheck, RuleEvalException } from './RuleEngine'
 import { compile, queryPath, queryValue, whereQuery, whereQueryNullable } from './RuleHelpers'
 import { Rule, RuleTree } from './Rule'
@@ -44,7 +44,9 @@ export default {
         })
     },
     query({ rule }) {
-        const path = queryPath(rule)
+
+        // Make sure we can handle numbers, strings and dates
+        const path = `parseDateTimeBestEffortOrNull(NULLIF(toString(${queryPath(rule)}), ''))`
 
         if (rule.operator === 'is set') {
             return whereQueryNullable(path, false)
@@ -58,6 +60,10 @@ export default {
 
         if (['=', '!=', '<', '<=', '>', '>='].includes(rule.operator)) {
             return whereQuery(path, rule.operator, ruleValue.getTime())
+        }
+
+        if (rule.operator === 'is same day') {
+            return `toDate(${path}) = toDate('${format(ruleValue, 'yyyy-MM-dd')}')`
         }
 
         throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
