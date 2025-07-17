@@ -28,6 +28,62 @@ interface EmailUnsubscribeParams {
     user_id: number
 }
 
+const strings: Record<any, Record<string, string>> = {
+    en: {
+        title: 'Communication Preferences',
+        description: 'Choose which methods of communication you would like to continue to receive:',
+        success_message: 'Your preferences have been updated!',
+        no_subscriptions: 'You are not subscribed to any notifications.',
+        save: 'Save Preferences',
+        unsubscribed: 'You have been unsubscribed!',
+    },
+    es: {
+        title: 'Preferencias de Comunicación',
+        description: 'Elige qué métodos de comunicación deseas seguir recibiendo:',
+        success_message: '¡Tus preferencias han sido actualizadas!',
+        no_subscriptions: 'No estás suscrito a ninguna notificación.',
+        save: 'Guardar Preferencias',
+        unsubscribed: '¡Te has dado de baja!',
+    },
+    fr: {
+        title: 'Préférences de communication',
+        description: 'Choisissez les méthodes de communication que vous souhaitez continuer à recevoir :',
+        success_message: 'Vos préférences ont été mises à jour !',
+        no_subscriptions: 'Vous n\'êtes abonné à aucune notification.',
+        save: 'Enregistrer les Préférences',
+        unsubscribed: 'Vous avez été désabonné !',
+    },
+    de: {
+        title: 'Kommunikationspräferenzen',
+        description: 'Wählen Sie, welche Kommunikationsmethoden Sie weiterhin erhalten möchten:',
+        success_message: 'Ihre Einstellungen wurden aktualisiert!',
+        no_subscriptions: 'Sie sind für keine Benachrichtigungen angemeldet.',
+        save: 'Einstellungen speichern',
+        unsubscribed: 'Sie wurden abgemeldet!',
+    },
+    pt: {
+        title: 'Preferências de comunicação',
+        description: 'Escolha quais métodos de comunicação você gostaria de continuar recebendo:',
+        success_message: 'Suas preferências foram atualizadas!',
+        no_subscriptions: 'Você não está inscrito em nenhuma notificação.',
+        save: 'Salvar Preferências',
+        unsubscribed: 'Você foi cancelado!',
+    },
+    it: {
+        title: 'Preferenze di Iscrizione',
+        description: 'Scegli quali metodi di comunicazione desideri continuare a ricevere:',
+        success_message: 'Le tue preferenze sono state aggiornate!',
+        no_subscriptions: 'Non sei iscritto a nessuna notifica.',
+        save: 'Salva Preferenze',
+        unsubscribed: 'Sei stato disiscritto!',
+    },
+}
+
+const keysForLocale = (locale: string | undefined) => {
+    const baseLocale = locale?.split('-')[0] ?? 'en'
+    return strings[baseLocale]
+}
+
 export const emailUnsubscribeSchema: JSONSchemaType<EmailUnsubscribeParams> = {
     $id: 'emailUnsubscribe',
     type: 'object',
@@ -50,8 +106,30 @@ publicRouter.get('/email', async ctx => {
     if (!campaign) throw new RequestError(SubscriptionError.UnsubscribeInvalidCampaign)
 
     await unsubscribe(user.id, campaign.subscription_id)
+
+    const keys = keysForLocale(user.locale)
+
     ctx.headers['content-type'] = 'text/html'
-    ctx.body = '<html><body><h3>You have been unsubscribed!</h3></body></html>'
+    ctx.body = `<html>
+        <head>
+            <style>
+            body {
+                font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                font-size: 15px;
+                margin: 0;
+                padding: 0;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            </style>
+        </head>
+        <body>
+            <h3>${keys.unsubscribed}</h3>
+        </body>
+    </html>`
 })
 
 publicRouter.post('/email', async ctx => {
@@ -101,7 +179,7 @@ const subscriptionPreferencesTemplate = compileTemplate<SubscriptionPreferencesA
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>Subscription Preferences</title>
+        <title>{{title}}</title>
         <style>
             body {
                 font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -144,11 +222,11 @@ const subscriptionPreferencesTemplate = compileTemplate<SubscriptionPreferencesA
         <main>
             {{#if subscriptions}}
             <form action="{{url}}" method="post">
-                <h1>Communication Preferences</h1>
-                <p>Choose which methods of communication you would like to continue to receive:</p>
+                <h1>{{title}}</h1>
+                <p>{{description}}</p>
                 {{#if showUpdatedMessage}}
                 <div class="alert-success">
-                    Your preferences have been updated!
+                    {{success_message}}
                 </div>
                 {{/if}}
                 {{#each subscriptions}}
@@ -164,7 +242,7 @@ const subscriptionPreferencesTemplate = compileTemplate<SubscriptionPreferencesA
                     </span>
                 </label>
                 {{/each}}
-                <input type="submit" value="Save Preferences" />
+                <input type="submit" value="{{save}}" />
             </form>
             {{else}}
             <div>
@@ -178,10 +256,15 @@ const subscriptionPreferencesTemplate = compileTemplate<SubscriptionPreferencesA
 
 preferencesPage.get('/', async ctx => {
     ctx.headers['content-type'] = 'text/html'
+
+    const keys = keysForLocale(ctx.state.user?.locale)
+
     ctx.body = subscriptionPreferencesTemplate({
         subscriptions: ctx.state.subscriptions ?? [],
         url: App.main.env.baseUrl + ctx.URL.pathname,
         showUpdatedMessage: ctx.query.u === '1',
+
+        ...keys,
     })
 })
 
