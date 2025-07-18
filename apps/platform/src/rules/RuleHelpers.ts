@@ -98,8 +98,9 @@ export const dateFromPeriod = (period: EventRulePeriod): { start_date: Date, end
         month: 30 * 24 * 60 * 60,
         year: 365 * 24 * 60 * 60,
     }
+    const offset = period.value * intervals[period.unit]
     return {
-        start_date: subSeconds(Date.now(), intervals[period.unit]),
+        start_date: subSeconds(Date.now(), offset),
     }
 }
 
