@@ -181,9 +181,13 @@ router.post('/:journeyId/version', async ctx => {
     ctx.body = await duplicateJourney(ctx.state.journey!, true)
 })
 
-router.post('/:journeyId/publish', async ctx => {
-    ctx.body = await publishJourney(ctx.state.journey!)
-})
+router.post(
+    '/:journeyId/publish',
+    projectRoleMiddleware('publisher'),
+    async ctx => {
+        ctx.body = await publishJourney(ctx.state.journey!)
+    },
+)
 
 router.get('/:journeyId/entrances', async ctx => {
     const params = extractQueryParams(ctx.query, searchParamsSchema)

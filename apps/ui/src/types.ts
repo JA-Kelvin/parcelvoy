@@ -162,6 +162,7 @@ export type OrganizationUpdateParams = Omit<Organization, 'id' | 'auth' | AuditF
 export const projectRoles = [
     'support',
     'editor',
+    'publisher',
     'admin',
 ] as const
 

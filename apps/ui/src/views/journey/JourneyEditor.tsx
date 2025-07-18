@@ -30,7 +30,7 @@ import ReactFlow, {
     useReactFlow,
 } from 'reactflow'
 import { JourneyContext, ProjectContext } from '../../contexts'
-import { createComparator, createUuid } from '../../utils'
+import { checkProjectRole, createComparator, createUuid } from '../../utils'
 import * as journeySteps from './steps/index'
 import clsx from 'clsx'
 import api from '../../api'
@@ -704,13 +704,15 @@ export default function JourneyEditor() {
                         >
                             {t('edit_details')}
                         </Button>}
-                        <Button
-                            onClick={publishJourney}
-                            isLoading={saving}
-                            variant="secondary"
-                        >
-                            {t('publish')}
-                        </Button>
+                        {checkProjectRole('publisher', project.role) && (
+                            <Button
+                                onClick={publishJourney}
+                                isLoading={saving}
+                                variant="secondary"
+                            >
+                                {t('publish')}
+                            </Button>
+                        )}
                         <Button
                             onClick={saveSteps}
                             isLoading={saving}

@@ -4,7 +4,7 @@ import { Outlet } from 'react-router'
 import { NavigationTabs } from '../../ui/Tabs'
 import { useContext, useEffect, useState } from 'react'
 import { CampaignContext, LocaleContext, LocaleSelection, ProjectContext } from '../../contexts'
-import { languageName } from '../../utils'
+import { checkProjectRole, languageName } from '../../utils'
 import { Campaign, LocaleOption, Template } from '../../types'
 import api from '../../api'
 import { CampaignTag } from './Campaigns'
@@ -152,7 +152,11 @@ export default function CampaignDetail() {
                 progress={progress}
                 send_at={send_at}
             />}
-            actions={campaign.type !== 'trigger' && action[state]}
+            actions={
+                checkProjectRole('publisher', project.role) && (
+                    campaign.type !== 'trigger' && action[state]
+                )
+            }
             fullscreen={true}>
             <NavigationTabs tabs={tabs} />
             <LocaleContext.Provider value={[locale, setLocale]}>
