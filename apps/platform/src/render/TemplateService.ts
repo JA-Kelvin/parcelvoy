@@ -83,6 +83,7 @@ export const screenshotHtml = (template: TemplateType) => {
 
 export const validateTemplates = async (projectId: number, campaignId: number) => {
     const templates = await allTemplates(projectId, campaignId)
+    if (!templates.length) throw new RequestError('No templates found for this campaign.')
     for (const template of templates) {
         const [isValid, error] = template.map().validate()
         if (!isValid) throw error

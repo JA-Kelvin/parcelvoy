@@ -20,10 +20,10 @@ export default class PushChannel {
         // Find tokens from active devices with push enabled
         // Temporarily include the old table
         const oldDevices = variables.user?.devices?.filter(device => device.token != null) as PushDevice[] ?? []
-        const tokens: string[] = [
+        const tokens: string[] = [...new Set([
             ...devices.map(device => device.token),
             ...oldDevices.map(device => device.token),
-        ]
+        ])]
 
         const push = {
             tokens,
