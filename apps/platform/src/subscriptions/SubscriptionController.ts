@@ -341,7 +341,6 @@ export const subscriptionCreateSchema: JSONSchemaType<SubscriptionParams> = {
         },
         is_public: {
             type: 'boolean',
-            required: false,
         },
     },
     additionalProperties: false,
