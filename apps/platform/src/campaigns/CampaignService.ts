@@ -571,9 +571,9 @@ export const estimatedSendSize = async (campaign: Campaign) => {
     return lists.reduce((acc, list) => (list.users_count ?? 0) + acc, 0)
 }
 
-export const canSendCampaignToUser = (campaign: Campaign, user: Pick<User, 'email' | 'phone' | 'has_push_device' | 'devices'>) => {
+export const canSendCampaignToUser = (campaign: Campaign, user: Pick<User, 'email' | 'phone' | 'devices'>) => {
     if (campaign.channel === 'email' && !user.email) return false
     if (campaign.channel === 'text' && !user.phone) return false
-    if (campaign.channel === 'push' && !(user.has_push_device || !!user.devices)) return false
+    if (campaign.channel === 'push' && !user.devices) return false
     return true
 }
