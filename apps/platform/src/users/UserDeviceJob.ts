@@ -18,12 +18,10 @@ export default class UserDeviceJob extends Job {
         const attempts = job.options.attempts ?? 1
         const attemptsMade = job.state.attemptsMade ?? 0
 
-        await App.main.db.transaction(async (trx) => {
-            try {
-                await saveDevice(project_id, device, trx)
-            } catch (error) {
-                if (attemptsMade < (attempts - 1)) throw error
-            }
-        })
+        try {
+            await saveDevice(project_id, device)
+        } catch (error) {
+            if (attemptsMade < (attempts - 1)) throw error
+        }
     }
 }
