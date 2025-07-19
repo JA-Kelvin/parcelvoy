@@ -450,7 +450,7 @@ const recipientClickhouseQuery = async (campaign: Campaign) => {
         } else if (campaign.channel === 'text') {
             return "(users.phone != '' AND users.phone IS NOT NULL)"
         } else if (campaign.channel === 'push') {
-            return '((users.devices IS NOT NULL AND NOT empty(users.devices)) OR users.has_push_device = 1)'
+            return '(users.devices IS NOT NULL AND NOT empty(users.devices))'
         }
         return ''
     }

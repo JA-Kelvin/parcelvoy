@@ -1,8 +1,7 @@
 import { ClientIdentity } from '../client/Client'
-import { UniversalModel } from '../core/Model'
+import { ModelParams, UniversalModel } from '../core/Model'
 import parsePhoneNumber from 'libphonenumber-js'
 import { SubscriptionState } from '../subscriptions/Subscription'
-import { Device } from './Device'
 
 export interface TemplateUser extends Record<string, any> {
     id: string
@@ -17,6 +16,22 @@ export interface UserAttribute {
     value: any
 }
 
+export interface Device {
+    device_id: string
+    token?: string
+    os?: string
+    os_version?: string
+    model?: string
+    app_build?: string
+    app_version?: string
+}
+
+export type DeviceParams = Omit<Device, ModelParams> & ClientIdentity
+
+interface PushEnabledDevice extends Device {
+    token: string
+}
+
 export class User extends UniversalModel {
     project_id!: number
     anonymous_id!: string
@@ -24,7 +39,6 @@ export class User extends UniversalModel {
     email?: string
     phone?: string
     devices?: Device[]
-    has_push_device!: boolean
     data!: Record<string, any> // first_name, last_name live in data
     unsubscribe_ids?: number[]
     timezone?: string
@@ -48,6 +62,10 @@ export class User extends UniversalModel {
             lastName: this.lastName,
             fullName: this.fullName,
         }
+    }
+
+    get pushEnabledDevices(): PushEnabledDevice[] {
+        return this.devices?.filter(device => device.token != null) as PushEnabledDevice[] ?? []
     }
 
     get fullName() {

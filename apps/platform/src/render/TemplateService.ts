@@ -1,5 +1,5 @@
 import { PageParams } from '../core/searchParams'
-import Template, { EmailTemplate, PushTemplate, TemplateParams, TemplateType, TemplateUpdateParams, TextTemplate, WebhookTemplate } from './Template'
+import Template, { TemplateParams, TemplateType, TemplateUpdateParams } from './Template'
 import { partialMatchLocale, pick, prune } from '../utilities'
 import { Variables } from '.'
 import { loadEmailChannel } from '../providers/email'
@@ -16,8 +16,6 @@ import Project from '../projects/Project'
 import { getProject } from '../projects/ProjectService'
 import { logger } from '../config/logger'
 import EventPostJob from '../client/EventPostJob'
-import { getPushDevicesForUser } from '../users/DeviceRepository'
-import Campaign from '../campaigns/Campaign'
 
 export const pagedTemplates = async (params: PageParams, projectId: number) => {
     return await Template.search(
@@ -113,13 +111,26 @@ export const sendProof = async (template: TemplateType, variables: Variables, re
 
     let response: any
     if (template.type === 'email') {
-        response = await sendEmailProof(campaign, template, variables)
+        const channel = await loadEmailChannel(campaign.provider_id, project.id)
+        response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:email:result')
     } else if (template.type === 'text') {
-        response = await sendTextProof(campaign, template, variables)
+        const channel = await loadTextChannel(campaign.provider_id, project.id)
+        response = await channel?.send(template, variables)
+        logger.info(response, 'template:proof:text:result')
     } else if (template.type === 'push') {
-        response = await sendPushProof(campaign, template, variables)
+        const channel = await loadPushChannel(campaign.provider_id, project.id)
+        if (!user.id) throw new RequestError('Unable to find a user matching the criteria.')
+        response = await channel?.send(template, variables)
+
+        // Disable any tokens that we've discovered are invalid
+        if (response.invalidTokens.length) {
+            await disableNotifications(user.id, response.invalidTokens)
+        }
+        logger.info(response, 'template:proof:push:result')
     } else if (template.type === 'webhook') {
-        response = await sendWebhookProof(campaign, template, variables)
+        const channel = await loadWebhookChannel(campaign.provider_id, project.id)
+        response = await channel?.send(template, variables)
     } else {
         throw new RequestError('Sending template proofs is only supported for email and text message types as this time.')
     }
@@ -138,43 +149,6 @@ export const sendProof = async (template: TemplateType, variables: Variables, re
     }).queue()
 
     return response
-}
-
-const sendEmailProof = async (campaign: Campaign, template: EmailTemplate, variables: Variables) => {
-    if (variables.user.unsubscribe_ids?.includes(campaign.subscription_id)) {
-        throw new RequestError('This template cannot be sent to this user as they have unsubscribed from emails.')
-    }
-    const channel = await loadEmailChannel(campaign.provider_id, variables.project.id)
-    const response = await channel?.send(template, variables)
-    logger.info(response, 'template:proof:email:result')
-    return response
-}
-
-const sendTextProof = async (campaign: Campaign, template: TextTemplate, variables: Variables) => {
-    const channel = await loadTextChannel(campaign.provider_id, variables.project.id)
-    const response = await channel?.send(template, variables)
-    logger.info(response, 'template:proof:text:result')
-    return response
-}
-
-const sendPushProof = async (campaign: Campaign, template: PushTemplate, variables: Variables) => {
-    const { user, project } = variables
-    const devices = await getPushDevicesForUser(project.id, user.id)
-    const channel = await loadPushChannel(campaign.provider_id, project.id)
-    if (!user.id) throw new RequestError('Unable to find a user matching the criteria.')
-    const response = await channel?.send(template, devices, variables)
-
-    // Disable any tokens that we've discovered are invalid
-    if (response?.invalidTokens.length) {
-        await disableNotifications(user, response.invalidTokens)
-    }
-    logger.info(response, 'template:proof:push:result')
-    return response
-}
-
-const sendWebhookProof = async (campaign: Campaign, template: WebhookTemplate, variables: Variables) => {
-    const channel = await loadWebhookChannel(campaign.provider_id, variables.project.id)
-    return await channel?.send(template, variables)
 }
 
 // Determine what template to send to the user based on the following:
