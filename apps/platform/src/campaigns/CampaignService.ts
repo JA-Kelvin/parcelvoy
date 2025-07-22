@@ -523,6 +523,7 @@ export const campaignDeliveryProgress = async (campaignId: number): Promise<Camp
 export const updateCampaignProgress = async (campaign: Campaign): Promise<void> => {
     const currentState = (pending: number, delivery: CampaignDelivery) => {
         if (campaign.type === 'trigger') return 'running'
+        if (campaign.state === 'draft') return 'draft'
         if (campaign.state === 'loading') return 'loading'
         if (pending <= 0) return 'finished'
         if (delivery.sent === 0) return 'scheduled'
