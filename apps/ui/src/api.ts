@@ -233,6 +233,11 @@ const api = {
         updateSubscriptions: async (projectId: number | string, userId: number | string, subscriptions: SubscriptionParams[]) => await client
             .patch(`${projectUrl(projectId)}/users/${userId}/subscriptions`, subscriptions)
             .then(r => r.data),
+        deleteImport: async (projectId: number | string, file: File) => {
+            const formData = new FormData()
+            formData.append('file', file)
+            await client.post(`${projectUrl(projectId)}/users/delete`, formData)
+        },
 
         journeys: {
             search: async (projectId: number | string, userId: number | string, params: SearchParams) => await client

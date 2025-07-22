@@ -10,6 +10,7 @@ import { Context } from 'koa'
 import { EventPostJob } from '../jobs'
 import { Transaction } from '../core/Model'
 import App from '../app'
+import Project from '../projects/Project'
 
 export const getUser = async (id: number, projectId?: number): Promise<User | undefined> => {
     return await User.find(id, qb => {
@@ -114,13 +115,15 @@ export const aliasUser = async (projectId: number, {
     return await User.updateAndFetch(previous.id, { external_id })
 }
 
-export const createUser = async (projectId: number, { external_id, anonymous_id, data, created_at, ...fields }: UserInternalParams, trx?: Transaction) => {
+export const createUser = async (projectId: number, { external_id, anonymous_id, data, locale, created_at, ...fields }: UserInternalParams, trx?: Transaction) => {
+    const project = await Project.find(projectId)
     const user = await User.insertAndFetch({
         project_id: projectId,
         anonymous_id: anonymous_id ?? uuid(),
         external_id,
         data: data ?? {},
         devices: [],
+        locale: locale ?? project?.locale,
         created_at: created_at ? new Date(created_at) : new Date(),
         ...fields,
         version: Date.now(),
@@ -164,12 +167,6 @@ export const deleteUser = async (projectId: number, externalId: string): Promise
     const user = await getUserFromClientId(projectId, { external_id: externalId } as ClientIdentity)
     if (!user) return
 
-    // Delete the user from ClickHouse
-    await User.clickhouse().delete('project_id = {projectId: UInt32} AND id = {id: UInt32}', {
-        projectId,
-        id: user.id,
-    })
-
     // Delete the user events from the database
     await UserEvent.delete(qb => qb.where('project_id', projectId)
         .where('user_id', user.id),
@@ -179,6 +176,12 @@ export const deleteUser = async (projectId: number, externalId: string): Promise
     await User.delete(qb => qb.where('project_id', projectId)
         .where('id', user.id),
     )
+
+    // Delete the user from ClickHouse
+    await User.clickhouse().delete('project_id = {projectId: UInt32} AND id = {id: UInt32}', {
+        projectId,
+        id: user.id,
+    })
 
     // Delete the user events from ClickHouse
     await UserEvent.clickhouse().delete('project_id = {projectId: UInt32} AND user_id = {userId: UInt32}', {

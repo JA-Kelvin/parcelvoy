@@ -3,6 +3,7 @@ import App from '../app'
 import { ProjectState } from '../auth/AuthMiddleware'
 import UserDeleteJob from './UserDeleteJob'
 import UserPatchJob from './UserPatchJob'
+import parse from '../storage/FileStream'
 import { JSONSchemaType, validate } from '../core/validate'
 import { User, UserParams } from './User'
 import { extractQueryParams } from '../utilities'
@@ -13,6 +14,7 @@ import { SubscriptionState } from '../subscriptions/Subscription'
 import { getUserEvents } from './UserEventRepository'
 import { projectRoleMiddleware } from '../projects/ProjectService'
 import { pagedEntrancesByUser } from '../journey/JourneyRepository'
+import { removeUsers } from './UserImport'
 
 const router = new Router<
     ProjectState & { user?: User }
@@ -115,6 +117,17 @@ router.patch('/', projectRoleMiddleware('editor'), async ctx => {
 
     ctx.status = 204
     ctx.body = ''
+})
+
+router.post('/delete', async ctx => {
+    const stream = await parse(ctx)
+
+    await removeUsers({
+        project_id: ctx.state.project.id,
+        stream,
+    })
+
+    ctx.status = 204
 })
 
 const deleteUsersRequest: JSONSchemaType<string[]> = {
