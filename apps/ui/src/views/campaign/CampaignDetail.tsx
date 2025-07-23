@@ -1,6 +1,6 @@
 import Button from '../../ui/Button'
 import PageContent from '../../ui/PageContent'
-import { Outlet } from 'react-router'
+import { Outlet, useNavigate } from 'react-router'
 import { NavigationTabs } from '../../ui/Tabs'
 import { useContext, useEffect, useState } from 'react'
 import { CampaignContext, LocaleContext, LocaleSelection, ProjectContext } from '../../contexts'
@@ -9,8 +9,9 @@ import { Campaign, LocaleOption, Template } from '../../types'
 import api from '../../api'
 import { CampaignTag } from './Campaigns'
 import LaunchCampaign from './LaunchCampaign'
-import { ForbiddenIcon, RestartIcon, SendIcon } from '../../ui/icons'
+import { ArchiveIcon, DuplicateIcon, ForbiddenIcon, RestartIcon, SendIcon } from '../../ui/icons'
 import { useTranslation } from 'react-i18next'
+import { Menu, MenuItem } from '../../ui'
 
 export interface LocaleParams {
     locale: string
@@ -55,6 +56,7 @@ export const createLocale = async ({ locale, data }: LocaleParams, campaign: Cam
 export default function CampaignDetail() {
     const [project] = useContext(ProjectContext)
     const { t } = useTranslation()
+    const navigate = useNavigate()
     const [campaign, setCampaign] = useContext(CampaignContext)
     const { name, templates, state, send_at, progress } = campaign
     const [locale, setLocale] = useState<LocaleSelection>(localeState(templates ?? []))
@@ -63,6 +65,16 @@ export default function CampaignDetail() {
     }, [campaign.id])
     const [isLaunchOpen, setIsLaunchOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+
+    const handleDuplicate = async (id: number) => {
+        const campaign = await api.campaigns.duplicate(project.id, id)
+        await navigate(`/projects/${project.id}/campaigns/${campaign.id}`)
+    }
+
+    const handleArchive = async (id: number) => {
+        await api.campaigns.delete(project.id, id)
+        await navigate(`/projects/${project.id}/campaigns`)
+    }
 
     const handleAbort = async () => {
         setIsLoading(true)
@@ -159,9 +171,19 @@ export default function CampaignDetail() {
                 send_at={send_at}
             />}
             actions={
-                checkProjectRole('publisher', project.role) && (
-                    campaign.type !== 'trigger' && action[state]
-                )
+                <>
+                    {checkProjectRole('publisher', project.role) && (
+                        campaign.type !== 'trigger' && action[state]
+                    )}
+                    <Menu size="regular">
+                        <MenuItem onClick={async () => await handleDuplicate(campaign.id)}>
+                            <DuplicateIcon />{t('duplicate')}
+                        </MenuItem>
+                        <MenuItem onClick={async () => await handleArchive(campaign.id)}>
+                            <ArchiveIcon />{t('archive')}
+                        </MenuItem>
+                    </Menu>
+                </>
             }
             fullscreen={true}>
             <NavigationTabs tabs={tabs} />
