@@ -59,3 +59,10 @@
 .heading label, .heading input {
     margin: 0;
 }
+
+@media only screen and (max-width: 600px) {
+    .heading {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

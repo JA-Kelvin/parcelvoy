@@ -39,7 +39,7 @@
     "campaign_form_lists": "Select what lists to send this campaign to and what user lists you want to exclude from getting the campaign.",
     "campaign_form_select_list": "Select one or more lists using the button above.",
     "campaign_form_type": "Should a campaign be sent as a blast to a list of users or triggered individually via API.",
-    "campaign_list_generating": "This list is still generating. Sending before it has completed could result in this campaign not sending to all users who will enter the list. Are you sure you want to continue?",
+    "campaign_list_generating": "This list is still generating or has not been published. Sending before it has completed could result in this campaign not sending to all users who will enter the list. Are you sure you want to continue?",
     "campaign_name": "Campaign Name",
     "campaigns": "Campaigns",
     "campaign": "Campaign",

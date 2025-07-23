@@ -1,5 +1,4 @@
 import { logger } from '../config/logger'
-import { releaseLock } from '../core/Lock'
 import { Job } from '../queue'
 import { CampaignJobParams, SentCampaign } from './Campaign'
 import CampaignEnqueueSendsJob from './CampaignEnqueueSendsJob'
@@ -13,13 +12,11 @@ export default class CampaignGenerateListJob extends Job {
     }
 
     static async handler({ id, project_id }: CampaignJobParams) {
-        const key = `campaign_generate_${id}`
-
         logger.info({ campaign_id: id }, 'campaign:generate:loading')
 
         const campaign = await getCampaign(id, project_id) as SentCampaign
         if (!campaign) return
-        if (campaign.state === 'aborted' || campaign.state === 'draft') return
+        if (campaign.isAbortedOrDraft) return
 
         try {
             logger.info({ campaignId: id }, 'campaign:generate:populating')
@@ -30,14 +27,9 @@ export default class CampaignGenerateListJob extends Job {
                 id: campaign.id,
                 project_id: campaign.project_id,
             }).queue()
-
-            await releaseLock(key)
         } catch (error) {
             logger.info({ campaignId: id, error }, 'campaign:generate:failed')
             throw error
-        } finally {
-            logger.info({ campaignId: id }, 'campaign:generate:lock_released')
-            await releaseLock(key)
         }
     }
 }

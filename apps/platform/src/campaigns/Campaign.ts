@@ -51,6 +51,11 @@ export default class Campaign extends Model {
     eventName(action: string) {
         return `${this.channel}_${action}`
     }
+
+    get isAborted() { return this.state === 'aborted' || this.state === 'aborting' }
+    get isAbortedOrDraft() {
+        return this.isAborted || this.state === 'draft'
+    }
 }
 
 export type CampaignPopulationProgress = {

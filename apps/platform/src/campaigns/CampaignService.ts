@@ -23,7 +23,6 @@ import Template from '../render/Template'
 import { differenceInDays, subDays } from 'date-fns'
 import { cacheBatchHash, cacheBatchReadHashAndDelete, cacheDel, cacheGet, cacheHashExists, cacheIncr, cacheSet, DataPair, HashScanCallback } from '../config/redis'
 import App from '../app'
-import { releaseLock } from '../core/Lock'
 import CampaignAbortJob from './CampaignAbortJob'
 import { getRuleQuery } from '../rules/RuleEngine'
 import { getJourneysForCampaign } from '../journey/JourneyService'
@@ -343,20 +342,27 @@ const generateSendList = async (project: Project, campaign: SentCampaign, callba
     await cacheSet(redis, CacheKeys.populationTotal(campaign), count, 86400)
     await cacheSet(redis, CacheKeys.generateReady(campaign), 1, 86400)
 
+    // Double check that the campaign hasn't been aborted
+    const updatedCampaign = await getCampaign(campaign.id, campaign.project_id) as SentCampaign
+    if (updatedCampaign.isAborted) return
+
     // Now that we have results, pass them back to the callback
     return await cacheBatchReadHashAndDelete(redis, hashKey, callback)
 }
 
 const cleanupSendListGeneration = async (campaign: Campaign) => {
-    const redis = App.main.redis
-
     const { pending, ...delivery } = await campaignDeliveryProgress(campaign.id)
 
     // Update the state & count of the campaign
     await Campaign.update(qb => qb.where('id', campaign.id).where('project_id', campaign.project_id), { state: 'scheduled', delivery })
 
     // Clear out all the keys related to the generation
-    await cacheDel(redis, CacheKeys.generateReady(campaign))
+    await cleanupGenerationCacheKeys(campaign)
+}
+
+const cleanupGenerationCacheKeys = async (campaign: Campaign) => {
+    const redis = App.main.redis
+    await cacheDel(redis, CacheKeys.generate(campaign))
     await cacheDel(redis, CacheKeys.populationTotal(campaign))
     await cacheDel(redis, CacheKeys.populationProgress(campaign))
 }
@@ -478,7 +484,7 @@ export const abortCampaign = async (campaign: Campaign) => {
         .where('campaign_id', campaign.id)
         .where('state', 'pending')
         .update({ state: 'aborted' })
-    await releaseLock(`campaign_generate_${campaign.id}`)
+    await cleanupGenerationCacheKeys(campaign)
 }
 
 export const clearCampaign = async (campaign: Campaign) => {

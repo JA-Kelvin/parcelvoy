@@ -120,7 +120,13 @@ export default function CampaignDetail() {
                     isLoading={true}
                 >{t('abort_campaign')}</Button>
             ),
-        loading: <></>,
+        loading: (
+            <Button
+                icon={<ForbiddenIcon />}
+                isLoading={isLoading}
+                onClick={async () => await handleAbort()}
+            >{t('abort_campaign')}</Button>
+        ),
         scheduled: (
             <>
                 <Button
