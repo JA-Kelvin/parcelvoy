@@ -26,6 +26,8 @@ import App from '../app'
 import CampaignAbortJob from './CampaignAbortJob'
 import { getRuleQuery } from '../rules/RuleEngine'
 import { getJourneysForCampaign } from '../journey/JourneyService'
+import { createAuditLog } from '../auth/AuditService'
+import { WithAdmin } from '../auth/Audit'
 
 export const CacheKeys = {
     pendingStats: 'campaigns:pending_stats',
@@ -84,7 +86,7 @@ export const getCampaign = async (id: number, projectId: number): Promise<Campai
     return campaign
 }
 
-export const createCampaign = async (projectId: number, { tags, ...params }: CampaignCreateParams): Promise<Campaign> => {
+export const createCampaign = async (projectId: number, { tags, admin_id, ...params }: WithAdmin<CampaignCreateParams>): Promise<Campaign> => {
     const subscription = await Subscription.find(params.subscription_id)
     if (!subscription) {
         throw new RequestError('Unable to find associated subscription', 404)
@@ -108,10 +110,19 @@ export const createCampaign = async (projectId: number, { tags, ...params }: Cam
         })
     }
 
+    if (admin_id) {
+        await createAuditLog({
+            project_id: projectId,
+            admin_id,
+            event: 'create',
+            object: campaign,
+        })
+    }
+
     return await getCampaign(campaign.id, projectId) as Campaign
 }
 
-export const updateCampaign = async (id: number, projectId: number, { tags, ...params }: Partial<CampaignParams>): Promise<Campaign | undefined> => {
+export const updateCampaign = async (id: number, projectId: number, { tags, admin_id, ...params }: WithAdmin<Partial<CampaignParams>>): Promise<Campaign | undefined> => {
 
     // Ensure finished campaigns are no longer modified
     const campaign = await getCampaign(id, projectId) as Campaign
@@ -150,7 +161,7 @@ export const updateCampaign = async (id: number, projectId: number, { tags, ...p
         data.state = 'running'
     }
 
-    await Campaign.update(qb => qb.where('id', id), {
+    const newCampaign = await Campaign.updateAndFetch(id, {
         ...data,
         send_at,
     })
@@ -172,16 +183,50 @@ export const updateCampaign = async (id: number, projectId: number, { tags, ...p
         await CampaignAbortJob.from({ ...campaign, reschedule: isRescheduling }).queue()
     }
 
+    if (admin_id) {
+        const event = data.state === 'aborting'
+            ? 'aborted'
+            : data.state === 'loading'
+                ? 'launched'
+                : 'updated'
+        await createAuditLog({
+            project_id: projectId,
+            admin_id,
+            event,
+            object: newCampaign,
+            previous: campaign,
+        })
+    }
+
     return await getCampaign(id, projectId)
 }
 
-export const archiveCampaign = async (id: number, projectId: number) => {
-    await Campaign.archive(id, qb => qb.where('project_id', projectId))
-    return getCampaign(id, projectId)
+export const archiveCampaign = async (campaign: Campaign, adminId?: number) => {
+    await Campaign.archive(campaign.id, qb => qb.where('project_id', campaign.project_id))
+
+    if (adminId) {
+        await createAuditLog({
+            project_id: campaign.project_id,
+            admin_id: adminId,
+            event: 'archive',
+            previous: campaign,
+        })
+    }
+
+    return getCampaign(campaign.id, campaign.project_id)
 }
 
-export const deleteCampaign = async (id: number, projectId: number) => {
-    return await Campaign.deleteById(id, qb => qb.where('project_id', projectId))
+export const deleteCampaign = async (campaign: Campaign, adminId?: number) => {
+    const results = await Campaign.deleteById(campaign.id, qb => qb.where('project_id', campaign.project_id))
+    if (adminId) {
+        await createAuditLog({
+            project_id: campaign.project_id,
+            admin_id: adminId,
+            event: 'delete',
+            previous: campaign,
+        })
+    }
+    return results
 }
 
 export const getCampaignUsers = async (id: number, params: PageParams, projectId: number) => {
@@ -494,14 +539,14 @@ export const clearCampaign = async (campaign: Campaign) => {
         .delete()
 }
 
-export const duplicateCampaign = async (campaign: Campaign) => {
-    const params: Partial<Campaign> = pick(campaign, ['project_id', 'list_ids', 'exclusion_list_ids', 'provider_id', 'subscription_id', 'channel', 'name', 'type'])
+export const duplicateCampaign = async (campaign: Campaign, adminId?: number) => {
+    const params: CampaignCreateParams = pick(campaign, ['project_id', 'list_ids', 'exclusion_list_ids', 'provider_id', 'subscription_id', 'channel', 'name', 'type'])
     params.name = `Copy of ${params.name}`
-    params.state = campaign.type === 'blast' ? 'draft' : 'running'
-    const cloneId = await Campaign.insert(params)
+    const { id: cloneId } = await createCampaign(campaign.project_id, { ...params, admin_id: adminId })
     for (const template of campaign.templates) {
         await duplicateTemplate(template, cloneId)
     }
+
     return await getCampaign(cloneId, campaign.project_id)
 }
 

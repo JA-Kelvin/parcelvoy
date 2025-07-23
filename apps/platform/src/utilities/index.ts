@@ -249,6 +249,38 @@ export function deepEqual<T>(a: T, b: T): boolean {
     )
 }
 
+const isObject = (value: any): boolean => {
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+type Obj = Record<string, any>
+
+export const deepDiff = (newObj: Obj, oldObj: Obj): Obj => {
+    const diff: Obj = {}
+
+    const keys = new Set([...Object.keys(newObj || {}), ...Object.keys(oldObj || {})])
+
+    for (const key of keys) {
+        const newVal = newObj ? newObj[key] : undefined
+        const oldVal = oldObj ? oldObj[key] : undefined
+
+        if (newVal === oldVal) {
+            continue
+        }
+
+        if (isObject(newVal) && isObject(oldVal)) {
+            const nestedDiff = deepDiff(newVal, oldVal)
+            if (Object.keys(nestedDiff).length > 0) {
+                diff[key] = nestedDiff
+            }
+        } else {
+            diff[key] = { old: oldVal, new: newVal }
+        }
+    }
+
+    return diff
+}
+
 type ChunkCallback<T> = (chunk: T[]) => Promise<void>
 
 export const chunk = async <T>(

@@ -1,6 +1,10 @@
 import { pluralize, snakeCase } from '../../utilities'
 
 export class RawModel {
+    get $tableName() {
+        return (this.constructor as typeof RawModel).tableName
+    }
+
     static jsonAttributes: string[] = []
     static virtualAttributes: string[] = []
 

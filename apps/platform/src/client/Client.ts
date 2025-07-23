@@ -1,10 +1,5 @@
+import { RequireAtLeastOne } from '../core/Types'
 import type { User } from '../users/User'
-
-type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
-    Pick<T, Exclude<keyof T, Keys>>
-    & {
-        [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-    }[Keys]
 
 export type ClientIdentityKeys = {
     anonymous_id: string

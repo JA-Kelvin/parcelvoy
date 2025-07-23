@@ -116,4 +116,4 @@ export class UniversalModel extends Model {
     }
 }
 
-export type ModelParams = 'id' | 'created_at' | 'updated_at' | 'parseJson' | 'project_id' | 'toJSON'
+export type ModelParams = 'id' | 'created_at' | 'updated_at' | 'parseJson' | 'project_id' | 'toJSON' | '$tableName'

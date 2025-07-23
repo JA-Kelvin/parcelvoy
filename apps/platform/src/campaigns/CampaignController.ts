@@ -86,7 +86,10 @@ const campaignCreateParams: JSONSchemaType<CampaignCreateParams> = {
 
 router.post('/', async ctx => {
     const payload = validate(campaignCreateParams, ctx.request.body)
-    ctx.body = await createCampaign(ctx.state.project.id, payload)
+    ctx.body = await createCampaign(ctx.state.project.id, {
+        ...payload,
+        admin_id: ctx.state.admin?.id,
+    })
 })
 
 router.param('campaignId', checkCampaignId)
@@ -148,7 +151,10 @@ const campaignUpdateParams: JSONSchemaType<Partial<CampaignUpdateParams>> = {
 
 router.patch('/:campaignId', async ctx => {
     const payload = validate(campaignUpdateParams, ctx.request.body)
-    ctx.body = await updateCampaign(ctx.state.campaign!.id, ctx.state.project.id, payload)
+    ctx.body = await updateCampaign(ctx.state.campaign!.id, ctx.state.project.id, {
+        ...payload,
+        admin_id: ctx.state.admin?.id,
+    })
 })
 
 router.get('/:campaignId/users', async ctx => {
@@ -157,17 +163,17 @@ router.get('/:campaignId/users', async ctx => {
 })
 
 router.delete('/:campaignId', async ctx => {
-    const { id, project_id, deleted_at } = ctx.state.campaign!
-    if (deleted_at) {
-        await deleteCampaign(id, project_id)
+    const campaign = ctx.state.campaign!
+    if (campaign.deleted_at) {
+        await deleteCampaign(campaign, ctx.state.admin?.id)
     } else {
-        await archiveCampaign(id, project_id)
+        await archiveCampaign(campaign, ctx.state.admin?.id)
     }
     ctx.body = true
 })
 
 router.post('/:campaignId/duplicate', async ctx => {
-    ctx.body = await duplicateCampaign(ctx.state.campaign!)
+    ctx.body = await duplicateCampaign(ctx.state.campaign!, ctx.state.admin?.id)
 })
 
 router.get('/:campaignId/preview', async ctx => {
