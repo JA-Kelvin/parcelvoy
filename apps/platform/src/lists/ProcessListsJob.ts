@@ -5,6 +5,10 @@ import ListStatsJob from './ListStatsJob'
 export default class ProcessListsJob extends Job {
     static $name = 'process_lists_job'
 
+    static from(): ProcessListsJob {
+        return new this().deduplicationKey(this.$name)
+    }
+
     static async handler() {
 
         const lists = await List.all(qb => qb.whereNot('state', 'loading').whereNull('deleted_at'))

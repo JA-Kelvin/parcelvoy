@@ -66,7 +66,7 @@ export default class Job implements EncodedJob {
         return this.$static.handler(this.data, this)
     }
 
-    constructor(data: any) {
+    constructor(data: any = {}) {
         this.data = data
     }
 
