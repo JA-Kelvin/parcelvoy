@@ -23,13 +23,6 @@ export default (app: App) => {
         lockLength: 120,
     })
     scheduler.schedule({
-        rule: '*/5 * * * *',
-        callback: () => {
-            app.queue.enqueue(ProcessListsJob.from())
-        },
-        lockLength: 360,
-    })
-    scheduler.schedule({
         rule: '0 * * * *',
         callback: () => {
             cleanupExpiredRevokedTokens(subDays(new Date(), 1))
@@ -38,6 +31,12 @@ export default (app: App) => {
             }))
             app.queue.enqueue(UpdateJourneysJob.from())
             app.queue.enqueue(ScheduledEntranceOrchestratorJob.from())
+        },
+    })
+    scheduler.schedule({
+        rule: '0 0,12 * * *',
+        callback: () => {
+            app.queue.enqueue(ProcessListsJob.from())
         },
     })
     return scheduler
