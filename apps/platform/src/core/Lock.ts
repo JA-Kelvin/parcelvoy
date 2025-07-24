@@ -45,4 +45,9 @@ export const releaseLock = async (key: string) => {
     await App.main.redis.del(`lock:${key}`)
 }
 
-export class LockError extends Error {}
+export class LockError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'LockError'
+    }
+}

@@ -20,7 +20,12 @@ export interface EncodedJob {
 }
 
 export class JobError extends Error {}
-export class RetryError extends JobError {}
+export class RetryError extends JobError {
+    constructor(message: string) {
+        super(message)
+        this.name = 'RetryError'
+    }
+}
 
 export const JobPriority = {
     none: 0,
