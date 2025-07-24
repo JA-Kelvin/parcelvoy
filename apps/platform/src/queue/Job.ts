@@ -21,9 +21,8 @@ export interface EncodedJob {
 
 export class JobError extends Error {}
 export class RetryError extends JobError {
-    constructor(message: string) {
-        super(message)
-        this.name = 'RetryError'
+    constructor() {
+        super('RetryError')
     }
 }
 

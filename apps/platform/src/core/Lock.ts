@@ -46,8 +46,7 @@ export const releaseLock = async (key: string) => {
 }
 
 export class LockError extends Error {
-    constructor(message: string) {
-        super(message)
-        this.name = 'LockError'
+    constructor() {
+        super('LockError')
     }
 }
