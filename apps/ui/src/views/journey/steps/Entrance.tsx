@@ -16,6 +16,8 @@ import { env } from '../../../config/env'
 import { useTranslation, Trans } from 'react-i18next'
 import { createEventRule, isEventWrapper } from '../../users/rules/RuleHelpers'
 import { ruleDescription } from '../../users/rules/RuleDescriptions'
+import { Tag } from '../../../ui'
+import { Link } from 'react-router'
 
 interface EntranceConfig {
     trigger: 'none' | 'event' | 'schedule'
@@ -29,6 +31,8 @@ interface EntranceConfig {
     // schedule based
     list_id?: number
     schedule?: string
+
+    references?: Array<{ id: number, name: string }>
 }
 
 const triggerOptions = [
@@ -79,6 +83,7 @@ export const entranceStep: JourneyStepType<EntranceConfig> = {
             rule,
             list_id,
             schedule,
+            references = [],
         },
     }) {
         const { t } = useTranslation()
@@ -136,6 +141,19 @@ export const entranceStep: JourneyStepType<EntranceConfig> = {
                     }
                 </div>
             )
+        }
+
+        if (references.length) {
+            return <div className="references">
+                <span>{t('entrance_links')}</span>
+                <div className="ui-tag-list">
+                    {references.map(journey =>
+                        <Tag variant="plain" key={journey.id}>
+                            <Link to={`../journeys/${journey.id}`}>{journey.name}</Link>
+                        </Tag>,
+                    )}
+                </div>
+            </div>
         }
 
         return <>{t('entrance_empty')}</>

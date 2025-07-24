@@ -1,7 +1,7 @@
 import { add, addDays, addHours, addMinutes, getDay, isEqual, isFuture, isPast, parse } from 'date-fns'
 import Model from '../core/Model'
 import { getCampaign, getCampaignSend, triggerCampaignSend } from '../campaigns/CampaignService'
-import { crossTimezoneCopy, random, snakeCase, uuid } from '../utilities'
+import { crossTimezoneCopy, pick, random, snakeCase, uuid } from '../utilities'
 import { Database } from '../config/database'
 import { compileTemplate } from '../render'
 import { logger } from '../config/logger'
@@ -14,6 +14,7 @@ import { JourneyState } from './JourneyState'
 import { EventPostJob, UserPatchJob } from '../jobs'
 import { exitUserFromJourney, getJourneyUserStepByExternalId } from './JourneyRepository'
 import JourneyUserStep from './JourneyUserStep'
+import Journey from './Journey'
 
 export class JourneyStepChild extends Model {
 
@@ -63,6 +64,11 @@ export class JourneyStep extends Model {
 
     async next(state: JourneyState): Promise<undefined | number> {
         return state.childrenOf(this.id)[0]?.child_id
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    static async hydrate(step: JourneyStepMapItem, journey: Journey): Promise<JourneyStepMapItem> {
+        return Promise.resolve(step)
     }
 }
 
@@ -131,6 +137,24 @@ export class JourneyEntrance extends JourneyStep {
             x: 0,
             y: 0,
         }, db)
+    }
+
+    static async hydrate(step: JourneyStep, journey: Journey) {
+        if (!step.data) return step
+        if (step.data.trigger !== 'none') return step
+
+        const references = await Journey.all(
+            qb => qb
+                .where('journey_steps.type', 'link')
+                .whereJsonPath('journey_steps.data', '$.target_id', '=', journey.id)
+                .where('journeys.status', 'live')
+                .whereNull('journeys.deleted_at')
+                .whereNull('journeys.parent_id')
+                .leftJoin('journey_steps', 'journey_steps.journey_id', '=', 'journeys.id')
+                .select('journeys.name', 'journeys.id'),
+        )
+        step.data.references = references.map(item => pick(item, ['id', 'name']))
+        return step
     }
 }
 
@@ -598,7 +622,7 @@ export const journeyStepTypes = [
     return a
 }, {})
 
-interface JourneyStepMapItem {
+export interface JourneyStepMapItem {
     type: string
     name?: string
     data?: Record<string, unknown>

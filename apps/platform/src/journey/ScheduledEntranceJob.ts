@@ -71,5 +71,4 @@ export default class ScheduledEntranceJob extends Job {
             await App.main.queue.enqueueBatch(items.map(({ id }) => JourneyProcessJob.from({ entrance_id: id })))
         })
     }
-
 }

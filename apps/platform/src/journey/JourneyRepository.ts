@@ -3,7 +3,7 @@ import { Database } from '../config/database'
 import { RequestError } from '../core/errors'
 import { PageParams } from '../core/searchParams'
 import Journey, { JourneyParams, UpdateJourneyParams } from './Journey'
-import { JourneyStep, JourneyEntrance, JourneyStepMap, toJourneyStepMap, JourneyStepChild } from './JourneyStep'
+import { JourneyStep, JourneyEntrance, JourneyStepMap, toJourneyStepMap, JourneyStepChild, journeyStepTypes } from './JourneyStep'
 import JourneyUserStep from './JourneyUserStep'
 import { createTagSubquery, getTags, setTags } from '../tags/TagService'
 import { User } from '../users/User'
@@ -136,6 +136,17 @@ export const getJourneyStepChildren = async (journeyId: number, db?: Database): 
             .orderBy('id', 'asc'),
         db,
     )
+}
+
+export const getJourneyStepMapForUI = async (journey: Journey) => {
+    const map = await getJourneyStepMap(journey.id)
+    for (const key of Object.keys(map)) {
+        const step = map[key]
+        const type = journeyStepTypes[step.type]
+        console.log('hydrate!', step.type)
+        map[key] = await type.hydrate(step, journey)
+    }
+    return map
 }
 
 export const getJourneyStepMap = async (journeyId: number) => {

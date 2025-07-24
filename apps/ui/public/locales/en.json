@@ -127,6 +127,7 @@
     "entrance_multiple_entries": "Multiple Entries",
     "entrance_multiple_entries_desc": "Should people enter this journey multiple times?",
     "entrance_occurs": " occurs",
+    "entrance_links": "Users can enter this journey by being sent from links in these journeys:",
     "entrance_simultaneous_entries": "Simultaneous Entries",
     "entrance_simultaneous_entries_desc": "If enabled, user could join this journey multiple times before finishing previous ones.",
     "entrance_trigger": "Trigger Entrance",

@@ -419,3 +419,13 @@
     align-items: center;
     justify-content: center;
 }
+
+.journey-step.entrance {
+    max-width: 325px;
+}
+
+.journey-step.entrance .references {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
