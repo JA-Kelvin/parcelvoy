@@ -18,6 +18,7 @@ import { acquireLock, LockError, releaseLock } from '../core/Lock'
 const CacheKeys = {
     user: (id: number) => `user:${id}`,
     userPatch: (id: number) => `lock:user:${id}:patch`,
+    devicePatch: (deviceId: string) => `lock:device:${deviceId}:patch`,
 }
 
 export const getUser = async (id: number, projectId?: number, trx?: Transaction): Promise<User | undefined> => {
@@ -159,7 +160,7 @@ const patchUser = async (fields: Partial<User>, existing: User, trx?: Transactio
 
     // Create a lock to prevent concurrent updates
     const key = CacheKeys.userPatch(existing.id)
-    const acquired = await acquireLock({ key, timeout: 300 })
+    const acquired = await acquireLock({ key, timeout: 90 })
     if (!acquired) throw new LockError()
 
     try {
@@ -217,10 +218,15 @@ export const deleteUser = async (projectId: number, externalId: string): Promise
 
 export const saveDevice = async (projectId: number, { external_id, anonymous_id, ...params }: DeviceParams, trx?: Transaction): Promise<number | undefined> => {
 
+    const { device_id, token } = params
     const user = await getUserFromClientId(projectId, { external_id, anonymous_id } as ClientIdentity, trx)
     if (!user) throw new RetryError()
 
-    const { device_id, token } = params
+    // Make sure we aren't trying to add the same device twice
+    const key = CacheKeys.devicePatch(device_id)
+    const acquired = await acquireLock({ key, timeout: 90 })
+    if (!acquired) throw new LockError()
+
     const device = await getDeviceFromIdOrToken(projectId, device_id, token, trx)
 
     // If we have a device, move it to the new user and update both users
@@ -252,6 +258,7 @@ export const saveDevice = async (projectId: number, { external_id, anonymous_id,
         if (previousUser) {
             await updateUserDeviceState(previousUser, hasPushDevice, trx)
         }
+        await releaseLock(key)
 
         return device.id
     } else {
@@ -268,6 +275,7 @@ export const saveDevice = async (projectId: number, { external_id, anonymous_id,
         // If user previously had another device, no need to update
         if (user.has_push_device || !token) return deviceId
         await updateUserDeviceState(user, true, trx)
+        await releaseLock(key)
 
         return deviceId
     }
