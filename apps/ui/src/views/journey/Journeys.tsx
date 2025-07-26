@@ -53,6 +53,7 @@ export default function Journeys() {
                     {
                         key: 'name',
                         title: t('name'),
+                        minWidth: '150px',
                     },
                     {
                         key: 'status',

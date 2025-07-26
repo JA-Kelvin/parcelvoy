@@ -62,7 +62,7 @@
 
 @media only screen and (max-width: 600px) {
     .heading {
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 10px;
     }
 }

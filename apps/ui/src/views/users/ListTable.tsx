@@ -67,6 +67,7 @@ export default function ListTable({ search, selectedRow, onSelectRow, title }: L
                     key: 'name',
                     title: t('name'),
                     sortable: true,
+                    minWidth: '200px',
                 },
                 {
                     key: 'type',

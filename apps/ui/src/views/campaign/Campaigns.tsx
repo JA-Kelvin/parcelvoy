@@ -128,6 +128,7 @@ export default function Campaigns() {
                             key: 'name',
                             title: t('name'),
                             sortable: true,
+                            minWidth: '225px',
                             cell: ({ item: { id, name, channel } }) => (
                                 <div className="multi-cell">
                                     { channel === 'email'
