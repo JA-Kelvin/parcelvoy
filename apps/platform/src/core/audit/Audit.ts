@@ -1,4 +1,4 @@
-import Model from '../core/Model'
+import Model from '../Model'
 
 export default class Audit extends Model {
     project_id!: number

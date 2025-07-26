@@ -1,5 +1,5 @@
-import { RequireAtLeastOne } from '../core/Types'
-import { deepDiff } from '../utilities'
+import { RequireAtLeastOne } from '../Types'
+import { deepDiff } from '../../utilities'
 import Audit, { Auditable } from './Audit'
 
 type AuditParams = {
