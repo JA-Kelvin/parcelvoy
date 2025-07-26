@@ -9,7 +9,7 @@ type CachedQueryParams = {
     cacheKey: string,
     itemMap: (data: any) => DataPair
     callback: HashScanCallback
-    beforeCallback?: (count: number) => Promise<void>
+    beforeCallback?: (count: number) => Promise<boolean>
     afterCallback?: () => Promise<void>
 }
 
@@ -18,7 +18,7 @@ export const processUsers = async ({
     cacheKey,
     itemMap,
     callback,
-    beforeCallback,
+    beforeCallback = async () => true,
     afterCallback,
 }: CachedQueryParams) => {
 
@@ -43,6 +43,7 @@ export const processUsers = async ({
     if (hashExists && isReady) {
         await cacheBatchReadHashAndDelete(redis, hashKey, callback)
         await cleanupQuery()
+        return
     }
 
     logger.info({
@@ -74,7 +75,9 @@ export const processUsers = async ({
     await chunker.flush()
 
     // Prepare anything before running, otherwise just set the ready flag
-    await beforeCallback?.(count)
+    const shouldContinue = await beforeCallback(count)
+    if (!shouldContinue) return
+
     await cacheSet(redis, hashKeyReady, 1, 86400)
 
     // Now that we have results, pass them back to the callback

@@ -143,7 +143,6 @@ export const getJourneyStepMapForUI = async (journey: Journey) => {
     for (const key of Object.keys(map)) {
         const step = map[key]
         const type = journeyStepTypes[step.type]
-        console.log('hydrate!', step.type)
         map[key] = await type.hydrate(step, journey)
     }
     return map
