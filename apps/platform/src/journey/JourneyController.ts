@@ -165,7 +165,6 @@ const journeyStepsParamsSchema: JSONSchemaType<JourneyStepMapParams> = {
 }
 
 router.get('/:journeyId/steps', async ctx => {
-    console.log('run!')
     ctx.body = await getJourneyStepMapForUI(ctx.state.journey!)
 })
 

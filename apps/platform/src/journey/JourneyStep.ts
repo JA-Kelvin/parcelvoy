@@ -210,6 +210,7 @@ export class JourneyDelay extends JourneyStep {
         this.hours = json?.data?.hours
         this.days = json?.data?.days
         this.time = json?.data?.time
+        this.date = json?.data?.date
         this.exclusion_days = json?.data?.exclusion_days
     }
 
@@ -262,13 +263,18 @@ export class JourneyDelay extends JourneyStep {
             }
             return nextDate
         } else if (this.format === 'date' && date) {
-            const compiledDate = compileTemplate(date)({
-                user: state.user.flatten(),
-                journey: state.stepData(),
-            })
-            const localDate = crossTimezoneCopy(new Date(compiledDate), 'UTC', timezone)
-            if (localDate < baseDate) return baseDate
-            return localDate
+            try {
+                const compiledDate = compileTemplate(date)({
+                    user: state.user.flatten(),
+                    journey: state.stepData(),
+                })
+                const localDate = crossTimezoneCopy(new Date(compiledDate), 'UTC', timezone)
+                if (localDate < baseDate) return baseDate
+                return localDate
+            } catch (error) {
+                logger.error({ error, date, timezone }, 'journey:delay:parse:error')
+                throw error
+            }
         }
 
         return baseDate
