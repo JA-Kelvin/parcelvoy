@@ -453,6 +453,7 @@ export interface WebhookTemplateData {
     endpoint: string
     body: Record<string, any>
     headers: Record<string, string>
+    cache_key?: string
 }
 
 export type Template = {

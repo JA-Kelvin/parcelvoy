@@ -208,6 +208,9 @@ export const truncateWords = function(str: string, count: number, suffix = ''): 
  * Get the base locale from a given locale string
  * @param locale
  */
-export const baseLocale = (locale: string): string => {
-    return locale.split('-')[0]
+export const baseLocale = (locale?: string): string | undefined => {
+    if (!locale) return ''
+    const parts = locale.split('-')
+    if (parts.length < 2) return locale
+    return parts[0]
 }

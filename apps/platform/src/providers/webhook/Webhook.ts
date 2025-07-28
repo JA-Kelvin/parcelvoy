@@ -3,6 +3,7 @@ export interface Webhook {
     endpoint: string
     headers: Record<string, string>
     body?: Record<string, any>
+    cacheKey?: string
 }
 
 export interface WebhookResponse {

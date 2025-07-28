@@ -133,6 +133,7 @@ const WebhookTable = ({ data }: { data: WebhookTemplateData }) => {
         [t('endpoint')]: data.endpoint ?? <Tag variant="warn">{t('missing')}</Tag>,
         [t('headers')]: JSON.stringify(data.headers),
         [t('body')]: JSON.stringify(data.body),
+        [t('cache_key')]: data.cache_key,
     }} />
 }
 
@@ -160,6 +161,11 @@ const WebhookForm = ({ form }: { form: UseFormReturn<TemplateUpdateParams, any> 
             name="data.body"
             label={t('body')}
             textarea />
+        <TextInput.Field
+            form={form}
+            name="data.cache_key"
+            label={t('cache_key')}
+            subtitle={t('cache_key_subtitle')} />
     </>
 }
 

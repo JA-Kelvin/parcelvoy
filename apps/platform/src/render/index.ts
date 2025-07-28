@@ -92,4 +92,14 @@ export const Render = (template: string, { user, event, journey, context }: Vari
     })
 }
 
+export const RenderObject = (object: Record<string, any> | undefined, variables: Variables) => {
+    if (!object) return {}
+    return Object.keys(object).reduce((body, key) => {
+        body[key] = typeof object[key] === 'object'
+            ? RenderObject(object[key], variables)
+            : Render(object[key], variables)
+        return body
+    }, {} as Record<string, any>)
+}
+
 export default Render

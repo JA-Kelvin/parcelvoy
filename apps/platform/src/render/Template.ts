@@ -1,4 +1,4 @@
-import Render, { Variables, Wrap } from '.'
+import Render, { RenderObject, Variables, Wrap } from '.'
 import { Webhook } from '../providers/webhook/Webhook'
 import { ChannelType } from '../config/channels'
 import Model, { ModelParams } from '../core/Model'
@@ -183,11 +183,7 @@ export class PushTemplate extends Template {
     }
 
     compile(variables: Variables): CompiledPush {
-        const custom = Object.keys(this.custom).reduce((body, key) => {
-            body[key] = Render(this.custom[key], variables)
-            return body
-        }, {} as Record<string, any>)
-
+        const custom = RenderObject(this.custom, variables)
         const url = this.compileUrl(variables)
 
         return {
@@ -239,6 +235,7 @@ export class WebhookTemplate extends Template {
     endpoint!: string
     body!: Record<string, any>
     headers: Record<string, string> = {}
+    cacheKey?: string
 
     parseJson(json: any) {
         super.parseJson(json)
@@ -247,26 +244,26 @@ export class WebhookTemplate extends Template {
         this.endpoint = json?.data.endpoint
         this.body = json?.data.body
         this.headers = json?.data.headers || {}
+        this.cacheKey = json?.data.cache_key
     }
 
     compile(variables: Variables): Webhook {
-        const headers = Object.keys(this.headers ?? {}).reduce((headers, key) => {
-            headers[key] = Render(this.headers[key], variables)
-            return headers
-        }, {} as Record<string, string>)
-
-        const body = Object.keys(this.body ?? {}).reduce((body, key) => {
-            body[key] = Render(this.body[key], variables)
-            return body
-        }, {} as Record<string, any>)
+        const headers = RenderObject(this.headers, variables)
+        const body = ['POST', 'PATCH', 'PUT'].includes(this.method)
+            ? RenderObject(this.body, variables)
+            : undefined
 
         const endpoint = Render(this.endpoint, variables)
+        const cacheKey = this.cacheKey
+            ? Render(this.cacheKey, variables)
+            : undefined
         const method = this.method
         return {
             endpoint,
             method,
             headers,
             body,
+            cacheKey,
         }
     }
 
