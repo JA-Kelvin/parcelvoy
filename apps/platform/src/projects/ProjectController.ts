@@ -106,7 +106,11 @@ router.post('/', async ctx => {
     const payload = validate(projectCreateParams, ctx.request.body)
     const { id, organization_id } = ctx.state.admin!
     const admin = await getAdmin(id, organization_id)
-    ctx.body = await createProject(admin!, payload)
+    ctx.body = {
+        ...await createProject(admin!, payload),
+        role: ctx.state.projectRole,
+        has_provider: await hasProvider(ctx.state.project.id),
+    }
 })
 
 export default router
@@ -165,7 +169,11 @@ subrouter.patch('/', async ctx => {
     requireProjectRole(ctx, 'admin')
     const { admin, project } = ctx.state
     const payload = validate(projectUpdateParams, ctx.request.body)
-    ctx.body = await updateProject(project.id, admin!.id, payload)
+    ctx.body = {
+        ...await updateProject(project.id, admin!.id, payload),
+        role: ctx.state.projectRole,
+        has_provider: await hasProvider(ctx.state.project.id),
+    }
 })
 
 subrouter.get('/data/paths', async ctx => {
