@@ -5,7 +5,7 @@ import { Series } from '../../types'
 import Tile, { TileGrid } from '../../ui/Tile'
 import PageContent from '../../ui/PageContent'
 import { SingleSelect } from '../../ui/form/SingleSelect'
-import { Button, DataTable, JsonPreview, Modal } from '../../ui'
+import { Alert, Button, DataTable, JsonPreview, Modal } from '../../ui'
 import { useSearchParams } from 'react-router'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
@@ -13,6 +13,7 @@ import './Performance.css'
 import { PreferencesContext } from '../../ui/PreferencesContext'
 import { formatDate } from '../../utils'
 import { useTranslation } from 'react-i18next'
+import { ErrorBoundary } from 'react-error-boundary'
 
 interface ChartProps {
     series: Series[]
@@ -188,22 +189,24 @@ export default function Performance() {
 
             {failed.length && <>
                 <Heading size="h4" title="Failed Jobs" />
-                <div className="failed">
-                    <DataTable items={failed} columns={[
-                        { key: 'id', title: 'ID' },
-                        { key: 'name', title: 'Name' },
-                        { key: 'attemptsMade', title: 'Attempts Made' },
-                        { key: 'failedReason', title: 'Reason' },
-                        {
-                            key: 'timestamp',
-                            title: 'Timestamp',
-                            cell: ({ item: { timestamp } }) => {
-                                const date = new Date(timestamp)
-                                return date.toLocaleString()
+                <ErrorBoundary fallback={<Alert variant="error" title="error">Failed to load failed jobs.</Alert>}>
+                    <div className="failed">
+                        <DataTable items={failed} columns={[
+                            { key: 'id', title: 'ID' },
+                            { key: 'name', title: 'Name' },
+                            { key: 'attemptsMade', title: 'Attempts Made' },
+                            { key: 'failedReason', title: 'Reason' },
+                            {
+                                key: 'timestamp',
+                                title: 'Timestamp',
+                                cell: ({ item: { timestamp } }) => {
+                                    const date = new Date(timestamp)
+                                    return date.toLocaleString()
+                                },
                             },
-                        },
-                    ]} onSelectRow={row => setSelectedFailed(row) }/>
-                </div>
+                        ]} onSelectRow={row => setSelectedFailed(row) }/>
+                    </div>
+                </ErrorBoundary>
             </>}
 
             <Modal
