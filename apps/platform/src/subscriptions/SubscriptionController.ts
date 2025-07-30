@@ -81,7 +81,7 @@ const strings: Record<any, Record<string, string>> = {
 
 const keysForLocale = (locale: string | undefined) => {
     const baseLocale = locale?.split('-')[0] ?? 'en'
-    return strings[baseLocale]
+    return strings[baseLocale] ?? strings.en
 }
 
 export const emailUnsubscribeSchema: JSONSchemaType<EmailUnsubscribeParams> = {
