@@ -106,10 +106,10 @@ router.post('/', async ctx => {
     const payload = validate(projectCreateParams, ctx.request.body)
     const { id, organization_id } = ctx.state.admin!
     const admin = await getAdmin(id, organization_id)
+    const project = await createProject(admin!, payload)
     ctx.body = {
-        ...await createProject(admin!, payload),
-        role: ctx.state.projectRole,
-        has_provider: await hasProvider(ctx.state.project.id),
+        ...project,
+        has_provider: await hasProvider(project.id),
     }
 })
 
