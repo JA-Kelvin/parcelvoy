@@ -544,6 +544,17 @@ export const updateCampaignProgress = async (campaign: Campaign): Promise<void> 
 
     // If nothing has changed, continue otherwise update
     if (shallowEqual(campaign.delivery, delivery) && state === campaign.state) return
+
+    if (state !== campaign.state) {
+        await createAuditLog({
+            project_id: campaign.project_id,
+            event: 'state',
+            object: { ...campaign, pending, delivery, state },
+            previous: campaign,
+        })
+        logger.info({ campaignId: campaign.id, state, pending, delivery }, 'campaign:state:update')
+    }
+
     await Campaign.update(qb => qb.where('id', campaign.id).where('project_id', campaign.project_id), { state, delivery })
 }
 

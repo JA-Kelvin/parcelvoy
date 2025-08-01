@@ -29,7 +29,7 @@
     "balancer_edit_desc": "Randomly split users across paths. Configure an optional rate limit to limit the number of users that go down a path over a given time period.",
     "bcc": "BCC",
     "blast": "Blast",
-    "body": "Body (JSON)",
+    "body": "Body",
     "bounced": "Bounced",
     "cache_key": "Cache Key",
     "cache_key_subtitle": "A unique key to cache the response for this webhook. Only use if you intend to cache the response, leave empty to not cache.",

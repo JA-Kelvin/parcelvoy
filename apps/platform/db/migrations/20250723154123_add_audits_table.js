@@ -9,7 +9,7 @@ exports.up = async function(knex) {
             .onDelete('CASCADE')
         table.integer('admin_id')
             .unsigned()
-            .notNullable()
+            .nullable()
             .references('id')
             .inTable('admins')
             .onDelete('CASCADE')

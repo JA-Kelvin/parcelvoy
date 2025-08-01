@@ -69,6 +69,7 @@ export const reservedPaths: Record<RuleGroup, string[]> = {
         'timezone',
         'locale',
         'created_at',
+        'has_push_device',
     ],
     event: [
         'name',

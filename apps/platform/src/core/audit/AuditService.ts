@@ -12,10 +12,14 @@ type AuditParams = {
 type AuditCreateParams = RequireAtLeastOne<{
     project_id: number
     event: string
-    admin_id: number
+    admin_id?: number
+} & ({
     object?: Auditable
+    previous?: Record<string, any>
+} | {
+    object?: Record<string, any>
     previous?: Auditable
-}, 'object' | 'previous'>
+}), 'object' | 'previous'>
 
 export const createAuditLog = async (data: AuditCreateParams) => {
     return await Audit.insert({
@@ -24,8 +28,8 @@ export const createAuditLog = async (data: AuditCreateParams) => {
         admin_id: data.admin_id,
         object: data.object,
         object_changes: deepDiff(data.object ?? {}, data.previous ?? {}),
-        item_id: data.object ? data.object.id : data.previous?.id,
-        item_type: data.object ? data.object.$tableName : data.previous?.$tableName,
+        item_id: data.object?.id ?? data.previous?.id,
+        item_type: data.object?.$tableName ?? data.previous?.$tableName,
     })
 }
 
