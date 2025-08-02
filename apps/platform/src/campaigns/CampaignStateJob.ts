@@ -7,6 +7,10 @@ import App from '../app'
 export default class CampaignStateJob extends Job {
     static $name = 'campaign_state_job'
 
+    static from(): CampaignStateJob {
+        return new this().deduplicationKey(this.$name)
+    }
+
     static async handler() {
 
         // Fetch anything that is currently running, has finished
@@ -18,7 +22,10 @@ export default class CampaignStateJob extends Job {
                 qb.where('state', 'finished')
                     .where('send_at', '>', subDays(Date.now(), 2))
             })
-            .orWhereIn('id', openedCampaignIds),
+            .orWhere(function(qb) {
+                qb.whereIn('id', openedCampaignIds)
+                    .whereNotIn('state', ['draft', 'aborted'])
+            }),
         )
 
         for (const campaign of campaigns) {
