@@ -28,6 +28,7 @@ export default class Queue {
     }
 
     async dequeue(job: EncodedJob): Promise<boolean> {
+        if (!job || !job.name) return false
         const handler = this.jobs[job.name]
         if (!handler) {
             App.main.error.notify(new Error(`No handler found for job: ${job.name}`))

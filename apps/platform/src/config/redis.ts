@@ -112,6 +112,10 @@ export const cacheBatchReadHashAndDelete = async (
     await redis.del(hashKey)
 }
 
+export const cacheBatchLength = async (redis: Redis, hashKey: string): Promise<number> => {
+    return await redis.hlen(hashKey)
+}
+
 export const cacheHashExists = async (redis: Redis, hashKey: string): Promise<boolean> => {
     const exists = await redis.exists(hashKey)
     return exists !== 0

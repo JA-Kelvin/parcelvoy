@@ -4,7 +4,7 @@ import TextJob from '../providers/text/TextJob'
 import EmailJob from '../providers/email/EmailJob'
 import { logger } from '../config/logger'
 import { User } from '../users/User'
-import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendReferenceType, CampaignSendState, SentCampaign } from './Campaign'
+import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendReferenceType, CampaignSendState, CampaignState, SentCampaign } from './Campaign'
 import List from '../lists/List'
 import Subscription, { SubscriptionState } from '../subscriptions/Subscription'
 import { RequestError } from '../core/errors'
@@ -334,10 +334,9 @@ export const updateSendState = async ({ campaign, user, state = 'sent', referenc
 }
 
 const cleanupSendListGeneration = async (campaign: Campaign) => {
-    const { pending, ...delivery } = await campaignDeliveryProgress(campaign.id)
 
     // Update the state & count of the campaign
-    await Campaign.update(qb => qb.where('id', campaign.id).where('project_id', campaign.project_id), { state: 'scheduled', delivery })
+    await updateCampaignProgress(campaign, 'scheduled')
 
     // Clear out all the keys related to the generation
     await cleanupGenerationCacheKeys(campaign)
@@ -529,7 +528,7 @@ export const campaignDeliveryProgress = async (campaignId: number): Promise<Camp
     }
 }
 
-export const updateCampaignProgress = async (campaign: Campaign): Promise<void> => {
+export const updateCampaignProgress = async (campaign: Campaign, stateOverride?: CampaignState): Promise<void> => {
     const currentState = (pending: number, delivery: CampaignDelivery) => {
         if (campaign.type === 'trigger') return 'running'
         if (campaign.state === 'draft') return 'draft'
@@ -540,7 +539,7 @@ export const updateCampaignProgress = async (campaign: Campaign): Promise<void> 
     }
 
     const { pending, ...delivery } = await campaignDeliveryProgress(campaign.id)
-    const state = currentState(pending, delivery)
+    const state = stateOverride ?? currentState(pending, delivery)
 
     // If nothing has changed, continue otherwise update
     if (shallowEqual(campaign.delivery, delivery) && state === campaign.state) return

@@ -1,7 +1,7 @@
 import { Chunker } from '../utilities'
 import App from '../app'
 import { logger } from '../config/logger'
-import { cacheBatchHash, cacheBatchReadHashAndDelete, cacheDel, cacheGet, cacheHashExists, cacheSet, DataPair, HashScanCallback } from '../config/redis'
+import { cacheBatchHash, cacheBatchLength, cacheBatchReadHashAndDelete, cacheDel, cacheGet, cacheHashExists, cacheSet, DataPair, HashScanCallback } from '../config/redis'
 import { User } from './User'
 
 type CachedQueryParams = {
@@ -28,10 +28,18 @@ export const processUsers = async ({
     const hashExists = await cacheHashExists(redis, hashKey)
     const isReady = await cacheGet(redis, hashKeyReady)
 
-    const cleanupQuery = async () => {
+    const processFromCache = async () => {
+        logger.info({
+            key: hashKey,
+            count: await cacheBatchLength(redis, hashKey),
+        }, 'users:generate:loading:started')
+
+        await cacheBatchReadHashAndDelete(redis, hashKey, callback)
         await afterCallback?.()
         await cacheDel(redis, hashKeyReady)
         await cacheDel(redis, hashKey)
+
+        logger.info({ key: hashKey }, 'users:generate:loading:finished')
     }
 
     logger.info({
@@ -41,15 +49,14 @@ export const processUsers = async ({
 
     // Return users from the hash if they exist
     if (hashExists && isReady) {
-        await cacheBatchReadHashAndDelete(redis, hashKey, callback)
-        await cleanupQuery()
+        await processFromCache()
         return
     }
 
     logger.info({
         query,
         key: hashKey,
-    }, 'users:generate:querying')
+    }, 'users:generate:querying:started')
 
     // Generate the initial send list from ClickHouse
     const result = await User.clickhouse().query(query, {}, {
@@ -74,6 +81,11 @@ export const processUsers = async ({
     }
     await chunker.flush()
 
+    logger.info({
+        key: hashKey,
+        count,
+    }, 'users:generate:querying:finished')
+
     // Prepare anything before running, otherwise just set the ready flag
     const shouldContinue = await beforeCallback(count)
     if (!shouldContinue) return
@@ -81,6 +93,5 @@ export const processUsers = async ({
     await cacheSet(redis, hashKeyReady, 1, 86400)
 
     // Now that we have results, pass them back to the callback
-    await cacheBatchReadHashAndDelete(redis, hashKey, callback)
-    await cleanupQuery()
+    await processFromCache()
 }

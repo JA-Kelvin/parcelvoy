@@ -41,7 +41,7 @@ export default class ScheduledEntranceJob extends Job {
         const query = getRuleQuery(list.project_id, list.rule)
         await processUsers({
             query,
-            cacheKey: `journeys:${journey}:entrance:${entrance.id}:users`,
+            cacheKey: `journeys:${journey.id}:entrance:${entrance.id}:users`,
             itemMap: (user) => ({
                 key: user.id,
                 value: `${user.id}`,
