@@ -210,6 +210,9 @@ services:
     environment:
       CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    ports:
+      - 8123:8123
+      - 9000:9000
     expose:
       - 8123
       - 9000
