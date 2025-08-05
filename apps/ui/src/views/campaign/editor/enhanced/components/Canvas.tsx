@@ -186,13 +186,14 @@ const Canvas: React.FC<CanvasProps> = ({
                     )
                     : (
                         <div className="canvas-empty">
-                        <div className="empty-state">
-                            <div className="empty-icon">📧</div>
-                            <h3>Start Building Your Email</h3>
-                            <p>Drag components from the left panel to begin creating your email template.</p>
+                            <div className="empty-state">
+                                <div className="empty-icon">📧</div>
+                                <h3>Start Building Your Email</h3>
+                                <p>Drag components from the left panel to begin creating your email template.</p>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {isOver && canDrop && (
                     <div className="drop-indicator">

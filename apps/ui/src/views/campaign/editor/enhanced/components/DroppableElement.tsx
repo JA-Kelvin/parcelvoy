@@ -1,19 +1,19 @@
 // Droppable Element Component for Enhanced MJML Editor
-import React, { useState, useRef } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
-import { EditorElement } from '../types';
-import './DroppableElement.css';
+import React, { useState, useRef } from 'react'
+import { useDrag, useDrop } from 'react-dnd'
+import { EditorElement } from '../types'
+import './DroppableElement.css'
 
 interface DroppableElementProps {
-    element: EditorElement;
-    isSelected: boolean;
-    isPreviewMode: boolean;
-    onSelect: (elementId: string | null) => void;
-    onUpdate: (elementId: string, attributes: Record<string, any>, content?: string) => void;
-    onDelete: (elementId: string) => void;
-    onMove: (elementId: string, newParentId: string, newIndex: number) => void;
-    onElementAdd: (element: EditorElement, parentId?: string, index?: number) => void;
-    children?: React.ReactNode;
+    element: EditorElement
+    isSelected: boolean
+    isPreviewMode: boolean
+    onSelect: (elementId: string | null) => void
+    onUpdate: (elementId: string, attributes: Record<string, any>, content?: string) => void
+    onDelete: (elementId: string) => void
+    onMove: (elementId: string, newParentId: string, newIndex: number) => void
+    onElementAdd: (element: EditorElement, parentId?: string, index?: number) => void
+    children?: React.ReactNode
 }
 
 const DroppableElement: React.FC<DroppableElementProps> = ({
@@ -25,31 +25,31 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     onDelete,
     onMove,
     onElementAdd,
-    children
+    children,
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const elementRef = useRef<HTMLDivElement>(null);
+    const [isHovered, setIsHovered] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const elementRef = useRef<HTMLDivElement>(null)
 
     // Drag functionality for moving elements
     const [{ isDragging }, drag] = useDrag({
         type: 'element',
         item: { id: element.id, type: element.type },
         collect: (monitor) => ({
-            isDragging: monitor.isDragging()
+            isDragging: monitor.isDragging(),
         }),
-        canDrag: !isPreviewMode
-    });
+        canDrag: !isPreviewMode,
+    })
 
     // Drop functionality for accepting other elements
     const [{ isOver, canDrop }, drop] = useDrop({
         accept: ['element', 'component'],
         drop: (item: any, monitor) => {
-            if (monitor.didDrop()) return;
-            
+            if (monitor.didDrop()) return
+
             if (item.id && item.id !== element.id) {
                 // Moving existing element
-                onMove(item.id, element.id, 0);
+                onMove(item.id, element.id, 0)
             } else if (item.type && !item.id) {
                 // Adding new component
                 const newElement: EditorElement = {
@@ -58,33 +58,36 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     tagName: item.tagName || item.type,
                     attributes: { ...item.defaultAttributes },
                     children: [],
-                    content: item.type === 'mj-text' ? 'Your text here' : 
-                                    item.type === 'mj-button' ? 'Click me' : undefined
-                };
-                onElementAdd(newElement, element.id);
+                    content: item.type === 'mj-text'
+                        ? 'Your text here'
+                        : item.type === 'mj-button'
+                            ? 'Click me'
+                            : undefined,
+                }
+                onElementAdd(newElement, element.id)
             }
         },
         collect: (monitor) => ({
             isOver: monitor.isOver({ shallow: true }),
-            canDrop: monitor.canDrop()
+            canDrop: monitor.canDrop(),
         }),
         canDrop: (item) => {
             // Define drop rules based on MJML structure
-            const allowedChildren = getElementAllowedChildren(element.tagName);
-            return allowedChildren.includes(item.type || item.tagName);
-        }
-    });
+            const allowedChildren = getElementAllowedChildren(element.tagName)
+            return allowedChildren.includes(item.type || item.tagName)
+        },
+    })
 
     // Combine drag and drop refs
     const combinedRef = (node: HTMLDivElement | null) => {
         if (node) {
-            (elementRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            (elementRef as React.MutableRefObject<HTMLDivElement | null>).current = node
             if (!isPreviewMode) {
-                drag(node);
-                drop(node);
+                drag(node)
+                drop(node)
             }
         }
-    };
+    }
 
     const getElementAllowedChildren = (tagName: string): string[] => {
         const rules: Record<string, string[]> = {
@@ -95,125 +98,129 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             'mj-wrapper': ['mj-section'],
             'mj-hero': ['mj-text', 'mj-button'],
             'mj-navbar': ['mj-navbar-link'],
-            'mj-social': ['mj-social-element']
-        };
-        return rules[tagName] || [];
-    };
+            'mj-social': ['mj-social-element'],
+        }
+        return rules[tagName] || []
+    }
 
     const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
+        e.stopPropagation()
         if (!isPreviewMode) {
-            onSelect(element.id);
+            onSelect(element.id)
         }
-    };
+    }
 
     const handleDoubleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
+        e.stopPropagation()
         if (!isPreviewMode && (element.tagName === 'mj-text' || element.tagName === 'mj-button')) {
-            setIsEditing(true);
+            setIsEditing(true)
         }
-    };
+    }
 
     const handleContentEdit = (newContent: string) => {
-        onUpdate(element.id, element.attributes, newContent);
-        setIsEditing(false);
-    };
+        onUpdate(element.id, element.attributes, newContent)
+        setIsEditing(false)
+    }
 
     const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onDelete(element.id);
-    };
+        e.stopPropagation()
+        onDelete(element.id)
+    }
 
     const getElementStyle = (): React.CSSProperties => {
         const baseStyle: React.CSSProperties = {
             opacity: isDragging ? 0.5 : 1,
-            position: 'relative'
-        };
+            position: 'relative',
+        }
 
         // Apply MJML attributes as CSS styles
-        const { attributes } = element;
-        
+        const { attributes } = element
+
         if (attributes['background-color']) {
-            baseStyle.backgroundColor = attributes['background-color'];
+            baseStyle.backgroundColor = attributes['background-color']
         }
-        
-        if (attributes['color']) {
-            baseStyle.color = attributes['color'];
+
+        if (attributes.color) {
+            baseStyle.color = attributes.color
         }
-        
+
         if (attributes['font-size']) {
-            baseStyle.fontSize = attributes['font-size'];
+            baseStyle.fontSize = attributes['font-size']
         }
-        
-        if (attributes['padding']) {
-            baseStyle.padding = attributes['padding'];
+
+        if (attributes.padding) {
+            baseStyle.padding = attributes.padding
         }
-        
-        if (attributes['margin']) {
-            baseStyle.margin = attributes['margin'];
+
+        if (attributes.margin) {
+            baseStyle.margin = attributes.margin
         }
 
         if (attributes['text-align']) {
-            baseStyle.textAlign = attributes['text-align'] as any;
+            baseStyle.textAlign = attributes['text-align']
         }
 
-        return baseStyle;
-    };
+        return baseStyle
+    }
 
     const renderElementContent = () => {
-        const { tagName, content, attributes } = element;
+        const { tagName, content, attributes } = element
 
         switch (tagName) {
             case 'mj-text':
-                return isEditing ? (
-                    <ContentEditor
-                        content={content || ''}
-                        onSave={handleContentEdit}
-                        onCancel={() => setIsEditing(false)}
-                    />
-                ) : (
-                    <div 
-                        className="mj-text-content"
-                        dangerouslySetInnerHTML={{ __html: content || 'Your text here' }}
-                    />
-                );
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <div
+                            className="mj-text-content"
+                            dangerouslySetInnerHTML={{ __html: content ?? 'Your text here' }}
+                        />
+                    )
 
             case 'mj-button':
-                return isEditing ? (
-                    <ContentEditor
-                        content={content || ''}
-                        onSave={handleContentEdit}
-                        onCancel={() => setIsEditing(false)}
-                    />
-                ) : (
-                    <button 
-                        className="mj-button-content"
-                        style={{
-                            backgroundColor: attributes['background-color'] || '#007bff',
-                            color: attributes['color'] || '#ffffff',
-                            borderRadius: attributes['border-radius'] || '4px',
-                            padding: attributes['padding'] || '12px 24px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: attributes['font-size'] || '16px'
-                        }}
-                    >
-                        {content || 'Click me'}
-                    </button>
-                );
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <button
+                            className="mj-button-content"
+                            style={{
+                                backgroundColor: attributes['background-color'] || '#007bff',
+                                color: attributes.color || '#ffffff',
+                                borderRadius: attributes['border-radius'] || '4px',
+                                padding: attributes.Padding || '12px 24px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: attributes['font-size'] || '16px',
+                            }}
+                        >
+                            {content ?? 'Click me'}
+                        </button>
+                    )
 
             case 'mj-image':
                 return (
                     <img
-                        src={attributes['src'] || 'https://via.placeholder.com/600x200?text=Image'}
-                        alt={attributes['alt'] || 'Image'}
+                        src={attributes.src || 'https://via.placeholder.com/600x200?text=Image'}
+                        alt={attributes.alt || 'Image'}
                         style={{
-                            width: attributes['width'] || '100%',
+                            width: attributes.width || '100%',
                             height: 'auto',
-                            display: 'block'
+                            display: 'block',
                         }}
                     />
-                );
+                )
 
             case 'mj-divider':
                 return (
@@ -222,59 +229,59 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             borderColor: attributes['border-color'] || '#cccccc',
                             borderWidth: attributes['border-width'] || '1px',
                             borderStyle: 'solid',
-                            margin: '10px 0'
+                            margin: '10px 0',
                         }}
                     />
-                );
+                )
 
             case 'mj-spacer':
                 return (
                     <div
                         style={{
-                            height: attributes['height'] || '20px',
-                            backgroundColor: 'transparent'
+                            height: attributes.height || '20px',
+                            backgroundColor: 'transparent',
                         }}
                     />
-                );
+                )
 
             case 'mj-section':
                 return (
                     <div className="mj-section-content">
                         {children}
                     </div>
-                );
+                )
 
             case 'mj-column':
                 return (
                     <div className="mj-column-content">
                         {children}
                     </div>
-                );
+                )
 
             default:
                 return (
                     <div className={`${tagName}-content`}>
-                        {children || content || `${tagName} element`}
+                        {children ?? content ?? `${tagName} element`}
                     </div>
-                );
+                )
         }
-    };
+    }
 
     const getElementClasses = () => {
         const classes = [
             'droppable-element',
             `element-${element.tagName}`,
-            element.tagName
-        ];
+            element.tagName,
+        ]
 
-        if (isSelected) classes.push('selected');
-        if (isHovered) classes.push('hovered');
-        if (isDragging) classes.push('dragging');
-        if (isOver && canDrop) classes.push('drop-target');
-        if (isPreviewMode) classes.push('preview-mode');
+        if (isSelected) classes.push('selected')
+        if (isHovered) classes.push('hovered')
+        if (isDragging) classes.push('dragging')
+        if (isOver && canDrop) classes.push('drop-target')
+        if (isPreviewMode) classes.push('preview-mode')
 
-        return classes.join(' ');
-    };
+        return classes.join(' ')
+    }
 
     return (
         <div
@@ -289,15 +296,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             data-element-type={element.tagName}
         >
             {renderElementContent()}
-            
+
             {!isPreviewMode && (isSelected || isHovered) && (
                 <div className="element-controls">
                     <button
                         className="control-button edit"
                         onClick={(e) => {
-                            e.stopPropagation();
+                            e.stopPropagation()
                             if (element.tagName === 'mj-text' || element.tagName === 'mj-button') {
-                                setIsEditing(true);
+                                setIsEditing(true)
                             }
                         }}
                         title="Edit content"
@@ -320,36 +327,36 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 </div>
             )}
         </div>
-    );
-};
+    )
+}
 
 // Content Editor Component for inline editing
 interface ContentEditorProps {
-    content: string;
-    onSave: (content: string) => void;
-    onCancel: () => void;
+    content: string
+    onSave: (content: string) => void
+    onCancel: () => void
 }
 
 const ContentEditor: React.FC<ContentEditorProps> = ({ content, onSave, onCancel }) => {
-    const [editContent, setEditContent] = useState(content);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [editContent, setEditContent] = useState(content)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     React.useEffect(() => {
         if (textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.select();
+            textareaRef.current.focus()
+            textareaRef.current.select()
         }
-    }, []);
+    }, [])
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            onSave(editContent);
+            e.preventDefault()
+            onSave(editContent)
         } else if (e.key === 'Escape') {
-            e.preventDefault();
-            onCancel();
+            e.preventDefault()
+            onCancel()
         }
-    };
+    }
 
     return (
         <div className="content-editor">
@@ -366,7 +373,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onSave, onCancel
                 Press Enter to save, Escape to cancel
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default DroppableElement;
+export default DroppableElement

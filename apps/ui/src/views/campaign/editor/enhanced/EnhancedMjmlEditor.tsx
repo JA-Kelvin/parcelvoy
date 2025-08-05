@@ -27,90 +27,90 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
     const { type, payload } = action
 
     switch (type) {
-    case 'ADD_ELEMENT': {
-        const { element, parentId, index } = payload
-        const newElements = addElementRecursive(state.present, element, parentId, index)
-        return {
-            present: newElements,
-            history: [...state.history.slice(-49), state.present],
-            future: [],
-            selectedElementId: element.id,
+        case 'ADD_ELEMENT': {
+            const { element, parentId, index } = payload
+            const newElements = addElementRecursive(state.present, element, parentId, index)
+            return {
+                present: newElements,
+                history: [...state.history.slice(-49), state.present],
+                future: [],
+                selectedElementId: element.id,
+            }
         }
-    }
 
-    case 'UPDATE_ELEMENT': {
-        const { elementId, attributes, content } = payload
-        const newElements = updateElementRecursive(state.present, elementId, attributes, content)
-        return {
-            present: newElements,
-            history: [...state.history.slice(-49), state.present],
-            future: [],
-            selectedElementId: state.selectedElementId,
+        case 'UPDATE_ELEMENT': {
+            const { elementId, attributes, content } = payload
+            const newElements = updateElementRecursive(state.present, elementId, attributes, content)
+            return {
+                present: newElements,
+                history: [...state.history.slice(-49), state.present],
+                future: [],
+                selectedElementId: state.selectedElementId,
+            }
         }
-    }
 
-    case 'DELETE_ELEMENT': {
-        const { elementId } = payload
-        const newElements = deleteElementRecursive(state.present, elementId)
-        return {
-            present: newElements,
-            history: [...state.history.slice(-49), state.present],
-            future: [],
-            selectedElementId: state.selectedElementId === elementId ? null : state.selectedElementId,
+        case 'DELETE_ELEMENT': {
+            const { elementId } = payload
+            const newElements = deleteElementRecursive(state.present, elementId)
+            return {
+                present: newElements,
+                history: [...state.history.slice(-49), state.present],
+                future: [],
+                selectedElementId: state.selectedElementId === elementId ? null : state.selectedElementId,
+            }
         }
-    }
 
-    case 'SELECT_ELEMENT': {
-        return {
-            ...state,
-            selectedElementId: payload.elementId,
+        case 'SELECT_ELEMENT': {
+            return {
+                ...state,
+                selectedElementId: payload.elementId,
+            }
         }
-    }
 
-    case 'UNDO': {
-        if (state.history.length === 0) return state
-        const previous = state.history[state.history.length - 1]
-        return {
-            present: previous,
-            history: state.history.slice(0, -1),
-            future: [state.present, ...state.future.slice(0, 49)],
-            selectedElementId: null,
+        case 'UNDO': {
+            if (state.history.length === 0) return state
+            const previous = state.history[state.history.length - 1]
+            return {
+                present: previous,
+                history: state.history.slice(0, -1),
+                future: [state.present, ...state.future.slice(0, 49)],
+                selectedElementId: null,
+            }
         }
-    }
 
-    case 'REDO': {
-        if (state.future.length === 0) return state
-        const next = state.future[0]
-        return {
-            present: next,
-            history: [...state.history.slice(-49), state.present],
-            future: state.future.slice(1),
-            selectedElementId: null,
+        case 'REDO': {
+            if (state.future.length === 0) return state
+            const next = state.future[0]
+            return {
+                present: next,
+                history: [...state.history.slice(-49), state.present],
+                future: state.future.slice(1),
+                selectedElementId: null,
+            }
         }
-    }
 
-    case 'LOAD_TEMPLATE': {
-        const { elements } = payload
-        return {
-            present: elements,
-            history: [],
-            future: [],
-            selectedElementId: null,
+        case 'LOAD_TEMPLATE': {
+            const { elements } = payload
+            return {
+                present: elements,
+                history: [],
+                future: [],
+                selectedElementId: null,
+            }
         }
-    }
 
-    case 'CLEAR_CANVAS': {
-        const defaultElements = createDefaultMjmlStructure()
-        return {
-            present: defaultElements,
-            history: [...state.history.slice(-49), state.present],
-            future: [],
-            selectedElementId: null,
+        case 'CLEAR_CANVAS': {
+            const defaultElements = createDefaultMjmlStructure()
+            return {
+                present: defaultElements,
+                history: [...state.history.slice(-49), state.present],
+                future: [],
+                selectedElementId: null,
+            }
         }
-    }
 
-    default:
-        return state
+        default:
+            return state
     }
 }
 
@@ -210,7 +210,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     ...template.data,
                     editor: 'enhanced-visual',
                     mjml: mjmlString,
-                    html: html,
+                    html,
                     elements: editorState.present,
                 },
             }
