@@ -1,257 +1,257 @@
 /* Enhanced MJML Editor Styles for Parcelvoy */
 .enhanced-mjml-editor {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #f8fafc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .enhanced-mjml-editor.preview-mode {
-  background: #ffffff;
+    background: #ffffff;
 }
 
 /* Toolbar */
 .editor-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    z-index: 10;
 }
 
 .toolbar-left,
 .toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .toolbar-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .toolbar-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  color: #374151;
-  transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #374151;
+    transition: all 0.2s ease;
 }
 
 .toolbar-button:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+    background: #f3f4f6;
+    border-color: #9ca3af;
 }
 
 .toolbar-button:active:not(:disabled) {
-  background: #e5e7eb;
-  transform: translateY(1px);
+    background: #e5e7eb;
+    transform: translateY(1px);
 }
 
 .toolbar-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .toolbar-button.active {
-  background: #3b82f6;
-  color: #ffffff;
-  border-color: #3b82f6;
+    background: #3b82f6;
+    color: #ffffff;
+    border-color: #3b82f6;
 }
 
 .toolbar-divider {
-  width: 1px;
-  height: 24px;
-  background: #d1d5db;
-  margin: 0 4px;
+    width: 1px;
+    height: 24px;
+    background: #d1d5db;
+    margin: 0 4px;
 }
 
 .template-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  text-align: center;
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    text-align: center;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Editor Content */
 .editor-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
+    display: flex;
+    flex: 1;
+    overflow: hidden;
 }
 
 /* Panel transitions */
 .enhanced-mjml-editor .components-panel,
 .enhanced-mjml-editor .properties-panel {
-  transition: width 0.3s ease;
+    transition: width 0.3s ease;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .editor-toolbar {
-    padding: 8px 12px;
-  }
-  
-  .toolbar-button {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-  
-  .template-name {
-    font-size: 13px;
-    max-width: 200px;
-  }
-  
-  .toolbar-left,
-  .toolbar-right {
-    gap: 6px;
-  }
+    .editor-toolbar {
+        padding: 8px 12px;
+    }
+    
+    .toolbar-button {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    
+    .template-name {
+        font-size: 13px;
+        max-width: 200px;
+    }
+    
+    .toolbar-left,
+    .toolbar-right {
+        gap: 6px;
+    }
 }
 
 @media (max-width: 768px) {
-  .enhanced-mjml-editor {
-    flex-direction: column;
-  }
-  
-  .editor-content {
-    flex-direction: column;
-  }
-  
-  .toolbar-center {
-    display: none;
-  }
-  
-  .editor-toolbar {
-    padding: 6px 8px;
-  }
-  
-  .toolbar-button {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
+    .enhanced-mjml-editor {
+        flex-direction: column;
+    }
+    
+    .editor-content {
+        flex-direction: column;
+    }
+    
+    .toolbar-center {
+        display: none;
+    }
+    
+    .editor-toolbar {
+        padding: 6px 8px;
+    }
+    
+    .toolbar-button {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
 }
 
 /* Dark Theme Support */
 @media (prefers-color-scheme: dark) {
-  .enhanced-mjml-editor {
-    background: #111827;
-  }
-  
-  .editor-toolbar {
-    background: #1f2937;
-    border-bottom-color: #374151;
-  }
-  
-  .toolbar-button {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-  }
-  
-  .toolbar-button:hover:not(:disabled) {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
-  
-  .toolbar-button:active:not(:disabled) {
-    background: #6b7280;
-  }
-  
-  .toolbar-button.active {
-    background: #60a5fa;
-    border-color: #60a5fa;
-  }
-  
-  .toolbar-divider {
-    background: #4b5563;
-  }
-  
-  .template-name {
-    color: #f9fafb;
-  }
+    .enhanced-mjml-editor {
+        background: #111827;
+    }
+    
+    .editor-toolbar {
+        background: #1f2937;
+        border-bottom-color: #374151;
+    }
+    
+    .toolbar-button {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .toolbar-button:hover:not(:disabled) {
+        background: #4b5563;
+        border-color: #6b7280;
+    }
+    
+    .toolbar-button:active:not(:disabled) {
+        background: #6b7280;
+    }
+    
+    .toolbar-button.active {
+        background: #60a5fa;
+        border-color: #60a5fa;
+    }
+    
+    .toolbar-divider {
+        background: #4b5563;
+    }
+    
+    .template-name {
+        color: #f9fafb;
+    }
 }
 
 /* Loading States */
 .enhanced-mjml-editor.loading {
-  pointer-events: none;
+    pointer-events: none;
 }
 
 .enhanced-mjml-editor.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
 /* Focus Management */
 .enhanced-mjml-editor:focus-within .toolbar-button:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }
 
 /* Print Styles */
 @media print {
-  .enhanced-mjml-editor {
-    background: #ffffff;
-  }
-  
-  .editor-toolbar {
-    display: none;
-  }
-  
-  .editor-content {
-    height: auto;
-  }
-  
-  .components-panel,
-  .properties-panel {
-    display: none;
-  }
+    .enhanced-mjml-editor {
+        background: #ffffff;
+    }
+    
+    .editor-toolbar {
+        display: none;
+    }
+    
+    .editor-content {
+        height: auto;
+    }
+    
+    .components-panel,
+    .properties-panel {
+        display: none;
+    }
 }
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
-  .toolbar-button {
-    border-width: 2px;
-  }
-  
-  .toolbar-button:focus {
-    outline-width: 3px;
-  }
+    .toolbar-button {
+        border-width: 2px;
+    }
+    
+    .toolbar-button:focus {
+        outline-width: 3px;
+    }
 }
 
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-  .enhanced-mjml-editor .components-panel,
-  .enhanced-mjml-editor .properties-panel,
-  .toolbar-button {
-    transition: none;
-  }
+    .enhanced-mjml-editor .components-panel,
+    .enhanced-mjml-editor .properties-panel,
+    .toolbar-button {
+        transition: none;
+    }
 }

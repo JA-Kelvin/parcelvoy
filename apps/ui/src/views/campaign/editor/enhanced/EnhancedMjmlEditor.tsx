@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useReducer, useState } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { EditorElement, EditorComponent, HistoryState, EnhancedTemplate, EditorAction } from './types'
+import { EditorElement, HistoryState, EnhancedTemplate, EditorAction } from './types'
 import {
     parseMJMLString,
     editorElementsToMjmlString,
@@ -27,90 +27,90 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
     const { type, payload } = action
 
     switch (type) {
-        case 'ADD_ELEMENT': {
-            const { element, parentId, index } = payload
-            const newElements = addElementRecursive(state.present, element, parentId, index)
-            return {
-                present: newElements,
-                history: [...state.history.slice(-49), state.present],
-                future: [],
-                selectedElementId: element.id,
-            }
+    case 'ADD_ELEMENT': {
+        const { element, parentId, index } = payload
+        const newElements = addElementRecursive(state.present, element, parentId, index)
+        return {
+            present: newElements,
+            history: [...state.history.slice(-49), state.present],
+            future: [],
+            selectedElementId: element.id,
         }
+    }
 
-        case 'UPDATE_ELEMENT': {
-            const { elementId, attributes, content } = payload
-            const newElements = updateElementRecursive(state.present, elementId, attributes, content)
-            return {
-                present: newElements,
-                history: [...state.history.slice(-49), state.present],
-                future: [],
-                selectedElementId: state.selectedElementId,
-            }
+    case 'UPDATE_ELEMENT': {
+        const { elementId, attributes, content } = payload
+        const newElements = updateElementRecursive(state.present, elementId, attributes, content)
+        return {
+            present: newElements,
+            history: [...state.history.slice(-49), state.present],
+            future: [],
+            selectedElementId: state.selectedElementId,
         }
+    }
 
-        case 'DELETE_ELEMENT': {
-            const { elementId } = payload
-            const newElements = deleteElementRecursive(state.present, elementId)
-            return {
-                present: newElements,
-                history: [...state.history.slice(-49), state.present],
-                future: [],
-                selectedElementId: state.selectedElementId === elementId ? null : state.selectedElementId,
-            }
+    case 'DELETE_ELEMENT': {
+        const { elementId } = payload
+        const newElements = deleteElementRecursive(state.present, elementId)
+        return {
+            present: newElements,
+            history: [...state.history.slice(-49), state.present],
+            future: [],
+            selectedElementId: state.selectedElementId === elementId ? null : state.selectedElementId,
         }
+    }
 
-        case 'SELECT_ELEMENT': {
-            return {
-                ...state,
-                selectedElementId: payload.elementId,
-            }
+    case 'SELECT_ELEMENT': {
+        return {
+            ...state,
+            selectedElementId: payload.elementId,
         }
+    }
 
-        case 'UNDO': {
-            if (state.history.length === 0) return state
-            const previous = state.history[state.history.length - 1]
-            return {
-                present: previous,
-                history: state.history.slice(0, -1),
-                future: [state.present, ...state.future.slice(0, 49)],
-                selectedElementId: null,
-            }
+    case 'UNDO': {
+        if (state.history.length === 0) return state
+        const previous = state.history[state.history.length - 1]
+        return {
+            present: previous,
+            history: state.history.slice(0, -1),
+            future: [state.present, ...state.future.slice(0, 49)],
+            selectedElementId: null,
         }
+    }
 
-        case 'REDO': {
-            if (state.future.length === 0) return state
-            const next = state.future[0]
-            return {
-                present: next,
-                history: [...state.history.slice(-49), state.present],
-                future: state.future.slice(1),
-                selectedElementId: null,
-            }
+    case 'REDO': {
+        if (state.future.length === 0) return state
+        const next = state.future[0]
+        return {
+            present: next,
+            history: [...state.history.slice(-49), state.present],
+            future: state.future.slice(1),
+            selectedElementId: null,
         }
+    }
 
-        case 'LOAD_TEMPLATE': {
-            const { elements } = payload
-            return {
-                present: elements,
-                history: [],
-                future: [],
-                selectedElementId: null,
-            }
+    case 'LOAD_TEMPLATE': {
+        const { elements } = payload
+        return {
+            present: elements,
+            history: [],
+            future: [],
+            selectedElementId: null,
         }
+    }
 
-        case 'CLEAR_CANVAS': {
-            const defaultElements = createDefaultMjmlStructure()
-            return {
-                present: defaultElements,
-                history: [...state.history.slice(-49), state.present],
-                future: [],
-                selectedElementId: null,
-            }
+    case 'CLEAR_CANVAS': {
+        const defaultElements = createDefaultMjmlStructure()
+        return {
+            present: defaultElements,
+            history: [...state.history.slice(-49), state.present],
+            future: [],
+            selectedElementId: null,
         }
+    }
 
-        default:
-            return state
+    default:
+        return state
     }
 }
 
@@ -223,10 +223,6 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     // Action handlers
     const handleElementAdd = useCallback((element: EditorElement, parentId?: string, index?: number) => {
         dispatch({ type: 'ADD_ELEMENT', payload: { element, parentId, index } })
-    }, [])
-    
-    const handleComponentDrop = useCallback((_component: EditorComponent, parentId: string, index: number) => {
-        // Component drop handler for drag and drop functionality
     }, [])
 
     const handleElementUpdate = useCallback((elementId: string, attributes: Record<string, any>, content?: string) => {

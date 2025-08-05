@@ -60,7 +60,7 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
             <EnhancedMjmlEditor
                 template={enhancedTemplate}
                 onTemplateChange={handleTemplateChange}
-                resources={resources}
+                _resources={resources}
                 isPreviewMode={false}
             />
         </div>

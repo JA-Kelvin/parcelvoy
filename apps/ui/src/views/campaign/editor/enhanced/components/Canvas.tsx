@@ -3,7 +3,8 @@ import React, { useRef, useCallback } from 'react'
 import { useDrop } from 'react-dnd'
 import { EditorElement, ComponentDefinition } from '../types'
 import { generateId } from '../utils/mjmlParser'
-import DroppableElement from './DroppableElement'
+// Import from barrel file instead of direct import
+import { DroppableElement } from '.'
 import './Canvas.css'
 
 interface CanvasProps {
@@ -42,8 +43,11 @@ const Canvas: React.FC<CanvasProps> = ({
                 tagName: item.tagName,
                 attributes: { ...item.defaultAttributes },
                 children: [],
-                content: item.type === 'mj-text' ? 'Your text here' :
-                    item.type === 'mj-button' ? 'Click me' : undefined,
+                content: item.type === 'mj-text'
+                    ? 'Your text here'
+                    : item.type === 'mj-button'
+                        ? 'Click me'
+                        : undefined,
             }
 
             // Find the appropriate parent (mj-body or mj-column)
@@ -71,7 +75,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         id: generateId(),
                         type: 'mj-section',
                         tagName: 'mj-section',
-                        attributes: { 'background-color': '#ffffff', 'padding': '20px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
                         children: [],
                     }
                     onElementAdd(newSection, mjBody.id)
@@ -106,7 +110,7 @@ const Canvas: React.FC<CanvasProps> = ({
                     id: generateId(),
                     type: 'mj-section',
                     tagName: 'mj-section',
-                    attributes: { 'background-color': '#ffffff', 'padding': '20px 0' },
+                    attributes: { 'background-color': '#ffffff', padding: '20px 0' },
                     children: [],
                 }
                 const newColumn: EditorElement = {
@@ -143,7 +147,7 @@ const Canvas: React.FC<CanvasProps> = ({
         }
     }
 
-    const renderElements = (elements: EditorElement[], parentId?: string): React.ReactNode => {
+    const renderElements = (elements: EditorElement[], _parentId?: string): React.ReactNode => {
         return elements.map((element) => (
             <DroppableElement
                 key={element.id}
@@ -156,8 +160,8 @@ const Canvas: React.FC<CanvasProps> = ({
                 onMove={onElementMove}
                 onElementAdd={onElementAdd}
             >
-                {element.children && element.children.length > 0 &&
-                    renderElements(element.children, element.id)
+                {element.children && element.children.length > 0
+                    && renderElements(element.children, element.id)
                 }
             </DroppableElement>
         ))
@@ -174,12 +178,14 @@ const Canvas: React.FC<CanvasProps> = ({
                 className={`canvas ${isOver && canDrop ? 'drag-over' : ''} ${isPreviewMode ? 'preview-mode' : ''}`}
                 onClick={handleCanvasClick}
             >
-                {mjmlBody ? (
-                    <div className="mjml-body-wrapper">
-                        {renderElements(mjmlBody.children || [])}
-                    </div>
-                ) : (
-                    <div className="canvas-empty">
+                {mjmlBody
+                    ? (
+                        <div className="mjml-body-wrapper">
+                            {renderElements(mjmlBody.children || [])}
+                        </div>
+                    )
+                    : (
+                        <div className="canvas-empty">
                         <div className="empty-state">
                             <div className="empty-icon">📧</div>
                             <h3>Start Building Your Email</h3>
