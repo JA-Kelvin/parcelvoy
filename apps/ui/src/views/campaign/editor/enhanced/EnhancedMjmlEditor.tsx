@@ -12,7 +12,8 @@ import {
 import ComponentsPanel from './components/ComponentsPanel'
 import Canvas from './components/Canvas'
 import PropertiesPanel from './components/PropertiesPanel'
-import PreviewModal from './components/PreviewModal'
+import EnhancedPreviewModal from './components/EnhancedPreviewModal'
+import ImportMjmlModal from './components/ImportMjmlModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
@@ -194,10 +195,10 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     isPreviewMode = false,
     isSaving = false,
 }) => {
-    // Right panel states - both components and properties are now on the right
+    const [showEnhancedPreview, setShowEnhancedPreview] = useState(false)
+    const [showImportModal, setShowImportModal] = useState(false)
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
     const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties'>('components')
-    const [showPreview, setShowPreview] = useState(false)
 
     // Initialize editor state with a function to ensure proper initialization
     const getInitialState = (): HistoryState => {
@@ -395,6 +396,33 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         }
     }, [onTemplateSave, template, editorState.present, onTemplateChange])
 
+    // Handle MJML import
+    const handleImportMjml = useCallback((elements: EditorElement[]) => {
+        try {
+            // Load the imported elements into the editor
+            dispatch({ type: 'LOAD_TEMPLATE', payload: { elements, templateId: template.id } })
+
+            // Update the template with new elements
+            const updatedTemplate: EnhancedTemplate = {
+                ...template,
+                data: {
+                    ...template.data,
+                    elements,
+                    metadata: {
+                        ...template.data.metadata,
+                        lastModified: new Date().toISOString(),
+                    },
+                },
+            }
+
+            onTemplateChange(updatedTemplate)
+            toast.success('MJML content imported successfully')
+        } catch (error) {
+            console.error('Error importing MJML:', error)
+            toast.error('Failed to import MJML content')
+        }
+    }, [template, onTemplateChange, dispatch])
+
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -471,8 +499,15 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             )}
                             <button
                                 className="toolbar-button"
-                                onClick={() => setShowPreview(true)}
-                                title="Preview Email"
+                                onClick={() => setShowImportModal(true)}
+                                title="Import MJML Content"
+                            >
+                                📥
+                            </button>
+                            <button
+                                className="toolbar-button enhanced-preview-button"
+                                onClick={() => setShowEnhancedPreview(true)}
+                                title="Preview Email with Code View"
                             >
                                 👁️
                             </button>
@@ -585,11 +620,17 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     )}
                 </div>
 
-                <PreviewModal
-                    isOpen={showPreview}
-                    onClose={() => setShowPreview(false)}
+                <EnhancedPreviewModal
+                    isOpen={showEnhancedPreview}
+                    onClose={() => setShowEnhancedPreview(false)}
                     elements={editorState.present}
                     templateName={template.data.metadata?.name ?? 'Email Template'}
+                />
+
+                <ImportMjmlModal
+                    isOpen={showImportModal}
+                    onClose={() => setShowImportModal(false)}
+                    onImport={handleImportMjml}
                 />
             </div>
         </DndProvider>

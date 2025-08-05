@@ -91,16 +91,14 @@
 /* Save Button Specific Styles */
 .toolbar-button.save-button {
     background: #10b981;
-    color: #ffffff;
     border-color: #10b981;
     font-weight: 600;
 }
 
 .toolbar-button.save-button:hover:not(:disabled) {
-    background: #059669;
-    border-color: #059669;
+    background-color: #059669;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
 }
 
 .toolbar-button.save-button:active:not(:disabled) {
@@ -117,6 +115,28 @@
     opacity: 0.7;
     cursor: not-allowed;
     animation: pulse 2s infinite;
+}
+
+/* Enhanced Preview Button Specific Styles */
+.toolbar-button.enhanced-preview-button {
+    background: #3b82f6;
+    color: #ffffff;
+    border-color: #3b82f6;
+    font-weight: 600;
+}
+
+.toolbar-button.enhanced-preview-button:hover:not(:disabled) {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.toolbar-button.enhanced-preview-button:active:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 @keyframes pulse {

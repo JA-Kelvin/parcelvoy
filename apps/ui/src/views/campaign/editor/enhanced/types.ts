@@ -33,6 +33,7 @@ export interface TemplateMetadata {
     subject?: string
     preheader?: string
     savedAt?: string
+    lastModified?: string
 }
 
 export interface EnhancedTemplate {

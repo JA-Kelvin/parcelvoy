@@ -2,5 +2,5 @@
 export { default as DroppableElement } from './DroppableElement'
 export { default as Canvas } from './Canvas'
 export { default as ComponentsPanel } from './ComponentsPanel'
-export { default as PreviewModal } from './PreviewModal'
+export { default as EnhancedPreviewModal } from './EnhancedPreviewModal'
 export { default as PropertiesPanel } from './PropertiesPanel'
