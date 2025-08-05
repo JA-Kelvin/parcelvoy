@@ -35,20 +35,24 @@ const templateDataEmailParams = {
                 address: {
                     type: 'string',
                     nullable: true,
+                    format: 'email',
                 },
             },
         },
         cc: {
             type: 'string',
             nullable: true,
+            format: 'email',
         },
         bcc: {
             type: 'string',
             nullable: true,
+            format: 'email',
         },
         reply_to: {
             type: 'string',
             nullable: true,
+            format: 'email',
         },
         subject: {
             type: 'string',
@@ -126,12 +130,8 @@ const templateCreateParams: JSONSchemaType<TemplateParams> = {
                 type: 'string',
                 enum: ['email'],
             },
-            campaign_id: {
-                type: 'integer',
-            },
-            locale: {
-                type: 'string',
-            },
+            campaign_id: { type: 'integer' },
+            locale: { type: 'string' },
             data: templateDataEmailParams as any,
         },
         additionalProperties: false,
@@ -144,12 +144,8 @@ const templateCreateParams: JSONSchemaType<TemplateParams> = {
                 type: 'string',
                 enum: ['text'],
             },
-            campaign_id: {
-                type: 'integer',
-            },
-            locale: {
-                type: 'string',
-            },
+            campaign_id: { type: 'integer' },
+            locale: { type: 'string' },
             data: templateDataTextParams as any,
         },
         additionalProperties: false,
@@ -162,12 +158,8 @@ const templateCreateParams: JSONSchemaType<TemplateParams> = {
                 type: 'string',
                 enum: ['push'],
             },
-            campaign_id: {
-                type: 'integer',
-            },
-            locale: {
-                type: 'string',
-            },
+            campaign_id: { type: 'integer' },
+            locale: { type: 'string' },
             data: templateDataPushParams as any,
         },
         additionalProperties: false,
@@ -180,12 +172,8 @@ const templateCreateParams: JSONSchemaType<TemplateParams> = {
                 type: 'string',
                 enum: ['webhook'],
             },
-            campaign_id: {
-                type: 'integer',
-            },
-            locale: {
-                type: 'string',
-            },
+            campaign_id: { type: 'integer' },
+            locale: { type: 'string' },
             data: templateDataWebhookParams as any,
         },
         additionalProperties: false,

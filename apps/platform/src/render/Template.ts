@@ -113,7 +113,7 @@ export class EmailTemplate extends Template {
                     required: ['address'],
                     properties: {
                         name: { type: 'string', nullable: true },
-                        address: { type: 'string' },
+                        address: { type: 'string', format: 'email' },
                     },
                 },
                 subject: { type: 'string' },

@@ -18,14 +18,22 @@ import { useTranslation } from 'react-i18next'
 
 const EmailTable = ({ data }: { data: EmailTemplateData }) => {
     const { t } = useTranslation()
+    const validate = (field: string, value: string | undefined, required = true) => {
+        if (!value && required) return <Tag variant="warn">{t('missing')}</Tag>
+        if (['cc', 'bcc', 'reply_to', 'from_email'].includes(field) && value && !value.includes('@')) {
+            return <Tag variant="warn">{t('invalid_email')}: &quot;{value}&quot;</Tag>
+        }
+        return value
+    }
+
     return <>
         <InfoTable rows={{
-            [t('from_email')]: data.from?.address ?? <Tag variant="warn">{t('missing')}</Tag>,
-            [t('from_name')]: data.from?.name ?? <Tag variant="warn">{t('missing')}</Tag>,
-            [t('reply_to')]: data.reply_to,
-            [t('cc')]: data.cc,
-            [t('bcc')]: data.bcc,
-            [t('subject')]: data.subject ?? <Tag variant="warn">{t('missing')}</Tag>,
+            [t('from_email')]: validate('from_email', data.from?.address),
+            [t('from_name')]: validate('from_name', data.from?.name),
+            [t('reply_to')]: validate('reply_to', data.reply_to, false),
+            [t('cc')]: validate('cc', data.cc, false),
+            [t('bcc')]: validate('bcc', data.bcc, false),
+            [t('subject')]: validate('subject', data.subject),
             [t('preheader')]: data.preheader,
         }} />
     </>
@@ -35,7 +43,12 @@ const EmailForm = ({ form }: { form: UseFormReturn<TemplateUpdateParams, any> })
     const { t } = useTranslation()
     return <>
         <TextInput.Field form={form} name="data.from.name" label={t('from_name')} required />
-        <TextInput.Field form={form} name="data.from.address" label={t('from_email')} required />
+        <TextInput.Field
+            form={form}
+            name="data.from.address"
+            label={t('from_email')}
+            type="email"
+            required />
         <TextInput.Field
             form={form}
             name="data.subject"

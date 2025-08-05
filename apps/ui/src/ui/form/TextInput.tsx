@@ -7,7 +7,7 @@ import './TextInput.css'
 
 type TextInputValue = string | number | readonly string[] | undefined
 export interface BaseTextInputProps<T extends TextInputValue> extends Partial<ControlledInputProps<T>> {
-    type?: 'text' | 'time' | 'date' | 'datetime-local' | 'number' | 'password'
+    type?: 'text' | 'time' | 'date' | 'datetime-local' | 'number' | 'password' | 'email'
     textarea?: boolean
     size?: 'tiny' | 'small' | 'regular'
     value?: T
