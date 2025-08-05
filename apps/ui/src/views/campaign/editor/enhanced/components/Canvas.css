@@ -1,0 +1,232 @@
+/* Enhanced Canvas Styles for Parcelvoy MJML Editor */
+.canvas-container {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+  background: #f8fafc;
+}
+
+.canvas {
+  min-height: 100%;
+  padding: 20px;
+  position: relative;
+  background: linear-gradient(45deg, #f8fafc 25%, transparent 25%), 
+              linear-gradient(-45deg, #f8fafc 25%, transparent 25%), 
+              linear-gradient(45deg, transparent 75%, #f8fafc 75%), 
+              linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.canvas.preview-mode {
+  background: #ffffff;
+  background-image: none;
+}
+
+.canvas.drag-over {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.mjml-body-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px dashed #d1d5db;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.drop-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.drop-message {
+  background: #3b82f6;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Element hover and selection styles */
+.canvas .droppable-element {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.canvas .droppable-element:hover {
+  outline: 2px solid rgba(59, 130, 246, 0.3);
+  outline-offset: 2px;
+}
+
+.canvas .droppable-element.selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.canvas .droppable-element .element-controls {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  display: none;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.canvas .droppable-element:hover .element-controls,
+.canvas .droppable-element.selected .element-controls {
+  display: flex;
+}
+
+.element-controls button {
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.element-controls button:hover {
+  color: #374151;
+}
+
+.element-controls button.delete:hover {
+  color: #dc2626;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .canvas {
+    padding: 10px;
+  }
+  
+  .mjml-body-wrapper {
+    max-width: 100%;
+    border-radius: 0;
+  }
+  
+  .empty-state {
+    margin: 0 10px;
+    padding: 30px 15px;
+  }
+  
+  .empty-icon {
+    font-size: 36px;
+  }
+  
+  .empty-state h3 {
+    font-size: 16px;
+  }
+  
+  .empty-state p {
+    font-size: 13px;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .canvas-container {
+    background: #111827;
+  }
+  
+  .canvas {
+    background: #1f2937;
+    background-image: linear-gradient(45deg, #374151 25%, transparent 25%), 
+                      linear-gradient(-45deg, #374151 25%, transparent 25%), 
+                      linear-gradient(45deg, transparent 75%, #374151 75%), 
+                      linear-gradient(-45deg, transparent 75%, #374151 75%);
+  }
+  
+  .mjml-body-wrapper {
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+  
+  .empty-state {
+    background: #374151;
+    border-color: #4b5563;
+  }
+  
+  .empty-state h3 {
+    color: #f9fafb;
+  }
+  
+  .empty-state p {
+    color: #d1d5db;
+  }
+  
+  .drop-message {
+    background: #60a5fa;
+  }
+  
+  .element-controls {
+    background: #374151;
+    border-color: #4b5563;
+  }
+  
+  .element-controls button {
+    color: #d1d5db;
+  }
+  
+  .element-controls button:hover {
+    color: #f9fafb;
+  }
+}
