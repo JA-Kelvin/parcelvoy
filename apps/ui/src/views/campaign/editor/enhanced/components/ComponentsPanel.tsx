@@ -1,5 +1,6 @@
 // Enhanced Components Panel for Parcelvoy MJML Editor
 import React from 'react'
+import { useDrag } from 'react-dnd'
 import { ComponentDefinition } from '../types'
 import './ComponentsPanel.css'
 
@@ -79,7 +80,11 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'content',
         icon: '🧭',
         defaultAttributes: {
-            'background-color': '#ffffff',
+            'container-background-color': '#ffffff',
+            'base-url': '',
+            'ico-color': '#000000',
+            'ico-font-family': 'Arial, sans-serif',
+            'ico-font-size': '16px',
         },
         allowedChildren: ['mj-navbar-link'],
     },
@@ -159,20 +164,56 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
     },
 ]
 
+// Draggable Component Item using react-dnd
+interface DraggableComponentProps {
+    component: ComponentDefinition
+    onComponentDrag?: (component: ComponentDefinition) => void
+}
+
+const DraggableComponent: React.FC<DraggableComponentProps> = ({ component, onComponentDrag }) => {
+    const [{ isDragging }, drag] = useDrag<ComponentDefinition, unknown, { isDragging: boolean }>({
+        type: 'component',
+        item: component,
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+    })
+
+    // Handle drag start callback
+    React.useEffect(() => {
+        if (isDragging && onComponentDrag) {
+            onComponentDrag(component)
+        }
+    }, [isDragging, component, onComponentDrag])
+
+    return (
+        <div
+            ref={drag}
+            className={`component-item ${isDragging ? 'dragging' : ''}`}
+            title={component.displayName}
+            style={{ opacity: isDragging ? 0.5 : 1 }}
+        >
+            <div className="component-icon">
+                {component.icon}
+            </div>
+            <div className="component-name">
+                {component.displayName}
+            </div>
+        </div>
+    )
+}
+
 const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
     onComponentDrag,
     isCollapsed = false,
     onToggleCollapse,
 }) => {
+    // Safety check for callback function
+    const safeOnComponentDrag = onComponentDrag || (() => {})
+
     const categories = ['layout', 'content', 'media', 'social'] as const
     const getComponentsByCategory = (category: string) => {
         return MJML_COMPONENTS.filter(comp => comp.category === category)
-    }
-
-    const handleDragStart = (e: React.DragEvent, component: ComponentDefinition) => {
-        e.dataTransfer.setData('application/json', JSON.stringify(component))
-        e.dataTransfer.effectAllowed = 'copy'
-        onComponentDrag(component)
     }
 
     if (isCollapsed) {
@@ -215,20 +256,11 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 
                             <div className="component-grid">
                                 {components.map(component => (
-                                    <div
+                                    <DraggableComponent
                                         key={component.type}
-                                        className="component-item"
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, component)}
-                                        title={component.displayName}
-                                    >
-                                        <div className="component-icon">
-                                            {component.icon}
-                                        </div>
-                                        <div className="component-name">
-                                            {component.displayName}
-                                        </div>
-                                    </div>
+                                        component={component}
+                                        onComponentDrag={safeOnComponentDrag}
+                                    />
                                 ))}
                             </div>
                         </div>

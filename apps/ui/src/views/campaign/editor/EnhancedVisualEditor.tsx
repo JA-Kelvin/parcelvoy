@@ -1,8 +1,10 @@
 // Enhanced Visual Editor Integration for Parcelvoy
-import React, { useCallback } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import { Template } from '../../../types'
 import { EnhancedTemplate } from './enhanced/types'
 import EnhancedMjmlEditor from './enhanced/EnhancedMjmlEditor'
+import { ProjectContext } from '../../../contexts'
+import api from '../../../api'
 
 interface EnhancedVisualEditorProps {
     template: Template
@@ -15,6 +17,8 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
     setTemplate,
     resources,
 }) => {
+    const [project] = useContext(ProjectContext)
+    const [isSaving, setIsSaving] = useState(false)
     // Convert Parcelvoy Template to Enhanced Template
     const convertToEnhancedTemplate = (parcelvoyTemplate: Template): EnhancedTemplate => {
         return {
@@ -53,6 +57,34 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
         setTemplate(parcelvoyTemplate)
     }, [setTemplate])
 
+    // Handle template save using Parcelvoy API
+    const handleTemplateSave = useCallback(async (enhancedTemplate: EnhancedTemplate) => {
+        setIsSaving(true)
+        try {
+            // Convert enhanced template back to Parcelvoy format
+            const parcelvoyTemplate = convertToParcelvoyTemplate(enhancedTemplate)
+
+            // Call Parcelvoy API to update the template
+            const updatedTemplate = await api.templates.update(
+                project.id,
+                template.id,
+                {
+                    type: parcelvoyTemplate.type,
+                    data: parcelvoyTemplate.data,
+                },
+            )
+
+            // Update the template state with the response from API
+            setTemplate(updatedTemplate)
+
+        } catch (error) {
+            console.error('Failed to save template:', error)
+            throw error // Re-throw to let the enhanced editor handle the error display
+        } finally {
+            setIsSaving(false)
+        }
+    }, [project.id, template.id, setTemplate])
+
     const enhancedTemplate = convertToEnhancedTemplate(template)
 
     return (
@@ -60,8 +92,10 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
             <EnhancedMjmlEditor
                 template={enhancedTemplate}
                 onTemplateChange={handleTemplateChange}
+                onTemplateSave={handleTemplateSave}
                 _resources={resources}
                 isPreviewMode={false}
+                isSaving={isSaving}
             />
         </div>
     )

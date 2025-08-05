@@ -4,7 +4,7 @@ import { useLoaderData } from 'react-router'
 interface LoaderContextProviderProps<T> {
     children: ReactNode | ((value: T) => ReactNode)
     context: Context<T>
-    key?: string
+    contextKey?: string
 }
 
 export function LoaderContextProvider<T>({ children, context }: LoaderContextProviderProps<T>) {
@@ -18,7 +18,7 @@ export function LoaderContextProvider<T>({ children, context }: LoaderContextPro
     )
 }
 
-export function StatefulLoaderContextProvider<T>({ children, key, context }: LoaderContextProviderProps<[T, Dispatch<SetStateAction<T>>]>) {
+export function StatefulLoaderContextProvider<T>({ children, contextKey, context }: LoaderContextProviderProps<[T, Dispatch<SetStateAction<T>>]>) {
     const loader = useLoaderData() as T
     const [state, setState] = useState(loader)
     useEffect(() => {
@@ -29,7 +29,7 @@ export function StatefulLoaderContextProvider<T>({ children, key, context }: Loa
         [state, loader],
     )
     return (
-        <context.Provider key={key} value={value}>
+        <context.Provider key={contextKey} value={value}>
             {
                 typeof children === 'function' ? children(value) : children
             }

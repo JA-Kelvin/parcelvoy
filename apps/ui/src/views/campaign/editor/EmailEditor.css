@@ -9,6 +9,14 @@
     z-index: 1;
 }
 
+/* Enhanced Visual Editor Full Width */
+.email-editor .enhanced-visual-editor-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .template-editor.inline {
     position: relative;
     top: unset;

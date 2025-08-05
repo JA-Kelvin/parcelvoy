@@ -13,13 +13,17 @@ import ComponentsPanel from './components/ComponentsPanel'
 import Canvas from './components/Canvas'
 import PropertiesPanel from './components/PropertiesPanel'
 import PreviewModal from './components/PreviewModal'
+import ErrorBoundary from './components/ErrorBoundary'
 import './EnhancedMjmlEditor.css'
+import { toast } from 'react-hot-toast/headless'
 
 interface EnhancedMjmlEditorProps {
     template: EnhancedTemplate
     onTemplateChange: (template: EnhancedTemplate) => void
+    onTemplateSave?: (template: EnhancedTemplate) => Promise<void>
     _resources?: any[]
     isPreviewMode?: boolean
+    isSaving?: boolean
 }
 
 // Reducer for managing editor state with history
@@ -35,6 +39,7 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: [...state.history.slice(-49), state.present],
                 future: [],
                 selectedElementId: element.id,
+                templateId: state.templateId,
             }
         }
 
@@ -46,6 +51,7 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: [...state.history.slice(-49), state.present],
                 future: [],
                 selectedElementId: state.selectedElementId,
+                templateId: state.templateId,
             }
         }
 
@@ -57,6 +63,7 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: [...state.history.slice(-49), state.present],
                 future: [],
                 selectedElementId: state.selectedElementId === elementId ? null : state.selectedElementId,
+                templateId: state.templateId,
             }
         }
 
@@ -75,6 +82,7 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: state.history.slice(0, -1),
                 future: [state.present, ...state.future.slice(0, 49)],
                 selectedElementId: null,
+                templateId: state.templateId,
             }
         }
 
@@ -86,16 +94,18 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: [...state.history.slice(-49), state.present],
                 future: state.future.slice(1),
                 selectedElementId: null,
+                templateId: state.templateId,
             }
         }
 
         case 'LOAD_TEMPLATE': {
-            const { elements } = payload
+            const { elements, templateId } = payload
             return {
                 present: elements,
                 history: [],
                 future: [],
                 selectedElementId: null,
+                templateId,
             }
         }
 
@@ -106,6 +116,7 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: [...state.history.slice(-49), state.present],
                 future: [],
                 selectedElementId: null,
+                templateId: state.templateId,
             }
         }
 
@@ -178,25 +189,92 @@ const deleteElementRecursive = (elements: EditorElement[], elementId: string): E
 const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     template,
     onTemplateChange,
+    onTemplateSave,
     _resources = [],
     isPreviewMode = false,
+    isSaving = false,
 }) => {
     const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
 
-    // Initialize editor state
-    const initialElements = template.data.elements
-        ?? (template.data.mjml ? parseMJMLString(template.data.mjml) : createDefaultMjmlStructure())
+    // Initialize editor state with a function to ensure proper initialization
+    const getInitialState = (): HistoryState => {
+        // Try to use elements from template data first
+        if (template.data.elements && Array.isArray(template.data.elements) && template.data.elements.length > 0) {
+            console.log('Using saved elements from template data:', template.data.elements.length)
+            return {
+                present: template.data.elements,
+                history: [],
+                future: [],
+                selectedElementId: null,
+                templateId: template.id,
+            }
+        }
 
-    const initialState: HistoryState = {
-        present: initialElements,
-        history: [],
-        future: [],
-        selectedElementId: null,
+        // If no elements, try to parse from MJML string
+        if (template.data.mjml) {
+            try {
+                console.log('Parsing MJML string for initial state')
+                const parsedElements = parseMJMLString(template.data.mjml)
+                if (Array.isArray(parsedElements) && parsedElements.length > 0) {
+                    console.log('Using parsed elements for initial state:', parsedElements.length)
+                    return {
+                        present: parsedElements,
+                        history: [],
+                        future: [],
+                        selectedElementId: null,
+                        templateId: template.id,
+                    }
+                }
+            } catch (error) {
+                console.error('Error parsing MJML for initial state:', error)
+            }
+        }
+
+        // Fallback to default structure
+        console.log('Using default MJML structure for initial state')
+        return {
+            present: createDefaultMjmlStructure(),
+            history: [],
+            future: [],
+            selectedElementId: null,
+            templateId: template.id,
+        }
     }
 
-    const [editorState, dispatch] = useReducer(editorReducer, initialState)
+    const [editorState, dispatch] = useReducer(editorReducer, getInitialState())
+
+    // Load template data when template prop changes (for saved template restoration)
+    useEffect(() => {
+        // Always reload template data when template changes
+        console.log('Template changed, loading data:', template.id)
+
+        if (template.data.elements && Array.isArray(template.data.elements) && template.data.elements.length > 0) {
+            // Template has saved elements, load them into editor
+            console.log('Loading saved elements:', template.data.elements.length)
+            console.log('Saved elements structure:', template.data.elements.map(el => ({ id: el.id, type: el.type, tagName: el.tagName, childrenCount: el.children?.length || 0 })))
+            dispatch({ type: 'LOAD_TEMPLATE', payload: { elements: template.data.elements, templateId: template.id } })
+        } else if (template.data.mjml && template.data.mjml.trim() !== '' && template.data.mjml !== '<mjml><mj-body></mj-body></mjml>') {
+            // Template has meaningful MJML string (not just the minimal default), parse it and load
+            try {
+                console.log('Parsing MJML string:', template.data.mjml.substring(0, 100) + '...')
+                const parsedElements = parseMJMLString(template.data.mjml)
+                if (Array.isArray(parsedElements) && parsedElements.length > 0) {
+                    console.log('Loaded parsed elements:', parsedElements.length)
+                    dispatch({ type: 'LOAD_TEMPLATE', payload: { elements: parsedElements, templateId: template.id } })
+                    return // Successfully loaded, don't create default structure
+                }
+            } catch (error) {
+                console.error('Error parsing saved MJML:', error)
+            }
+        }
+
+        // If we reach here, template has no meaningful content, create default structure
+        console.log('Template has no meaningful content, creating default structure')
+        const defaultElements = createDefaultMjmlStructure()
+        dispatch({ type: 'LOAD_TEMPLATE', payload: { elements: defaultElements, templateId: template.id } })
+    }, [template.id, template.data.elements, template.data.mjml]) // Watch for changes in template ID and content
 
     // Update template when editor state changes
     useEffect(() => {
@@ -218,7 +296,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         }).catch(error => {
             console.error('Error converting MJML to HTML:', error)
         })
-    }, [editorState.present, template, onTemplateChange])
+    }, [editorState.present]) // Removed template and onTemplateChange to prevent infinite loops
 
     // Action handlers
     const handleElementAdd = useCallback((element: EditorElement, parentId?: string, index?: number) => {
@@ -234,7 +312,10 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     }, [])
 
     const handleElementSelect = useCallback((elementId: string | null) => {
-        dispatch({ type: 'SELECT_ELEMENT', payload: { elementId } })
+        // Prevent rapid selection changes that could cause hanging
+        requestAnimationFrame(() => {
+            dispatch({ type: 'SELECT_ELEMENT', payload: { elementId } })
+        })
     }, [])
 
     const handleElementMove = useCallback((elementId: string, _newParentId: string, _newIndex: number): void => {
@@ -272,6 +353,47 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         ? findElementById(editorState.present, editorState.selectedElementId)
         : null
 
+    // Handle template save
+    const handleSave = useCallback(async () => {
+        if (!onTemplateSave) {
+            toast.error('Save functionality not available')
+            return
+        }
+
+        try {
+            // Generate MJML and HTML from current editor state
+            const mjmlString = editorElementsToMjmlString(editorState.present)
+            const htmlString = await mjmlToHtml(mjmlString)
+
+            // Create updated template with current data
+            const updatedTemplate: EnhancedTemplate = {
+                ...template,
+                data: {
+                    ...template.data,
+                    editor: 'enhanced-visual',
+                    mjml: mjmlString,
+                    html: htmlString,
+                    elements: editorState.present,
+                    metadata: {
+                        ...template.data.metadata,
+                        savedAt: new Date().toISOString(),
+                    },
+                },
+            }
+
+            // Call the save function passed from parent
+            await onTemplateSave(updatedTemplate)
+
+            // Update the template in the editor
+            onTemplateChange(updatedTemplate)
+
+            toast.success('Template saved successfully')
+        } catch (error) {
+            console.error('Error saving template:', error)
+            toast.error('Failed to save template')
+        }
+    }, [onTemplateSave, template, editorState.present, onTemplateChange])
+
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -283,6 +405,9 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
                 e.preventDefault()
                 handleRedo()
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault()
+                void handleSave()
             } else if (e.key === 'Delete' && selectedElement) {
                 e.preventDefault()
                 handleElementDelete(selectedElement.id)
@@ -291,7 +416,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
 
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
-    }, [isPreviewMode, handleUndo, handleRedo, selectedElement, handleElementDelete])
+    }, [isPreviewMode, handleUndo, handleRedo, handleSave, selectedElement, handleElementDelete])
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -330,6 +455,19 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                         </div>
 
                         <div className="toolbar-right">
+                            {onTemplateSave && (
+                                <>
+                                    <button
+                                        className="toolbar-button save-button"
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        title="Save Template (Ctrl+S)"
+                                    >
+                                        {isSaving ? '⏳' : '💾'}
+                                    </button>
+                                    <div className="toolbar-divider" />
+                                </>
+                            )}
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowPreview(true)}
@@ -358,31 +496,46 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
 
                 <div className="editor-content">
                     {!isPreviewMode && (
-                        <ComponentsPanel
-                            onComponentDrag={() => { /* Handle component drag */ }}
-                            isCollapsed={leftPanelCollapsed}
-                            onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-                        />
+                        <ErrorBoundary
+                            resetKeys={[leftPanelCollapsed ? 'collapsed' : 'expanded']}
+                            onError={(error) => console.error('ComponentsPanel error:', error)}
+                        >
+                            <ComponentsPanel
+                                onComponentDrag={() => { /* Handle component drag */ }}
+                                isCollapsed={leftPanelCollapsed}
+                                onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+                            />
+                        </ErrorBoundary>
                     )}
 
-                    <Canvas
-                        elements={editorState.present}
-                        selectedElementId={editorState.selectedElementId}
-                        onElementAdd={handleElementAdd}
-                        onElementSelect={handleElementSelect}
-                        onElementUpdate={handleElementUpdate}
-                        onElementDelete={handleElementDelete}
-                        onElementMove={handleElementMove}
-                        isPreviewMode={isPreviewMode}
-                    />
+                    <ErrorBoundary
+                        resetKeys={[editorState.present.length, editorState.selectedElementId ?? 'none']}
+                        onError={(error) => console.error('Canvas error:', error)}
+                    >
+                        <Canvas
+                            elements={editorState.present}
+                            selectedElementId={editorState.selectedElementId}
+                            onElementAdd={handleElementAdd}
+                            onElementSelect={handleElementSelect}
+                            onElementUpdate={handleElementUpdate}
+                            onElementDelete={handleElementDelete}
+                            onElementMove={handleElementMove}
+                            isPreviewMode={isPreviewMode}
+                        />
+                    </ErrorBoundary>
 
                     {!isPreviewMode && (
-                        <PropertiesPanel
-                            selectedElement={selectedElement}
-                            onElementUpdate={handleElementUpdate}
-                            isCollapsed={rightPanelCollapsed}
-                            onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-                        />
+                        <ErrorBoundary
+                            resetKeys={[selectedElement?.id ?? 'none', rightPanelCollapsed ? 'collapsed' : 'expanded']}
+                            onError={(error) => console.error('PropertiesPanel error:', error)}
+                        >
+                            <PropertiesPanel
+                                selectedElement={selectedElement}
+                                onElementUpdate={handleElementUpdate}
+                                isCollapsed={rightPanelCollapsed}
+                                onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+                            />
+                        </ErrorBoundary>
                     )}
                 </div>
 

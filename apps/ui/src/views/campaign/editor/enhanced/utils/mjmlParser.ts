@@ -21,7 +21,22 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
             throw new Error('No MJML root element found')
         }
 
-        return parseElementRecursive(mjmlElement)
+        // Create the MJML root element with its children
+        const mjmlRoot: EditorElement = {
+            id: generateId(),
+            type: 'mjml',
+            tagName: 'mjml',
+            attributes: {},
+            children: parseElementRecursive(mjmlElement), // Parse children of mjml element
+        }
+
+        // Parse attributes of the mjml element
+        for (let i = 0; i < mjmlElement.attributes.length; i++) {
+            const attr = mjmlElement.attributes[i]
+            mjmlRoot.attributes[attr.name] = attr.value
+        }
+
+        return [mjmlRoot]
     } catch (error) {
         console.error('Error parsing MJML:', error)
         // Return default structure on error
@@ -83,7 +98,26 @@ export const editorElementsToMjmlString = (elements: EditorElement[]): string =>
         return '<mjml><mj-body></mj-body></mjml>'
     }
 
-    return elements.map(element => elementToMjmlString(element)).join('')
+    // Find the mjml root element
+    const mjmlRoot = elements.find(el => el.tagName === 'mjml')
+
+    // If there's a valid mjml root, convert it
+    if (mjmlRoot) {
+        return elementToMjmlString(mjmlRoot)
+    }
+
+    // If no mjml root found, wrap the elements in a proper mjml structure
+    // First, look for mj-body element
+    const mjBodyElement = elements.find(el => el.tagName === 'mj-body')
+
+    if (mjBodyElement) {
+        // If mj-body exists, wrap it in mjml
+        return `<mjml>${elementToMjmlString(mjBodyElement)}</mjml>`
+    }
+
+    // If no mjml or mj-body found, create a complete structure
+    const elementsString = elements.map(element => elementToMjmlString(element)).join('')
+    return `<mjml><mj-body>${elementsString}</mj-body></mjml>`
 }
 
 // Convert single element to MJML string recursively

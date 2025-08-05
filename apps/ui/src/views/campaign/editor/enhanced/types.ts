@@ -13,6 +13,7 @@ export interface HistoryState {
     history: EditorElement[][]
     future: EditorElement[][]
     selectedElementId: string | null
+    templateId?: string
 }
 
 export interface EditorComponent {

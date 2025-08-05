@@ -27,6 +27,19 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     onElementAdd,
     children,
 }) => {
+    // Safety checks for props
+    if (!element) {
+        console.warn('DroppableElement: element prop is null/undefined')
+        return null
+    }
+
+    // Safety checks for callback functions
+    const safeOnSelect = onSelect || (() => {})
+    const safeOnUpdate = onUpdate || (() => {})
+    const safeOnDelete = onDelete || (() => {})
+    const safeOnMove = onMove || (() => {})
+    const safeOnElementAdd = onElementAdd || (() => {})
+
     const [isHovered, setIsHovered] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const elementRef = useRef<HTMLDivElement>(null)
@@ -49,7 +62,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
             if (item.id && item.id !== element.id) {
                 // Moving existing element
-                onMove(item.id, element.id, 0)
+                safeOnMove(item.id, element.id, 0)
             } else if (item.type && !item.id) {
                 // Adding new component
                 const newElement: EditorElement = {
@@ -64,7 +77,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             ? 'Click me'
                             : undefined,
                 }
-                onElementAdd(newElement, element.id)
+                safeOnElementAdd(newElement, element.id)
             }
         },
         collect: (monitor) => ({
@@ -106,7 +119,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
         if (!isPreviewMode) {
-            onSelect(element.id)
+            safeOnSelect(element.id)
         }
     }
 
@@ -118,13 +131,13 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     }
 
     const handleContentEdit = (newContent: string) => {
-        onUpdate(element.id, element.attributes, newContent)
+        safeOnUpdate(element.id, element.attributes, newContent)
         setIsEditing(false)
     }
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation()
-        onDelete(element.id)
+        safeOnDelete(element.id)
     }
 
     const getElementStyle = (): React.CSSProperties => {

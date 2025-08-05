@@ -1,5 +1,5 @@
 // Enhanced Canvas Component for Parcelvoy MJML Editor
-import React, { useRef, useCallback } from 'react'
+import React, { useRef, useCallback, useEffect } from 'react'
 import { useDrop } from 'react-dnd'
 import { EditorElement, ComponentDefinition } from '../types'
 import { generateId } from '../utils/mjmlParser'
@@ -28,6 +28,15 @@ const Canvas: React.FC<CanvasProps> = ({
     onElementMove,
     isPreviewMode = false,
 }) => {
+    // Comprehensive safety checks
+    const safeElements = !elements || !Array.isArray(elements) ? [] : elements
+
+    // Safety checks for callback functions
+    const safeOnElementAdd = onElementAdd || (() => {})
+    const safeOnElementSelect = onElementSelect || (() => {})
+    const safeOnElementUpdate = onElementUpdate || (() => {})
+    const safeOnElementDelete = onElementDelete || (() => {})
+    const safeOnElementMove = onElementMove || (() => {})
     const canvasRef = useRef<HTMLDivElement>(null)
 
     // Handle component drop from components panel
@@ -51,24 +60,32 @@ const Canvas: React.FC<CanvasProps> = ({
             }
 
             // Find the appropriate parent (mj-body or mj-column)
-            const mjmlRoot = elements.find(el => el.tagName === 'mjml')
-            if (!mjmlRoot) return
+            console.log('Drop handler - elements:', safeElements.length)
 
-            const mjBody = mjmlRoot.children?.find(el => el.tagName === 'mj-body')
-            if (!mjBody) return
+            const mjmlRoot = safeElements.find((el: EditorElement) => el.tagName === 'mjml')
+            if (!mjmlRoot) {
+                console.error('No mjml root found in elements')
+                return
+            }
+
+            const mjmlBody = mjmlRoot.children?.find((el: EditorElement) => el.tagName === 'mj-body')
+            if (!mjmlBody) {
+                console.error('No mj-body found in mjml root')
+                return
+            }
 
             // If it's a layout component (section), add to mj-body
             if (item.type === 'mj-section') {
-                onElementAdd(newElement, mjBody.id)
+                safeOnElementAdd(newElement, mjmlBody.id)
                 return
             }
 
             // If it's a column, add to the last section or create a new section
             if (item.type === 'mj-column') {
-                const sections = mjBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
                 const lastSection = sections[sections.length - 1]
                 if (lastSection) {
-                    onElementAdd(newElement, lastSection.id)
+                    safeOnElementAdd(newElement, lastSection.id)
                 } else {
                     // Create a new section first
                     const newSection: EditorElement = {
@@ -78,20 +95,20 @@ const Canvas: React.FC<CanvasProps> = ({
                         attributes: { 'background-color': '#ffffff', padding: '20px 0' },
                         children: [],
                     }
-                    onElementAdd(newSection, mjBody.id)
-                    onElementAdd(newElement, newSection.id)
+                    safeOnElementAdd(newSection, mjmlBody.id)
+                    safeOnElementAdd(newElement, newSection.id)
                 }
                 return
             }
 
             // For content components, add to the last column or create structure
-            const sections = mjBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+            const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
             const lastSection = sections[sections.length - 1]
             if (lastSection) {
                 const columns = lastSection.children?.filter((el: EditorElement) => el.tagName === 'mj-column') || []
                 const lastColumn = columns[columns.length - 1]
                 if (lastColumn) {
-                    onElementAdd(newElement, lastColumn.id)
+                    safeOnElementAdd(newElement, lastColumn.id)
                 } else {
                     // Create a new column in the section
                     const newColumn: EditorElement = {
@@ -101,8 +118,8 @@ const Canvas: React.FC<CanvasProps> = ({
                         attributes: { width: '100%' },
                         children: [],
                     }
-                    onElementAdd(newColumn, lastSection.id)
-                    onElementAdd(newElement, newColumn.id)
+                    safeOnElementAdd(newColumn, lastSection.id)
+                    safeOnElementAdd(newElement, newColumn.id)
                 }
             } else {
                 // Create complete structure: section -> column -> element
@@ -121,9 +138,9 @@ const Canvas: React.FC<CanvasProps> = ({
                     children: [],
                 }
 
-                onElementAdd(newSection, mjBody.id)
-                onElementAdd(newColumn, newSection.id)
-                onElementAdd(newElement, newColumn.id)
+                safeOnElementAdd(newSection, mjmlBody.id)
+                safeOnElementAdd(newColumn, newSection.id)
+                safeOnElementAdd(newElement, newColumn.id)
             }
         },
         collect: (monitor) => ({
@@ -143,7 +160,7 @@ const Canvas: React.FC<CanvasProps> = ({
     const handleCanvasClick = (e: React.MouseEvent) => {
         // Only deselect if clicking directly on canvas background
         if (e.target === e.currentTarget) {
-            onElementSelect(null)
+            safeOnElementSelect(null)
         }
     }
 
@@ -154,22 +171,46 @@ const Canvas: React.FC<CanvasProps> = ({
                 element={element}
                 isSelected={selectedElementId === element.id}
                 isPreviewMode={isPreviewMode}
-                onSelect={onElementSelect}
-                onUpdate={onElementUpdate}
-                onDelete={onElementDelete}
-                onMove={onElementMove}
-                onElementAdd={onElementAdd}
+                onSelect={safeOnElementSelect}
+                onUpdate={safeOnElementUpdate}
+                onDelete={safeOnElementDelete}
+                onMove={safeOnElementMove}
+                onElementAdd={safeOnElementAdd}
             >
                 {element.children && element.children.length > 0
-                    && renderElements(element.children, element.id)
-                }
+                    && renderElements(element.children, element.id)}
             </DroppableElement>
         ))
     }
 
-    // Find the MJML body for rendering
-    const mjmlRoot = elements.find(el => el.tagName === 'mjml')
-    const mjmlBody = mjmlRoot?.children?.find(el => el.tagName === 'mj-body')
+    // Canvas should not create default structure - that's handled by parent component
+    // Just log for debugging purposes
+    useEffect(() => {
+        if (safeElements.length === 0) {
+            console.log('Canvas: No elements provided - parent should handle default structure creation')
+        } else {
+            console.log('Canvas: Received', safeElements.length, 'elements from parent')
+        }
+    }, [safeElements.length])
+
+    // Find MJML structure for rendering
+    const mjmlRoot = safeElements.find((el: EditorElement) => el.tagName === 'mjml')
+    const mjmlBody = mjmlRoot?.children?.find((el: EditorElement) => el.tagName === 'mj-body')
+
+    // Detailed debug logging
+    console.log('Canvas: Detailed Debug Info:')
+    console.log('- Elements received:', safeElements.length)
+    console.log('- Elements structure:', safeElements.map(el => ({ id: el.id, tagName: el.tagName, childrenCount: el.children?.length || 0 })))
+    console.log('- MJML Root found:', !!mjmlRoot)
+    if (mjmlRoot) {
+        console.log('- MJML Root children:', mjmlRoot.children?.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: child.children?.length || 0 })))
+    }
+    console.log('- MJML Body found:', !!mjmlBody)
+    if (mjmlBody) {
+        console.log('- MJML Body children:', mjmlBody.children?.length || 0)
+        console.log('- MJML Body structure:', mjmlBody.children?.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: child.children?.length || 0 })))
+    }
+    console.log('- Will show empty state:', !mjmlBody)
 
     return (
         <div className="canvas-container">
@@ -190,6 +231,9 @@ const Canvas: React.FC<CanvasProps> = ({
                                 <div className="empty-icon">📧</div>
                                 <h3>Start Building Your Email</h3>
                                 <p>Drag components from the left panel to begin creating your email template.</p>
+                                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                                    Debug: {safeElements.length} elements, mjmlRoot: {mjmlRoot ? 'found' : 'missing'}, mjmlBody: {mjmlBody ? 'found' : 'missing'}
+                                </div>
                             </div>
                         </div>
                     )
