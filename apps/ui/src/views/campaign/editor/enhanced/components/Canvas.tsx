@@ -3,8 +3,8 @@ import React, { useRef, useCallback } from 'react'
 import { useDrop } from 'react-dnd'
 import { EditorElement, ComponentDefinition } from '../types'
 import { generateId } from '../utils/mjmlParser'
-// Import from barrel file instead of direct import
-import { DroppableElement } from '.'
+// Import directly to avoid circular dependencies
+import DroppableElement from './DroppableElement'
 import './Canvas.css'
 
 interface CanvasProps {
