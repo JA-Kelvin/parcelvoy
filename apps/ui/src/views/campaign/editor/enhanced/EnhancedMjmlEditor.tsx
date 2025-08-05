@@ -194,8 +194,9 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     isPreviewMode = false,
     isSaving = false,
 }) => {
-    const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
+    // Right panel states - both components and properties are now on the right
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
+    const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties'>('components')
     const [showPreview, setShowPreview] = useState(false)
 
     // Initialize editor state with a function to ensure proper initialization
@@ -477,37 +478,38 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             </button>
                             <div className="toolbar-divider" />
                             <button
-                                className={`toolbar-button ${leftPanelCollapsed ? 'active' : ''}`}
-                                onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-                                title="Toggle Components Panel"
+                                className={`toolbar-button ${activeRightTab === 'components' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setActiveRightTab('components')
+                                    setRightPanelCollapsed(false)
+                                }}
+                                title="Show Components Panel"
                             >
                                 📦
                             </button>
                             <button
-                                className={`toolbar-button ${rightPanelCollapsed ? 'active' : ''}`}
-                                onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-                                title="Toggle Properties Panel"
+                                className={`toolbar-button ${activeRightTab === 'properties' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setActiveRightTab('properties')
+                                    setRightPanelCollapsed(false)
+                                }}
+                                title="Show Properties Panel"
                             >
                                 ⚙️
+                            </button>
+                            <button
+                                className={`toolbar-button ${rightPanelCollapsed ? 'active' : ''}`}
+                                onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+                                title="Toggle Right Panel"
+                            >
+                                {rightPanelCollapsed ? '👁️' : '🙈'}
                             </button>
                         </div>
                     </div>
                 )}
 
                 <div className="editor-content">
-                    {!isPreviewMode && (
-                        <ErrorBoundary
-                            resetKeys={[leftPanelCollapsed ? 'collapsed' : 'expanded']}
-                            onError={(error) => console.error('ComponentsPanel error:', error)}
-                        >
-                            <ComponentsPanel
-                                onComponentDrag={() => { /* Handle component drag */ }}
-                                isCollapsed={leftPanelCollapsed}
-                                onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-                            />
-                        </ErrorBoundary>
-                    )}
-
+                    {/* Main Canvas Area */}
                     <ErrorBoundary
                         resetKeys={[editorState.present.length, editorState.selectedElementId ?? 'none']}
                         onError={(error) => console.error('Canvas error:', error)}
@@ -524,18 +526,62 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                         />
                     </ErrorBoundary>
 
+                    {/* Right Side Panel with Tabs */}
                     {!isPreviewMode && (
-                        <ErrorBoundary
-                            resetKeys={[selectedElement?.id ?? 'none', rightPanelCollapsed ? 'collapsed' : 'expanded']}
-                            onError={(error) => console.error('PropertiesPanel error:', error)}
-                        >
-                            <PropertiesPanel
-                                selectedElement={selectedElement}
-                                onElementUpdate={handleElementUpdate}
-                                isCollapsed={rightPanelCollapsed}
-                                onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-                            />
-                        </ErrorBoundary>
+                        <div className={`right-panel ${rightPanelCollapsed ? 'collapsed' : 'expanded'}`}>
+                            <div className="right-panel-header">
+                                <div className="panel-tabs">
+                                    <button
+                                        className={`tab-button ${activeRightTab === 'components' ? 'active' : ''}`}
+                                        onClick={() => setActiveRightTab('components')}
+                                    >
+                                        📦 Components
+                                    </button>
+                                    <button
+                                        className={`tab-button ${activeRightTab === 'properties' ? 'active' : ''}`}
+                                        onClick={() => setActiveRightTab('properties')}
+                                    >
+                                        ⚙️ Properties
+                                    </button>
+                                </div>
+                                <button
+                                    className="panel-toggle-button"
+                                    onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+                                    title={rightPanelCollapsed ? 'Expand Panel' : 'Collapse Panel'}
+                                >
+                                    {rightPanelCollapsed ? '◀' : '▶'}
+                                </button>
+                            </div>
+
+                            <div className="right-panel-content">
+                                {activeRightTab === 'components' && (
+                                    <ErrorBoundary
+                                        resetKeys={[rightPanelCollapsed ? 'collapsed' : 'expanded']}
+                                        onError={(error) => console.error('ComponentsPanel error:', error)}
+                                    >
+                                        <ComponentsPanel
+                                            onComponentDrag={() => { /* Handle component drag */ }}
+                                            isCollapsed={false}
+                                            onToggleCollapse={() => {}}
+                                        />
+                                    </ErrorBoundary>
+                                )}
+
+                                {activeRightTab === 'properties' && (
+                                    <ErrorBoundary
+                                        resetKeys={[selectedElement?.id ?? 'none', rightPanelCollapsed ? 'collapsed' : 'expanded']}
+                                        onError={(error) => console.error('PropertiesPanel error:', error)}
+                                    >
+                                        <PropertiesPanel
+                                            selectedElement={selectedElement}
+                                            onElementUpdate={handleElementUpdate}
+                                            isCollapsed={false}
+                                            onToggleCollapse={() => {}}
+                                        />
+                                    </ErrorBoundary>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
 
