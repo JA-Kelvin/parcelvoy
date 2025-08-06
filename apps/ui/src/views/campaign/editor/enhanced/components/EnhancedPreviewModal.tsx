@@ -1,5 +1,6 @@
-// Enhanced Preview Modal Component with Code View for Enhanced MJML Editor
-import React, { useState, useEffect } from 'react'
+// Enhanced Preview Modal Component with Monaco Editor Code View
+import React, { useState, useEffect, useRef } from 'react'
+import Editor from '@monaco-editor/react'
 import { EditorElement } from '../types'
 import { editorElementsToMjmlString, mjmlToHtml } from '../utils/mjmlParser'
 import './EnhancedPreviewModal.css'
@@ -14,6 +15,21 @@ interface EnhancedPreviewModalProps {
 type ViewMode = 'desktop' | 'tablet' | 'mobile'
 type PreviewTab = 'visual' | 'mjml' | 'html'
 
+// Custom hook to handle editor mounting and avoid ResizeObserver errors
+function useEditorMounting() {
+    const [isEditorReady, setIsEditorReady] = useState(false)
+
+    const handleEditorDidMount = () => {
+        setIsEditorReady(true)
+    }
+
+    const resetEditor = () => {
+        setIsEditorReady(false)
+    }
+
+    return { isEditorReady, handleEditorDidMount, resetEditor }
+}
+
 const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
     isOpen,
     onClose,
@@ -27,12 +43,29 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
     const [activeTab, setActiveTab] = useState<PreviewTab>('visual')
     const [error, setError] = useState<string | null>(null)
     const [copySuccess, setCopySuccess] = useState<string>('')
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    // Use custom hooks for each editor to handle mounting independently
+    const mjmlEditor = useEditorMounting()
+    const htmlEditor = useEditorMounting()
 
     useEffect(() => {
         if (isOpen && elements.length > 0) {
             void generatePreview()
         }
     }, [isOpen, elements])
+
+    const handleTabChange = (tab: PreviewTab) => {
+        // Reset editors when switching tabs to avoid ResizeObserver conflicts
+        mjmlEditor.resetEditor()
+        htmlEditor.resetEditor()
+
+        // Small delay before switching tabs to ensure cleanup
+        setTimeout(() => {
+            setActiveTab(tab)
+            setCopySuccess('')
+        }, 50)
+    }
 
     const generatePreview = async () => {
         setIsLoading(true)
@@ -88,125 +121,10 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
             setCopySuccess('Copied!')
             setTimeout(() => setCopySuccess(''), 2000)
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err)
+            console.error('Failed to copy:', err)
             setCopySuccess('Failed to copy')
             setTimeout(() => setCopySuccess(''), 2000)
         }
-    }
-
-    const formatCode = (code: string, language: 'mjml' | 'html'): string => {
-        // Enhanced code formatting with syntax highlighting
-        if (!code) return ''
-
-        try {
-            // First format the code structure
-            let formatted = ''
-
-            if (language === 'mjml') {
-                formatted = formatMjmlCode(code)
-            } else if (language === 'html') {
-                formatted = formatHtmlCode(code)
-            }
-
-            // Apply syntax highlighting
-            return applySyntaxHighlighting(formatted)
-        } catch (err) {
-            console.error(`Error formatting ${language} code:`, err)
-            return code
-        }
-    }
-
-    const applySyntaxHighlighting = (code: string): string => {
-        // Always escape HTML to prevent XSS
-        const escaped = escapeHtml(code)
-
-        // Apply syntax highlighting step by step to avoid conflicts
-        let highlighted = escaped
-
-        // 1. Highlight comments first
-        highlighted = highlighted.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="syntax-comment">$1</span>')
-
-        // 2. Highlight complete XML/HTML tags
-        highlighted = highlighted.replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^&gt;]*)?&gt;)/g, (match) => {
-            // Don't re-highlight if already in a span
-            if (match.includes('<span')) return match
-            return `<span class="syntax-tag">${match}</span>`
-        })
-
-        // 3. Highlight attributes and values within tag spans
-        highlighted = highlighted.replace(/<span class="syntax-tag">([^<]+)<\/span>/g, (match, tagContent) => {
-            let processedTag = tagContent
-            // Highlight attributes (word followed by =)
-            processedTag = processedTag.replace(/\b([a-zA-Z-]+)(?==)/g, '<span class="syntax-attribute">$1</span>')
-            // Highlight attribute values
-            processedTag = processedTag.replace(/=(&quot;[^&quot;]*&quot;|&#x27;[^&#x27;]*&#x27;)/g, '=<span class="syntax-value">$1</span>')
-            return `<span class="syntax-tag">${processedTag}</span>`
-        })
-
-        return highlighted
-    }
-
-    const escapeHtml = (text: string): string => {
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-    }
-
-    const formatMjmlCode = (code: string): string => {
-        let indent = 0
-        const lines = code.split('\n')
-
-        return lines.map(line => {
-            const trimmed = line.trim()
-            if (!trimmed) return ''
-
-            // Handle MJML-specific tags
-            if (trimmed.startsWith('</')) {
-                indent = Math.max(0, indent - 1)
-            }
-
-            const indentedLine = '  '.repeat(indent) + trimmed
-
-            // MJML void elements (self-closing)
-            const mjmlVoidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-raw']
-            const isVoidElement = mjmlVoidElements.some(tag => trimmed.includes(`<${tag}`))
-
-            if (trimmed.startsWith('<') && !trimmed.startsWith('</') && !trimmed.endsWith('/>') && !isVoidElement) {
-                indent++
-            }
-
-            return indentedLine
-        }).join('\n')
-    }
-
-    const formatHtmlCode = (code: string): string => {
-        let indent = 0
-        const lines = code.split('\n')
-
-        return lines.map(line => {
-            const trimmed = line.trim()
-            if (!trimmed) return ''
-
-            // Handle HTML-specific formatting
-            if (trimmed.startsWith('</')) {
-                indent = Math.max(0, indent - 1)
-            }
-
-            const indentedLine = '  '.repeat(indent) + trimmed
-
-            // HTML void elements
-            const htmlVoidElements = ['img', 'br', 'hr', 'input', 'meta', 'link']
-            const isVoidElement = htmlVoidElements.some(tag => trimmed.includes(`<${tag}`))
-
-            if (trimmed.startsWith('<') && !trimmed.startsWith('</') && !trimmed.endsWith('/>') && !isVoidElement) {
-                indent++
-            }
-
-            return indentedLine
-        }).join('\n')
     }
 
     if (!isOpen) return null
@@ -222,21 +140,21 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                     <div className="preview-tabs">
                         <button
                             className={`tab-button ${activeTab === 'visual' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('visual')}
+                            onClick={() => handleTabChange('visual')}
                             title="Visual Preview"
                         >
                             👁️ Visual
                         </button>
                         <button
                             className={`tab-button ${activeTab === 'mjml' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('mjml')}
+                            onClick={() => handleTabChange('mjml')}
                             title="MJML Code"
                         >
                             📝 MJML
                         </button>
                         <button
                             className={`tab-button ${activeTab === 'html' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('html')}
+                            onClick={() => handleTabChange('html')}
                             title="HTML Code"
                         >
                             🌐 HTML
@@ -355,10 +273,42 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                                                     Lines: {mjmlContent.split('\n').length} •
                                                     Size: {Math.round(mjmlContent.length / 1024)}KB
                                                 </div>
+                                                <button
+                                                    className="copy-button"
+                                                    onClick={copyToClipboard}
+                                                    title="Copy to clipboard"
+                                                >
+                                                    {copySuccess
+                                                        ? (
+                                                            <>✓ {copySuccess}</>
+                                                        )
+                                                        : (
+                                                            <>📋 Copy</>
+                                                        )
+                                                    }
+                                                </button>
                                             </div>
-                                            <pre className="code-content mjml-code">
-                                                <code dangerouslySetInnerHTML={{ __html: formatCode(mjmlContent, 'mjml') }} />
-                                            </pre>
+                                            <div className="editor-container" ref={containerRef}>
+                                                {!mjmlEditor.isEditorReady && <div className="editor-loading">Loading editor...</div>}
+                                                <div className={`editor-wrapper ${mjmlEditor.isEditorReady ? 'visible' : 'hidden'}`}>
+                                                    <Editor
+                                                        defaultLanguage="xml"
+                                                        value={mjmlContent}
+                                                        options={{
+                                                            readOnly: true,
+                                                            minimap: { enabled: false },
+                                                            scrollBeyondLastLine: false,
+                                                            wordWrap: 'on',
+                                                            fontSize: 14,
+                                                            lineNumbers: 'on',
+                                                            folding: true,
+                                                            theme: 'vs-light',
+                                                        }}
+                                                        onMount={mjmlEditor.handleEditorDidMount}
+                                                        loading={null}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
 
@@ -370,10 +320,41 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                                                     Lines: {htmlContent.split('\n').length} •
                                                     Size: {Math.round(htmlContent.length / 1024)}KB
                                                 </div>
+                                                <button
+                                                    className="copy-button"
+                                                    onClick={copyToClipboard}
+                                                    title="Copy to clipboard"
+                                                >
+                                                    {copySuccess
+                                                        ? (
+                                                            <>✓ {copySuccess}</>
+                                                        )
+                                                        : (
+                                                            <>📋 Copy</>
+                                                        )}
+                                                </button>
                                             </div>
-                                            <pre className="code-content html-code">
-                                                <code dangerouslySetInnerHTML={{ __html: formatCode(htmlContent, 'html') }} />
-                                            </pre>
+                                            <div className="editor-container" ref={containerRef}>
+                                                {!htmlEditor.isEditorReady && <div className="editor-loading">Loading editor...</div>}
+                                                <div className={`editor-wrapper ${htmlEditor.isEditorReady ? 'visible' : 'hidden'}`}>
+                                                    <Editor
+                                                        defaultLanguage="html"
+                                                        value={htmlContent}
+                                                        options={{
+                                                            readOnly: true,
+                                                            minimap: { enabled: false },
+                                                            scrollBeyondLastLine: false,
+                                                            wordWrap: 'on',
+                                                            fontSize: 14,
+                                                            lineNumbers: 'on',
+                                                            folding: true,
+                                                            theme: 'vs-light',
+                                                        }}
+                                                        onMount={htmlEditor.handleEditorDidMount}
+                                                        loading={null}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </>

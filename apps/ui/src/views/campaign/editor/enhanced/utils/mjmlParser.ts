@@ -92,10 +92,10 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
     return result
 }
 
-// Convert editor elements to MJML string
+// Convert editor elements to MJML string with proper formatting
 export const editorElementsToMjmlString = (elements: EditorElement[]): string => {
     if (!elements || elements.length === 0) {
-        return '<mjml><mj-body></mj-body></mjml>'
+        return '<mjml>\n  <mj-body></mj-body>\n</mjml>'
     }
 
     // Find the mjml root element
@@ -103,7 +103,7 @@ export const editorElementsToMjmlString = (elements: EditorElement[]): string =>
 
     // If there's a valid mjml root, convert it
     if (mjmlRoot) {
-        return elementToMjmlString(mjmlRoot)
+        return elementToMjmlString(mjmlRoot, 0)
     }
 
     // If no mjml root found, wrap the elements in a proper mjml structure
@@ -112,17 +112,19 @@ export const editorElementsToMjmlString = (elements: EditorElement[]): string =>
 
     if (mjBodyElement) {
         // If mj-body exists, wrap it in mjml
-        return `<mjml>${elementToMjmlString(mjBodyElement)}</mjml>`
+        return `<mjml>\n${elementToMjmlString(mjBodyElement, 1)}\n</mjml>`
     }
 
     // If no mjml or mj-body found, create a complete structure
-    const elementsString = elements.map(element => elementToMjmlString(element)).join('')
-    return `<mjml><mj-body>${elementsString}</mj-body></mjml>`
+    const elementsString = elements.map(element => elementToMjmlString(element, 2)).join('\n')
+    return `<mjml>\n  <mj-body>\n${elementsString}\n  </mj-body>\n</mjml>`
 }
 
-// Convert single element to MJML string recursively
-const elementToMjmlString = (element: EditorElement): string => {
+// Convert single element to MJML string recursively with proper indentation
+const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): string => {
     const { tagName, attributes, content, children } = element
+    const indent = '  '.repeat(indentLevel)
+    const childIndent = '  '.repeat(indentLevel + 1)
 
     // Build attributes string
     const attributesString = Object.entries(attributes || {})
@@ -134,17 +136,29 @@ const elementToMjmlString = (element: EditorElement): string => {
     // Handle void elements (self-closing)
     const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-raw']
     if (voidElements.includes(tagName) && !content && (!children || children.length === 0)) {
-        return `<${tagName}${attributesPart} />`
+        return `${indent}<${tagName}${attributesPart} />`
     }
 
-    // Handle elements with content
+    // Handle elements with content only (no children)
     if (content && (!children || children.length === 0)) {
-        return `<${tagName}${attributesPart}>${content}</${tagName}>`
+        // For text elements, preserve content formatting
+        if (tagName === 'mj-text' || tagName === 'mj-button') {
+            return `${indent}<${tagName}${attributesPart}>\n${childIndent}${content}\n${indent}</${tagName}>`
+        } else {
+            return `${indent}<${tagName}${attributesPart}>${content}</${tagName}>`
+        }
     }
 
     // Handle elements with children
-    const childrenString = children?.map(child => elementToMjmlString(child)).join('') || ''
-    return `<${tagName}${attributesPart}>${childrenString}</${tagName}>`
+    if (children && children.length > 0) {
+        const childrenString = children
+            .map(child => elementToMjmlString(child, indentLevel + 1))
+            .join('\n')
+        return `${indent}<${tagName}${attributesPart}>\n${childrenString}\n${indent}</${tagName}>`
+    }
+
+    // Handle empty elements
+    return `${indent}<${tagName}${attributesPart}></${tagName}>`
 }
 
 // Convert MJML to HTML using mjml-browser
