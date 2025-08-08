@@ -229,7 +229,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .properties-panel {
-        width: 280px;
+        width: 100%;
     }
     
     .panel-header {

@@ -15,6 +15,7 @@ import PropertiesPanel from './components/PropertiesPanel'
 import EnhancedPreviewModal from './components/EnhancedPreviewModal'
 import ImportMjmlModal from './components/ImportMjmlModal'
 import ErrorBoundary from './components/ErrorBoundary'
+import LayersPanel from './components/LayersPanel'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
 
@@ -344,14 +345,23 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     template,
     onTemplateChange,
     onTemplateSave,
-    _resources = [],
     isPreviewMode = false,
     isSaving = false,
 }) => {
     const [showEnhancedPreview, setShowEnhancedPreview] = useState(false)
     const [showImportModal, setShowImportModal] = useState(false)
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
-    const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties'>('components')
+    const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties' | 'layers'>('components')
+
+    // Function to focus on properties panel when edit button is clicked
+    const handleEditButtonClick = useCallback((elementId: string) => {
+        // Select the element
+        dispatch({ type: 'SELECT_ELEMENT', payload: { elementId } })
+        // Switch to properties tab
+        setActiveRightTab('properties')
+        // Ensure panel is expanded
+        setRightPanelCollapsed(false)
+    }, [])
 
     // Initialize editor state with a function to ensure proper initialization
     const getInitialState = (): HistoryState => {
@@ -636,14 +646,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                         <div className="toolbar-right">
                             {onTemplateSave && (
                                 <>
-                                    <button
-                                        className="toolbar-button save-button"
-                                        onClick={handleSave}
-                                        disabled={isSaving}
-                                        title="Save Template (Ctrl+S)"
-                                    >
-                                        {isSaving ? '⏳' : '💾'}
-                                    </button>
+                                    {isSaving ? '⏳' : ''}
                                     <div className="toolbar-divider" />
                                 </>
                             )}
@@ -655,39 +658,18 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                 📥
                             </button>
                             <button
-                                className="toolbar-button enhanced-preview-button"
+                                className="toolbar-button"
                                 onClick={() => setShowEnhancedPreview(true)}
                                 title="Preview Email with Code View"
                             >
                                 👁️
-                            </button>
-                            <div className="toolbar-divider" />
-                            <button
-                                className={`toolbar-button ${activeRightTab === 'components' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveRightTab('components')
-                                    setRightPanelCollapsed(false)
-                                }}
-                                title="Show Components Panel"
-                            >
-                                📦
-                            </button>
-                            <button
-                                className={`toolbar-button ${activeRightTab === 'properties' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveRightTab('properties')
-                                    setRightPanelCollapsed(false)
-                                }}
-                                title="Show Properties Panel"
-                            >
-                                ⚙️
                             </button>
                             <button
                                 className={`toolbar-button ${rightPanelCollapsed ? 'active' : ''}`}
                                 onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
                                 title="Toggle Right Panel"
                             >
-                                {rightPanelCollapsed ? '👁️' : '🙈'}
+                                {rightPanelCollapsed ? '➡️' : '⬅️'}
                             </button>
                         </div>
                     </div>
@@ -707,6 +689,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             onElementUpdate={handleElementUpdate}
                             onElementDelete={handleElementDelete}
                             onElementMove={handleElementMove}
+                            onEditButtonClick={handleEditButtonClick}
                             isPreviewMode={isPreviewMode}
                         />
                     </ErrorBoundary>
@@ -719,14 +702,26 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                     <button
                                         className={`tab-button ${activeRightTab === 'components' ? 'active' : ''}`}
                                         onClick={() => setActiveRightTab('components')}
+                                        title="MJML Components"
                                     >
-                                        📦 Components
+                                        <span className="tab-icon">📦</span>
+                                        <span className="tab-label">Components</span>
                                     </button>
                                     <button
                                         className={`tab-button ${activeRightTab === 'properties' ? 'active' : ''}`}
                                         onClick={() => setActiveRightTab('properties')}
+                                        title="Element Properties"
                                     >
-                                        ⚙️ Properties
+                                        <span className="tab-icon">⚙️</span>
+                                        <span className="tab-label">Properties</span>
+                                    </button>
+                                    <button
+                                        className={`tab-button ${activeRightTab === 'layers' ? 'active' : ''}`}
+                                        onClick={() => setActiveRightTab('layers')}
+                                        title="Element Structure"
+                                    >
+                                        <span className="tab-icon">🗂️</span>
+                                        <span className="tab-label">Layers</span>
                                     </button>
                                 </div>
                                 <button
@@ -762,6 +757,21 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                             onElementUpdate={handleElementUpdate}
                                             isCollapsed={false}
                                             onToggleCollapse={() => {}}
+                                        />
+                                    </ErrorBoundary>
+                                )}
+
+                                {activeRightTab === 'layers' && (
+                                    <ErrorBoundary
+                                        resetKeys={[editorState.present.length, editorState.selectedElementId ?? 'none', rightPanelCollapsed ? 'collapsed' : 'expanded']}
+                                        onError={(error) => console.error('LayersPanel error:', error)}
+                                    >
+                                        <LayersPanel
+                                            elements={editorState.present}
+                                            selectedElementId={editorState.selectedElementId}
+                                            onSelect={handleElementSelect}
+                                            onDelete={handleElementDelete}
+                                            onMove={handleElementMove}
                                         />
                                     </ErrorBoundary>
                                 )}

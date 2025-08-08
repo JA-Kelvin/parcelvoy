@@ -13,6 +13,7 @@ interface DroppableElementProps {
     onDelete: (elementId: string) => void
     onMove: (elementId: string, newParentId: string, newIndex: number) => void
     onElementAdd: (element: EditorElement, parentId?: string, index?: number) => void
+    onEditButtonClick?: (elementId: string) => void
     children?: React.ReactNode
 }
 
@@ -25,6 +26,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     onDelete,
     onMove,
     onElementAdd,
+    onEditButtonClick,
     children,
 }) => {
     // Safety checks for props
@@ -39,6 +41,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const safeOnDelete = onDelete || (() => {})
     const safeOnMove = onMove || (() => {})
     const safeOnElementAdd = onElementAdd || (() => {})
+    const safeOnEditButtonClick = onEditButtonClick ?? (() => {})
 
     const [isHovered, setIsHovered] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -144,33 +147,75 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         const baseStyle: React.CSSProperties = {
             opacity: isDragging ? 0.5 : 1,
             position: 'relative',
+            boxSizing: 'border-box',
         }
 
         // Apply MJML attributes as CSS styles
         const { attributes } = element
 
-        if (attributes['background-color']) {
-            baseStyle.backgroundColor = attributes['background-color']
-        }
+        // Colors
+        if (attributes['background-color']) baseStyle.backgroundColor = attributes['background-color']
+        if (attributes.color) baseStyle.color = attributes.color
 
-        if (attributes.color) {
-            baseStyle.color = attributes.color
-        }
+        // Typography
+        if (attributes['font-family']) baseStyle.fontFamily = attributes['font-family']
+        if (attributes['font-size']) baseStyle.fontSize = attributes['font-size']
+        if (attributes['line-height']) baseStyle.lineHeight = attributes['line-height']
+        if (attributes['font-weight']) baseStyle.fontWeight = attributes['font-weight']
+        if (attributes['font-style']) baseStyle.fontStyle = attributes['font-style']
 
-        if (attributes['font-size']) {
-            baseStyle.fontSize = attributes['font-size']
-        }
+        // Alignment
+        if (attributes['text-align']) baseStyle.textAlign = attributes['text-align']
 
-        if (attributes.padding) {
+        // Spacing - padding
+        const hasSidePadding = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'].some((k) => attributes[k] !== undefined)
+        if (hasSidePadding) {
+            if (attributes['padding-top']) baseStyle.paddingTop = attributes['padding-top']
+            if (attributes['padding-right']) baseStyle.paddingRight = attributes['padding-right']
+            if (attributes['padding-bottom']) baseStyle.paddingBottom = attributes['padding-bottom']
+            if (attributes['padding-left']) baseStyle.paddingLeft = attributes['padding-left']
+        } else if (attributes.padding !== undefined) {
             baseStyle.padding = attributes.padding
         }
 
-        if (attributes.margin) {
+        // Spacing - margin
+        const hasSideMargin = ['margin-top', 'margin-right', 'margin-bottom', 'margin-left'].some((k) => attributes[k] !== undefined)
+        if (hasSideMargin) {
+            if (attributes['margin-top']) baseStyle.marginTop = attributes['margin-top']
+            if (attributes['margin-right']) baseStyle.marginRight = attributes['margin-right']
+            if (attributes['margin-bottom']) baseStyle.marginBottom = attributes['margin-bottom']
+            if (attributes['margin-left']) baseStyle.marginLeft = attributes['margin-left']
+        } else if (attributes.margin !== undefined) {
             baseStyle.margin = attributes.margin
         }
 
-        if (attributes['text-align']) {
-            baseStyle.textAlign = attributes['text-align']
+        // Per-tag specifics
+        switch (element.tagName) {
+            case 'mj-section': {
+                if (attributes['background-url']) {
+                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
+                    baseStyle.backgroundSize = attributes['background-size'] || 'cover'
+                    baseStyle.backgroundPosition = attributes['background-position'] || 'center'
+                }
+                baseStyle.width = '100%'
+                break
+            }
+            case 'mj-column': {
+                const width = attributes.width
+                if (width) {
+                    baseStyle.flex = `0 0 ${width}`
+                    baseStyle.width = width
+                    baseStyle.maxWidth = width
+                } else {
+                    baseStyle.flex = '1 1 0'
+                }
+                if (attributes['vertical-align']) {
+                    const v = String(attributes['vertical-align']).toLowerCase()
+                    baseStyle.alignSelf = v === 'top' ? 'flex-start' : v === 'middle' ? 'center' : v === 'bottom' ? 'flex-end' : undefined
+                }
+                break
+            }
         }
 
         return baseStyle
@@ -212,10 +257,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                 backgroundColor: attributes['background-color'] || '#007bff',
                                 color: attributes.color || '#ffffff',
                                 borderRadius: attributes['border-radius'] || '4px',
-                                padding: attributes.Padding || '12px 24px',
-                                border: 'none',
+                                padding: attributes['inner-padding'] || attributes.padding || '10px 25px',
+                                border: attributes.border || 'none',
                                 cursor: 'pointer',
-                                fontSize: attributes['font-size'] || '16px',
+                                fontSize: attributes['font-size'] || '14px',
+                                fontFamily: attributes['font-family'],
+                                textDecoration: 'none',
+                                display: attributes.align ? 'block' : 'inline-block',
+                                marginLeft: attributes.align === 'right' ? 'auto' : undefined,
+                                marginRight: attributes.align === 'left' ? undefined : attributes.align ? 'auto' : undefined,
                             }}
                         >
                             {content ?? 'Click me'}
@@ -231,6 +281,12 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             width: attributes.width || '100%',
                             height: 'auto',
                             display: 'block',
+                            borderRadius: attributes['border-radius'],
+                            ...(attributes.align === 'center'
+                                ? { marginLeft: 'auto', marginRight: 'auto' }
+                                : attributes.align === 'right'
+                                    ? { marginLeft: 'auto' }
+                                    : {}),
                         }}
                     />
                 )
@@ -316,11 +372,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         className="control-button edit"
                         onClick={(e) => {
                             e.stopPropagation()
+                            // Call the edit button click handler to focus properties panel
+                            safeOnEditButtonClick(element.id)
+
+                            // For text and button elements, also enable inline editing
                             if (element.tagName === 'mj-text' || element.tagName === 'mj-button') {
                                 setIsEditing(true)
                             }
                         }}
-                        title="Edit content"
+                        title="Edit properties"
                     >
                         ✏️
                     </button>

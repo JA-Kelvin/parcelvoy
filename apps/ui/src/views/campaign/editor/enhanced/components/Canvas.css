@@ -32,13 +32,25 @@ linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
 }
 
 .mjml-body-wrapper {
-    max-width: 800px;
+    max-width: 660px;
+    padding: 20px;
     margin: 0 auto;
     background: #ffffff;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border-radius: 8px;
     overflow: hidden;
     position: relative;
+    /* Normalize typography similar to preview */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #111827;
+}
+
+/* In preview mode, remove canvas chrome for pixel parity */
+.canvas.preview-mode .mjml-body-wrapper {
+    box-shadow: none;
+    border-radius: 0;
 }
 
 .canvas-empty {
@@ -123,7 +135,7 @@ linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
 
 .canvas .droppable-element .element-controls {
     position: absolute;
-    top: -30px;
+    top: 0px;
     right: 0;
     display: none;
     background: #ffffff;
@@ -141,7 +153,6 @@ linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
 .element-controls button {
     background: none;
     border: none;
-    padding: 6px 8px;
     cursor: pointer;
     color: #6b7280;
     font-size: 12px;

@@ -31,7 +31,7 @@
 }
 
 .element-mj-column {
-    padding: 10px;
+    padding: 0px;
     border: 1px dashed transparent;
     min-height: 50px;
 }
@@ -110,7 +110,7 @@
 /* Element controls */
 .element-controls {
     position: absolute;
-    top: -35px;
+    top: -0px;
     right: 0;
     display: none;
     background: #ffffff;
@@ -218,6 +218,29 @@
 
 .droppable-element.preview-mode .drop-indicator {
     display: none;
+}
+
+/* Remove editor-only spacing/affordances in preview mode for parity */
+.droppable-element.preview-mode.element-mj-section {
+    margin-bottom: 0;
+}
+
+.droppable-element.preview-mode.element-mj-column {
+    padding: 0;
+    border: none;
+}
+
+.droppable-element.preview-mode.element-mj-text {
+    padding: 0;
+}
+
+.droppable-element.preview-mode.element-mj-button {
+    padding: 0;
+}
+
+.droppable-element.preview-mode .mj-button-content:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 /* Responsive adjustments */

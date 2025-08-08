@@ -239,7 +239,6 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                     onClick={onToggleCollapse}
                     title="Collapse Components Panel"
                 >
-                    ✕
                 </button>
             </div>
 

@@ -15,6 +15,7 @@ interface CanvasProps {
     onElementUpdate: (elementId: string, attributes: Record<string, any>, content?: string) => void
     onElementDelete: (elementId: string) => void
     onElementMove: (elementId: string, newParentId: string, newIndex: number) => void
+    onEditButtonClick?: (elementId: string) => void
     isPreviewMode?: boolean
 }
 
@@ -26,6 +27,7 @@ const Canvas: React.FC<CanvasProps> = ({
     onElementUpdate,
     onElementDelete,
     onElementMove,
+    onEditButtonClick,
     isPreviewMode = false,
 }) => {
     // Comprehensive safety checks
@@ -176,6 +178,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 onDelete={safeOnElementDelete}
                 onMove={safeOnElementMove}
                 onElementAdd={safeOnElementAdd}
+                onEditButtonClick={onEditButtonClick}
             >
                 {element.children && element.children.length > 0
                     && renderElements(element.children, element.id)}

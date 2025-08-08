@@ -42,7 +42,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         onClick={onToggleCollapse}
                         title="Collapse Properties Panel"
                     >
-                        ✕
                     </button>
                 </div>
                 <div className="panel-content">
@@ -233,7 +232,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     onClick={onToggleCollapse}
                     title="Collapse Properties Panel"
                 >
-                    ✕
                 </button>
             </div>
 
