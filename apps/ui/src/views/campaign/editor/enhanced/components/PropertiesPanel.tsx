@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 import { EditorElement } from '../types'
 import './PropertiesPanel.css'
+import ImageGalleryModal from '../../../ImageGalleryModal'
+import { Image } from '../../../../../types'
 
 interface PropertiesPanelProps {
     selectedElement: EditorElement | null
@@ -17,6 +19,24 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     onToggleCollapse,
 }) => {
     const [activeTab, setActiveTab] = useState<'attributes' | 'content' | 'style'>('attributes')
+    const [showImageModal, setShowImageModal] = useState(false)
+    const [imageAttrKey, setImageAttrKey] = useState<string | null>(null)
+
+    const openImagePicker = (key: string) => {
+        setImageAttrKey(key)
+        setShowImageModal(true)
+    }
+
+    const closeImagePicker = () => {
+        setShowImageModal(false)
+        setImageAttrKey(null)
+    }
+
+    const handleImageInsert = (image: Image) => {
+        if (!imageAttrKey) return
+        handleAttributeChange(imageAttrKey, image.url)
+        closeImagePicker()
+    }
 
     if (isCollapsed) {
         return (
@@ -317,6 +337,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
     const renderAttributeInput = (attr: any) => {
         const value = selectedElement.attributes[attr.key] || ''
+        const isImageAttribute = attr.type === 'url' && (attr.key === 'src' || attr.key === 'background-url')
         switch (attr.type) {
             case 'color':
                 return (
@@ -350,6 +371,49 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     </select>
                 )
             case 'url':
+                if (isImageAttribute) {
+                    return (
+                        <div className="image-input">
+                            <div className={`image-thumb${value ? '' : ' empty'}`} aria-label="Image preview">
+                                {value
+                                    ? (
+                                        <img src={value} alt={selectedElement.attributes?.alt || 'Selected image'} />
+                                    )
+                                    : (
+                                        <span className="image-thumb-placeholder">No image</span>
+                                    )}
+                            </div>
+                            <div className="image-controls">
+                                <input
+                                    type="url"
+                                    value={value}
+                                    onChange={(e) => handleAttributeChange(attr.key, e.target.value)}
+                                    placeholder={attr.placeholder}
+                                    className="text-input"
+                                    aria-label={`${attr.label} URL`}
+                                />
+                                <div className="image-actions">
+                                    <button
+                                        type="button"
+                                        className="image-button"
+                                        onClick={() => openImagePicker(attr.key)}
+                                        aria-label={`Choose ${attr.label}`}>
+                                        Choose…
+                                    </button>
+                                    {value && (
+                                        <button
+                                            type="button"
+                                            className="unlink-button"
+                                            onClick={() => handleAttributeChange(attr.key, '')}
+                                            aria-label={`Remove ${attr.label}`}>
+                                            Unlink
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
                 return (
                     <input
                         type="url"
@@ -465,6 +529,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     </div>
                 )}
             </div>
+            <ImageGalleryModal
+                open={showImageModal}
+                onClose={closeImagePicker}
+                onInsert={handleImageInsert}
+            />
         </div>
     )
 }
