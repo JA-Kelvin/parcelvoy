@@ -41,7 +41,7 @@ export interface EnhancedTemplate {
     type: string
     locale: string
     data: {
-        editor: 'enhanced-visual' | 'visual' | 'html'
+        editor: 'enhanced-visual' | 'enhanced-visual-dndkit' | 'visual' | 'html'
         mjml: string
         html: string
         elements?: EditorElement[]
@@ -53,15 +53,16 @@ export interface ComponentDefinition {
     type: string
     tagName: string
     displayName: string
-    category: 'layout' | 'content' | 'media' | 'social'
+    category: 'layout' | 'content' | 'media' | 'social' | 'structure' | 'advanced'
     icon: string
     defaultAttributes: Record<string, any>
     allowedChildren?: string[]
+    allowedParents?: string[]
     isVoid?: boolean
 }
 
 export interface EditorAction {
-    type: 'ADD_ELEMENT' | 'UPDATE_ELEMENT' | 'DELETE_ELEMENT' | 'SELECT_ELEMENT' | 'UNDO' | 'REDO' | 'LOAD_TEMPLATE' | 'CLEAR_CANVAS'
+    type: 'ADD_ELEMENT' | 'UPDATE_ELEMENT' | 'DELETE_ELEMENT' | 'MOVE_ELEMENT' | 'SELECT_ELEMENT' | 'UNDO' | 'REDO' | 'LOAD_TEMPLATE' | 'CLEAR_CANVAS'
     payload?: any
 }
 

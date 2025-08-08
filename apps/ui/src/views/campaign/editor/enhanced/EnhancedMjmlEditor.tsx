@@ -56,6 +56,19 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
             }
         }
 
+        case 'MOVE_ELEMENT': {
+            const { elementId, newParentId, newIndex } = payload
+            const { next, moved } = moveElementRecursive(state.present, elementId, newParentId, newIndex)
+            if (!moved) return state
+            return {
+                present: next,
+                history: [...state.history.slice(-49), state.present],
+                future: [],
+                selectedElementId: elementId,
+                templateId: state.templateId,
+            }
+        }
+
         case 'DELETE_ELEMENT': {
             const { elementId } = payload
             const newElements = deleteElementRecursive(state.present, elementId)
@@ -175,16 +188,156 @@ const updateElementRecursive = (elements: EditorElement[], elementId: string, up
 }
 
 const deleteElementRecursive = (elements: EditorElement[], elementId: string): EditorElement[] => {
-    const element = elements.find(el => el.id === elementId) ?? null
-    if (element) {
-        return elements.filter(el => el.id !== elementId).map(el => {
-            if (el.children && el.children.length > 0) {
-                return { ...el, children: deleteElementRecursive(el.children, elementId) }
+    return elements.map(element => {
+        if (element.id === elementId) {
+            return null // This will be filtered out
+        }
+        if (element.children) {
+            return {
+                ...element,
+                children: deleteElementRecursive(element.children, elementId).filter(Boolean),
             }
-            return el
-        })
+        }
+        return element
+    }).filter(Boolean) as EditorElement[]
+}
+
+// --- Move helpers ---
+const getElementByIdRecursive = (elements: EditorElement[], id: string): EditorElement | null => {
+    for (const el of elements) {
+        if (el.id === id) return el
+        if (el?.children.length) {
+            const found = getElementByIdRecursive(el.children, id)
+            if (found) return found
+        }
     }
-    return elements
+    return null
+}
+
+const findAndRemoveElement = (
+    elements: EditorElement[],
+    elementId: string,
+    parentId: string | null = null,
+): {
+    tree: EditorElement[]
+    removed?: EditorElement
+    originalParentId?: string | null
+    originalIndex?: number
+} => {
+    const newTree: EditorElement[] = []
+    let removed: EditorElement | undefined
+    let originalParentId: string | null | undefined
+    let originalIndex: number | undefined
+
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i]
+        if (el.id === elementId) {
+            removed = el
+            originalParentId = parentId
+            originalIndex = i
+            continue // skip adding this element
+        }
+        if (el.children && el.children.length > 0) {
+            const childResult = findAndRemoveElement(el.children, elementId, el.id)
+            if (childResult.removed) {
+                removed = childResult.removed
+                originalParentId = childResult.originalParentId
+                originalIndex = childResult.originalIndex
+                newTree.push({ ...el, children: childResult.tree })
+                continue
+            }
+        }
+        newTree.push(el)
+    }
+
+    return { tree: newTree, removed, originalParentId, originalIndex }
+}
+
+const insertElementAtParent = (
+    elements: EditorElement[],
+    parentId: string | null | undefined,
+    index: number,
+    element: EditorElement,
+): EditorElement[] => {
+    if (parentId == null) {
+        const root = [...elements]
+        const insertAt = Math.max(0, Math.min(index ?? root.length, root.length))
+        root.splice(insertAt, 0, element)
+        return root
+    }
+
+    return elements.map(el => {
+        if (el.id === parentId) {
+            const children = [...(el.children || [])]
+            const insertAt = Math.max(0, Math.min(index ?? children.length, children.length))
+            children.splice(insertAt, 0, element)
+            return { ...el, children }
+        }
+        if (el.children && el.children.length > 0) {
+            return { ...el, children: insertElementAtParent(el.children, parentId, index, element) }
+        }
+        return el
+    })
+}
+
+const isDescendant = (elements: EditorElement[], ancestorId: string, candidateId: string): boolean => {
+    const ancestor = getElementByIdRecursive(elements, ancestorId)
+    if (!ancestor) return false
+    const contains = (nodes: EditorElement[]): boolean => {
+        for (const n of nodes) {
+            if (n.id === candidateId) return true
+            if (n.children?.length && contains(n.children)) return true
+        }
+        return false
+    }
+    return contains(ancestor.children || [])
+}
+
+const moveElementRecursive = (
+    elements: EditorElement[],
+    elementId: string,
+    newParentId: string,
+    newIndex: number,
+): {
+    next: EditorElement[]
+    moved?: EditorElement
+} => {
+    // Guard: cannot move into itself or its descendant
+    if (elementId === newParentId) {
+        console.warn('MOVE_ELEMENT aborted: target parent equals element')
+        return { next: elements }
+    }
+    if (isDescendant(elements, elementId, newParentId)) {
+        console.warn('MOVE_ELEMENT aborted: target parent is a descendant of the element')
+        return { next: elements }
+    }
+
+    const removal = findAndRemoveElement(elements, elementId, null)
+    if (!removal.removed) {
+        console.warn('MOVE_ELEMENT: element to move not found', elementId)
+        return { next: elements }
+    }
+
+    // Adjust index if moving within same parent and forward
+    let targetIndex = newIndex ?? 0
+    if (
+        removal.originalParentId != null
+        && removal.originalParentId === newParentId
+        && typeof removal.originalIndex === 'number'
+        && typeof newIndex === 'number'
+        && newIndex > removal.originalIndex
+    ) {
+        targetIndex = newIndex - 1
+    }
+
+    // Ensure parent exists; if not, revert to original parent
+    const parentExists = !!getElementByIdRecursive(removal.tree, newParentId)
+    const treeToUse = parentExists ? removal.tree : removal.tree
+    const parentForInsert = parentExists ? newParentId : removal.originalParentId
+    const indexForInsert = parentExists ? targetIndex : (removal.originalIndex ?? 0)
+
+    const inserted = insertElementAtParent(treeToUse, parentForInsert ?? null, indexForInsert, removal.removed)
+    return { next: inserted, moved: removal.removed }
 }
 
 const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
@@ -320,11 +473,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         })
     }, [])
 
-    const handleElementMove = useCallback((elementId: string, _newParentId: string, _newIndex: number): void => {
-        // First remove the element
-        dispatch({ type: 'DELETE_ELEMENT', payload: { elementId } })
-        // Then add it to the new location
-        // Implementation needed
+    const handleElementMove = useCallback((elementId: string, newParentId: string, newIndex: number): void => {
+        dispatch({ type: 'MOVE_ELEMENT', payload: { elementId, newParentId, newIndex } })
     }, [])
 
     const handleUndo = useCallback(() => {

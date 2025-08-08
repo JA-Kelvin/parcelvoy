@@ -37,22 +37,21 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
             setValidationMessage('Content cannot be empty')
             return false
         }
-        
+
         // Check for basic MJML structure
         if (content.includes('<mjml') && !content.includes('</mjml>')) {
             setIsValid(false)
             setValidationMessage('MJML content appears to be missing closing tags')
             return false
         }
-        
+
         // Check for basic HTML structure
-        if ((content.includes('<html') && !content.includes('</html>')) ||
-            (content.includes('<body') && !content.includes('</body>'))) {
+        if ((content.includes('<html') && !content.includes('</html>')) || (content.includes('<body') && !content.includes('</body>'))) {
             setIsValid(false)
             setValidationMessage('HTML content appears to be missing closing tags')
             return false
         }
-        
+
         setIsValid(true)
         setValidationMessage('')
         return true
@@ -64,7 +63,7 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
         }
 
         setIsLoading(true)
-        
+
         try {
             // Parse the MJML content into editor elements
             const elements = await parseMJMLString(pastedContent)
@@ -78,11 +77,11 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
             setIsLoading(false)
         }
     }
-    
+
     const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newContent = e.target.value
         setPastedContent(newContent)
-        
+
         // Clear validation errors as user types
         if (!isValid && newContent.trim()) {
             setIsValid(true)
@@ -90,12 +89,12 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
         }
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = async (e: React.KeyboardEvent) => {
         if (e.key === 'Escape') {
             onClose()
         }
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            handleSubmit()
+            await handleSubmit()
         }
     }
 
@@ -138,7 +137,7 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
                             className={`content-textarea ${!isValid ? 'textarea-error' : ''}`}
                             disabled={isLoading}
                         />
-                        
+
                         {!isValid && (
                             <div className="validation-error">
                                 ⚠️ {validationMessage}
@@ -158,21 +157,24 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
 
                 <div className="import-modal-footer">
                     <div className="import-actions">
-                        <button 
-                            onClick={handleSubmit} 
+                        <button
+                            onClick={handleSubmit}
                             className="import-button primary-button"
                             disabled={!pastedContent.trim() || isLoading}
                         >
-                            {isLoading ? (
-                                <>
-                                    <div className="loading-spinner"></div>
-                                    Importing...
-                                </>
-                            ) : (
-                                <>
-                                    📥 Import Content
-                                </>
-                            )}
+                            {isLoading
+                                ? (
+                                    <>
+                                        <div className="loading-spinner"></div>
+                                        Importing...
+                                    </>
+                                )
+                                : (
+                                    <>
+                                        📥 Import Content
+                                    </>
+                                )
+                            }
                         </button>
                         <button onClick={onClose} className="cancel-button secondary-button">
                             Cancel

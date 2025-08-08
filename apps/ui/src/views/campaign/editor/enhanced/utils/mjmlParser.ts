@@ -93,13 +93,14 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
 }
 
 // Convert editor elements to MJML string with proper formatting
-export const editorElementsToMjmlString = (elements: EditorElement[]): string => {
-    if (!elements || elements.length === 0) {
+export const editorElementsToMjmlString = (elements: EditorElement[] | any): string => {
+    // Ensure elements is an array
+    if (!elements || !Array.isArray(elements) || elements.length === 0) {
         return '<mjml>\n  <mj-body></mj-body>\n</mjml>'
     }
 
     // Find the mjml root element
-    const mjmlRoot = elements.find(el => el.tagName === 'mjml')
+    const mjmlRoot = elements.find(el => el && typeof el === 'object' && el.tagName === 'mjml')
 
     // If there's a valid mjml root, convert it
     if (mjmlRoot) {

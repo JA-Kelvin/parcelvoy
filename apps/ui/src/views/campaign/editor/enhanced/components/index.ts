@@ -4,3 +4,10 @@ export { default as Canvas } from './Canvas'
 export { default as ComponentsPanel } from './ComponentsPanel'
 export { default as EnhancedPreviewModal } from './EnhancedPreviewModal'
 export { default as PropertiesPanel } from './PropertiesPanel'
+export { default as ErrorBoundary } from './ErrorBoundary'
+export { default as ImportMjmlModal } from './ImportMjmlModal'
+
+// DndKit components
+export { default as DroppableElementDndKit } from './DroppableElementDndKit'
+export { default as CanvasDndKit } from './CanvasDndKit'
+export { default as ComponentsPanelDndKit } from './ComponentsPanelDndKit'
