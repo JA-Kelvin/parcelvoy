@@ -75,7 +75,6 @@ const Canvas: React.FC<CanvasProps> = ({
                 console.error('No mjml root found in elements')
                 return
             }
-
             const mjmlBody = mjmlRoot.children?.find((el: EditorElement) => el.tagName === 'mj-body')
             if (!mjmlBody) {
                 console.error('No mj-body found in mjml root')
@@ -86,6 +85,109 @@ const Canvas: React.FC<CanvasProps> = ({
             if (item.type === 'mj-section') {
                 safeOnElementAdd(newElement, mjmlBody.id)
                 return
+            }
+
+            // Groups must be direct children of sections
+            if (item.type === 'mj-group') {
+                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+                const lastSection = sections[sections.length - 1]
+                if (lastSection) {
+                    safeOnElementAdd(newElement, lastSection.id)
+                } else {
+                    const newSection: EditorElement = {
+                        id: generateId(),
+                        type: 'mj-section',
+                        tagName: 'mj-section',
+                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        children: [],
+                    }
+                    safeOnElementAdd(newSection, mjmlBody.id)
+                    safeOnElementAdd(newElement, newSection.id)
+                }
+                // Add a default column inside the group for usability
+                const defaultColumn: EditorElement = {
+                    id: generateId(),
+                    type: 'mj-column',
+                    tagName: 'mj-column',
+                    attributes: { width: '100%' },
+                    children: [],
+                }
+                safeOnElementAdd(defaultColumn, newElement.id)
+                return
+            }
+
+            // Wrapper and Hero live directly under mj-body
+            if (item.type === 'mj-wrapper' || item.type === 'mj-hero') {
+                safeOnElementAdd(newElement, mjmlBody.id)
+                return
+            }
+
+            // Handle subcomponents that require a specific parent container
+            if (
+                item.type === 'mj-navbar-link'
+                || item.type === 'mj-social-element'
+                || item.type === 'mj-carousel-image'
+                || item.type === 'mj-accordion-element'
+                || item.type === 'mj-accordion-title'
+                || item.type === 'mj-accordion-text'
+            ) {
+                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+                let section = sections[sections.length - 1]
+                if (!section) {
+                    section = {
+                        id: generateId(),
+                        type: 'mj-section',
+                        tagName: 'mj-section',
+                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        children: [],
+                    }
+                    safeOnElementAdd(section, mjmlBody.id)
+                }
+                const columns = section.children?.filter((el: EditorElement) => el.tagName === 'mj-column') || []
+                let column = columns[columns.length - 1]
+                if (!column) {
+                    column = {
+                        id: generateId(),
+                        type: 'mj-column',
+                        tagName: 'mj-column',
+                        attributes: { width: '100%' },
+                        children: [],
+                    }
+                    safeOnElementAdd(column, section.id)
+                }
+
+                if (item.type === 'mj-navbar-link') {
+                    const navbar: EditorElement = { id: generateId(), type: 'mj-navbar', tagName: 'mj-navbar', attributes: {}, children: [] }
+                    safeOnElementAdd(navbar, column.id)
+                    safeOnElementAdd(newElement, navbar.id)
+                    return
+                }
+                if (item.type === 'mj-social-element') {
+                    const social: EditorElement = { id: generateId(), type: 'mj-social', tagName: 'mj-social', attributes: {}, children: [] }
+                    safeOnElementAdd(social, column.id)
+                    safeOnElementAdd(newElement, social.id)
+                    return
+                }
+                if (item.type === 'mj-carousel-image') {
+                    const carousel: EditorElement = { id: generateId(), type: 'mj-carousel', tagName: 'mj-carousel', attributes: {}, children: [] }
+                    safeOnElementAdd(carousel, column.id)
+                    safeOnElementAdd(newElement, carousel.id)
+                    return
+                }
+                if (item.type === 'mj-accordion-element') {
+                    const accordion: EditorElement = { id: generateId(), type: 'mj-accordion', tagName: 'mj-accordion', attributes: {}, children: [] }
+                    safeOnElementAdd(accordion, column.id)
+                    safeOnElementAdd(newElement, accordion.id)
+                    return
+                }
+                if (item.type === 'mj-accordion-title' || item.type === 'mj-accordion-text') {
+                    const accordion: EditorElement = { id: generateId(), type: 'mj-accordion', tagName: 'mj-accordion', attributes: {}, children: [] }
+                    safeOnElementAdd(accordion, column.id)
+                    const accEl: EditorElement = { id: generateId(), type: 'mj-accordion-element', tagName: 'mj-accordion-element', attributes: {}, children: [] }
+                    safeOnElementAdd(accEl, accordion.id)
+                    safeOnElementAdd(newElement, accEl.id)
+                    return
+                }
             }
 
             // If it's a column, add to the last section or create a new section

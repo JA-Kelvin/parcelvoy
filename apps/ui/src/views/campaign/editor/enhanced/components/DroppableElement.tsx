@@ -119,17 +119,34 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
     const getElementAllowedChildren = (tagName: string): string[] => {
         const rules: Record<string, string[]> = {
-            'mj-body': ['mj-section', 'mj-wrapper'],
+            'mj-body': ['mj-section', 'mj-wrapper', 'mj-hero'],
             'mj-section': ['mj-column', 'mj-group'],
-            'mj-column': ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-hero'],
+            'mj-column': [
+                'mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar',
+                'mj-table', 'mj-accordion', 'mj-carousel',
+            ],
             'mj-group': ['mj-column'],
             'mj-wrapper': ['mj-section'],
-            'mj-hero': ['mj-text', 'mj-button'],
+            'mj-hero': ['mj-text', 'mj-button', 'mj-image', 'mj-spacer'],
             'mj-navbar': ['mj-navbar-link'],
             'mj-social': ['mj-social-element'],
+            'mj-accordion': ['mj-accordion-element'],
+            'mj-accordion-element': ['mj-accordion-title', 'mj-accordion-text'],
+            'mj-carousel': ['mj-carousel-image'],
         }
         return rules[tagName] || []
     }
+
+    // Tags that support inline content editing
+    const inlineEditableTags = new Set([
+        'mj-text',
+        'mj-button',
+        'mj-raw',
+        'mj-table',
+        'mj-navbar-link',
+        'mj-accordion-title',
+        'mj-accordion-text',
+    ])
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -140,7 +157,12 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
-        if (!isPreviewMode && (element.tagName === 'mj-text' || element.tagName === 'mj-button')) {
+        if (isPreviewMode) return
+        // Focus properties panel on double-click
+        safeOnSelect(element.id)
+        safeOnEditButtonClick(element.id)
+        // Enable inline editing for supported tags
+        if (inlineEditableTags.has(element.tagName)) {
             setIsEditing(true)
         }
     }
@@ -226,6 +248,59 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     const v = String(attributes['vertical-align']).toLowerCase()
                     baseStyle.alignSelf = v === 'top' ? 'flex-start' : v === 'middle' ? 'center' : v === 'bottom' ? 'flex-end' : undefined
                 }
+                break
+            }
+            case 'mj-hero': {
+                if (attributes['background-url']) {
+                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                }
+                // Allow overriding background-* via attributes, fallback to sensible defaults
+                baseStyle.backgroundRepeat = attributes['background-repeat'] || (attributes['background-url'] ? 'no-repeat' : undefined)
+                baseStyle.backgroundSize = attributes['background-size'] || (attributes['background-url'] ? 'cover' : undefined)
+                baseStyle.backgroundPosition = attributes['background-position'] || (attributes['background-url'] ? 'center' : undefined)
+                if (attributes['background-color']) baseStyle.backgroundColor = attributes['background-color']
+                baseStyle.height = attributes.height || '300px'
+                baseStyle.display = 'flex'
+                baseStyle.alignItems = 'center'
+                baseStyle.justifyContent = 'center'
+                baseStyle.textAlign = attributes['text-align'] || 'center'
+                break
+            }
+            case 'mj-social': {
+                baseStyle.display = 'flex'
+                baseStyle.flexWrap = 'wrap'
+                baseStyle.gap = attributes['icon-padding'] || '8px'
+                const align = attributes.align || 'left'
+                baseStyle.justifyContent = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'
+                break
+            }
+            case 'mj-navbar': {
+                baseStyle.display = 'flex'
+                baseStyle.flexWrap = 'wrap'
+                baseStyle.gap = '8px'
+                const align = attributes.align || 'left'
+                baseStyle.justifyContent = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'
+                break
+            }
+            case 'mj-wrapper': {
+                baseStyle.width = '100%'
+                if (attributes['background-url']) {
+                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
+                    baseStyle.backgroundSize = attributes['background-size'] || 'cover'
+                    baseStyle.backgroundPosition = attributes['background-position'] || 'center'
+                }
+                break
+            }
+            case 'mj-carousel': {
+                baseStyle.display = 'flex'
+                baseStyle.flexWrap = 'nowrap'
+                baseStyle.gap = '8px'
+                baseStyle.overflowX = 'auto'
+                break
+            }
+            case 'mj-accordion': {
+                baseStyle.border = attributes.border || undefined
                 break
             }
         }
@@ -339,6 +414,205 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     </div>
                 )
 
+            case 'mj-wrapper':
+                return (
+                    <div className="mj-wrapper-content">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-hero':
+                return (
+                    <div className="mj-hero-content">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-navbar':
+                return (
+                    <div className="mj-navbar-content">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-navbar-link': {
+                const href = attributes.href || '#'
+                const target = attributes.target || '_blank'
+                const linkColor = attributes.color || '#111827'
+                const linkPadding = attributes.padding || '10px 15px'
+                const fontSize = attributes['font-size']
+                const fontFamily = attributes['font-family']
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <a
+                            href={href}
+                            target={target}
+                            rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+                            onClick={(e) => e.preventDefault()}
+                            style={{
+                                color: linkColor,
+                                padding: linkPadding,
+                                textDecoration: 'none',
+                                fontSize: fontSize,
+                                fontFamily: fontFamily,
+                            }}
+                            dangerouslySetInnerHTML={{ __html: content ?? 'Link' }}
+                        />
+                    )
+            }
+
+            case 'mj-social':
+                return (
+                    <div className="mj-social-content">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-social-element': {
+                const name = attributes.name || 'web'
+                const href = attributes.href || '#'
+                const target = attributes.target || '_blank'
+                const src = attributes.src as string | undefined
+                const iconSize = (attributes['icon-size'] as string | undefined) ?? '24px'
+                const bg = attributes['background-color'] as string | undefined
+                const fg = attributes.color as string | undefined
+
+                return (
+                    <a
+                        className="mj-social-element"
+                        href={href}
+                        target={target}
+                        rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: iconSize,
+                            height: iconSize,
+                            borderRadius: '4px',
+                            backgroundColor: bg ?? 'transparent',
+                            color: fg ?? '#111827',
+                            textDecoration: 'none',
+                            overflow: 'hidden',
+                        }}
+                        onClick={(e) => e.preventDefault()}
+                    >
+                        {
+                            src
+                                ? (
+                                    <img
+                                        src={src}
+                                        alt={name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                    />
+                                )
+                                : (
+                                    <span style={{ fontSize: '12px', textTransform: 'capitalize' }}>{name}</span>
+                                )
+                        }
+                    </a>
+                )
+            }
+
+            case 'mj-table': {
+                const align = attributes.align || 'left'
+                const width = attributes.width || '100%'
+                const cellpadding = attributes.cellpadding || '0'
+                const cellspacing = attributes.cellspacing || '0'
+                const tableHtml = content ?? '<tr><td>Cell 1</td><td>Cell 2</td></tr>'
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <div className="mj-table-content" style={{ overflowX: 'auto' }}>
+                            <table style={{ width }} cellPadding={parseInt(cellpadding) || 0} cellSpacing={parseInt(cellspacing) || 0} align={align}>
+                                <tbody dangerouslySetInnerHTML={{ __html: tableHtml }} />
+                            </table>
+                        </div>
+                    )
+            }
+
+            case 'mj-accordion':
+                return (
+                    <div className="mj-accordion-content">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-accordion-element':
+                return (
+                    <div className="mj-accordion-element">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-accordion-title':
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <div className="mj-accordion-title" dangerouslySetInnerHTML={{ __html: content ?? 'Accordion Title' }} />
+                    )
+
+            case 'mj-accordion-text':
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <div className="mj-accordion-text" dangerouslySetInnerHTML={{ __html: content ?? 'Accordion content goes here.' }} />
+                    )
+
+            case 'mj-carousel':
+                return (
+                    <div className="mj-carousel-content">
+                        {children}
+                    </div>
+                )
+
+            case 'mj-carousel-image':
+                return (
+                    <img
+                        src={attributes.src || 'https://via.placeholder.com/300x200'}
+                        alt={attributes.alt || 'Carousel image'}
+                        style={{ height: 'auto', display: 'block' }}
+                    />
+                )
+
+            case 'mj-raw':
+                return isEditing
+                    ? (
+                        <ContentEditor
+                            content={content ?? ''}
+                            onSave={handleContentEdit}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )
+                    : (
+                        <div className="mj-raw-content" dangerouslySetInnerHTML={{ __html: content ?? '<!-- Raw HTML here -->' }} />
+                    )
+
             default:
                 return (
                     <div className={`${tagName}-content`}>
@@ -377,6 +651,10 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             data-element-type={element.tagName}
         >
             {renderElementContent()}
+
+            {!isPreviewMode && !isEditing && (isSelected || isHovered) && inlineEditableTags.has(element.tagName) && (
+                <div className="inline-edit-hint">Double-click to edit</div>
+            )}
 
             {!isPreviewMode && (isSelected || isHovered) && (
                 <div className="element-controls">
@@ -426,8 +704,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             // Call the edit button click handler to focus properties panel
                             safeOnEditButtonClick(element.id)
 
-                            // For text and button elements, also enable inline editing
-                            if (element.tagName === 'mj-text' || element.tagName === 'mj-button') {
+                            // Enable inline editing for supported content tags
+                            if (inlineEditableTags.has(element.tagName)) {
                                 setIsEditing(true)
                             }
                         }}

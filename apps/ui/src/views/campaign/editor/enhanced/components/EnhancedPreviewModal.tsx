@@ -10,6 +10,8 @@ interface EnhancedPreviewModalProps {
     onClose: () => void
     elements: EditorElement[]
     templateName?: string
+    onConfirm?: () => void
+    confirmLabel?: string
 }
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile'
@@ -35,6 +37,8 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
     onClose,
     elements,
     templateName = 'Email Template',
+    onConfirm,
+    confirmLabel = 'Insert',
 }) => {
     const [htmlContent, setHtmlContent] = useState<string>('')
     const [mjmlContent, setMjmlContent] = useState<string>('')
@@ -88,6 +92,10 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Escape') {
             onClose()
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && onConfirm) {
+            e.preventDefault()
+            onConfirm()
         }
     }
 
@@ -376,6 +384,11 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                     </div>
 
                     <div className="preview-actions">
+                        {onConfirm && (
+                            <button onClick={onConfirm} className="primary-button">
+                                {confirmLabel}
+                            </button>
+                        )}
                         <button onClick={onClose} className="secondary-button">
                             Close
                         </button>

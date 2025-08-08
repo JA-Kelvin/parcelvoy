@@ -36,7 +36,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         defaultAttributes: {
             width: '100%',
         },
-        allowedChildren: ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw'],
+        allowedChildren: ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-table', 'mj-accordion', 'mj-carousel'],
     },
     {
         type: 'mj-group',
@@ -46,6 +46,18 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         icon: '🗂️',
         defaultAttributes: {},
         allowedChildren: ['mj-column'],
+    },
+    {
+        type: 'mj-wrapper',
+        tagName: 'mj-wrapper',
+        displayName: 'Wrapper',
+        category: 'layout',
+        icon: '🧳',
+        defaultAttributes: {
+            padding: '0',
+            'background-color': '#ffffff',
+        },
+        allowedChildren: ['mj-section'],
     },
 
     // Content Components
@@ -90,6 +102,19 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         },
         allowedChildren: ['mj-navbar-link'],
     },
+    {
+        type: 'mj-navbar-link',
+        tagName: 'mj-navbar-link',
+        displayName: 'Navbar Link',
+        category: 'content',
+        icon: '🔗',
+        defaultAttributes: {
+            href: '#',
+            target: '_blank',
+            color: '#111827',
+            padding: '10px 15px',
+        },
+    },
 
     // Media Components
     {
@@ -114,8 +139,37 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
             mode: 'fluid-height',
             'background-color': '#f0f0f0',
             padding: '40px 0',
+            'background-url': 'https://via.placeholder.com/1200x400?text=Hero',
+            height: '300px',
+            'background-width': '600px',
+            'background-height': '300px',
         },
-        allowedChildren: ['mj-text', 'mj-button'],
+        allowedChildren: ['mj-text', 'mj-button', 'mj-image', 'mj-spacer'],
+    },
+
+    // Carousel Components
+    {
+        type: 'mj-carousel',
+        tagName: 'mj-carousel',
+        displayName: 'Carousel',
+        category: 'media',
+        icon: '🎠',
+        defaultAttributes: {
+            align: 'center',
+        },
+        allowedChildren: ['mj-carousel-image'],
+    },
+    {
+        type: 'mj-carousel-image',
+        tagName: 'mj-carousel-image',
+        displayName: 'Carousel Image',
+        category: 'media',
+        icon: '🖼️',
+        defaultAttributes: {
+            src: 'https://via.placeholder.com/300x200',
+            alt: 'Carousel image',
+        },
+        isVoid: true,
     },
 
     // Social Components
@@ -127,8 +181,81 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         icon: '📱',
         defaultAttributes: {
             mode: 'horizontal',
+            'icon-size': '24px',
+            'icon-padding': '8px',
         },
         allowedChildren: ['mj-social-element'],
+    },
+    {
+        type: 'mj-social-element',
+        tagName: 'mj-social-element',
+        displayName: 'Social Item',
+        category: 'social',
+        icon: '🔗',
+        defaultAttributes: {
+            name: 'facebook',
+            href: 'https://facebook.com/',
+            target: '_blank',
+            'background-color': 'transparent',
+            color: '#111827',
+        },
+        // Can only be dropped inside mj-social per Droppable rules
+    },
+
+    // Accordion Components
+    {
+        type: 'mj-accordion',
+        tagName: 'mj-accordion',
+        displayName: 'Accordion',
+        category: 'content',
+        icon: '🗂️',
+        defaultAttributes: {
+            border: 'none',
+            padding: '1px',
+        },
+        allowedChildren: ['mj-accordion-element'],
+    },
+    {
+        type: 'mj-accordion-element',
+        tagName: 'mj-accordion-element',
+        displayName: 'Accordion Item',
+        category: 'content',
+        icon: '📑',
+        defaultAttributes: {
+            'icon-wrapped-url': 'https://i.imgur.com/Xvw0vjq.png',
+            'icon-unwrapped-url': 'https://i.imgur.com/KKHenWa.png',
+            'icon-height': '24px',
+            'icon-width': '24px',
+        },
+        allowedChildren: ['mj-accordion-title', 'mj-accordion-text'],
+    },
+    {
+        type: 'mj-accordion-title',
+        tagName: 'mj-accordion-title',
+        displayName: 'Accordion Title',
+        category: 'content',
+        icon: '🔼',
+        defaultAttributes: {
+            'background-color': '#ffffff',
+            color: '#031017',
+            padding: '15px',
+            'font-size': '18px',
+            'font-family': 'Arial, sans-serif',
+        },
+    },
+    {
+        type: 'mj-accordion-text',
+        tagName: 'mj-accordion-text',
+        displayName: 'Accordion Text',
+        category: 'content',
+        icon: '🔽',
+        defaultAttributes: {
+            'background-color': '#fafafa',
+            color: '#505050',
+            padding: '15px',
+            'font-size': '14px',
+            'font-family': 'Arial, sans-serif',
+        },
     },
 
     // Utility Components
@@ -141,6 +268,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         defaultAttributes: {
             'border-color': '#cccccc',
             'border-width': '1px',
+            padding: '10px 0',
         },
         isVoid: true,
     },
@@ -151,9 +279,22 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'content',
         icon: '⬜',
         defaultAttributes: {
-            height: '20px',
+            height: '24px',
         },
         isVoid: true,
+    },
+    {
+        type: 'mj-table',
+        tagName: 'mj-table',
+        displayName: 'Table',
+        category: 'content',
+        icon: '📊',
+        defaultAttributes: {
+            align: 'left',
+            width: '100%',
+            cellpadding: '0',
+            cellspacing: '0',
+        },
     },
     {
         type: 'mj-raw',
@@ -162,7 +303,6 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'content',
         icon: '🔧',
         defaultAttributes: {},
-        isVoid: true,
     },
 ]
 
@@ -280,7 +420,7 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                                     key={tpl.id}
                                     className="component-item"
                                     role="button"
-                                    title={`Insert: ${tpl.name}`}
+                                    title={`Preview & Insert: ${tpl.name}`}
                                     onClick={() => safeOnTemplateInsert(tpl.id)}
                                     tabIndex={0}
                                     onKeyDown={(e) => {

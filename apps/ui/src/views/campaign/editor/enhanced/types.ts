@@ -27,6 +27,14 @@ export interface EditorComponent {
     category?: string
 }
 
+// Template block definition used for prebuilt and user-defined custom templates
+export interface TemplateBlock {
+    id: string
+    name: string
+    description?: string
+    elements: EditorElement[]
+}
+
 export interface TemplateMetadata {
     id?: string
     name?: string
@@ -45,6 +53,8 @@ export interface EnhancedTemplate {
         mjml: string
         html: string
         elements?: EditorElement[]
+        // Persist custom templates with the template for reuse and portability
+        customTemplates?: TemplateBlock[]
         metadata?: TemplateMetadata
     }
 }

@@ -183,6 +183,22 @@
     white-space: nowrap;
 }
 
+/* Inline edit hint badge */
+.inline-edit-hint {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 11px;
+    color: #6b7280;
+    background: #ffffff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 90;
+}
+
 /* Drop indicator */
 .drop-indicator {
     position: absolute;
@@ -218,6 +234,10 @@
 
 .droppable-element.preview-mode .drop-indicator {
     display: none;
+}
+
+.droppable-element.preview-mode .inline-edit-hint {
+    display: none !important;
 }
 
 /* Remove editor-only spacing/affordances in preview mode for parity */
@@ -311,6 +331,12 @@
         border-color: #60a5fa;
         color: #60a5fa;
     }
+
+    .inline-edit-hint {
+        background: #374151;
+        border-color: #4b5563;
+        color: #d1d5db;
+    }
 }
 
 /* Animation for smooth interactions */
@@ -339,7 +365,8 @@
 @media print {
     .element-controls,
     .drop-indicator,
-    .editor-hint {
+    .editor-hint,
+    .inline-edit-hint {
         display: none !important;
     }
     

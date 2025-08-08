@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useReducer, useState } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { EditorElement, HistoryState, EnhancedTemplate, EditorAction } from './types'
+import { EditorElement, HistoryState, EnhancedTemplate, EditorAction, TemplateBlock } from './types'
 import {
     parseMJMLString,
     editorElementsToMjmlString,
@@ -435,6 +435,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
     const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties' | 'layers'>('components')
     const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
+    const [selectedTemplateBlock, setSelectedTemplateBlock] = useState<TemplateBlock | null>(null)
+    const [showTemplatePreview, setShowTemplatePreview] = useState(false)
 
     // Function to focus on properties panel when edit button is clicked
     const handleEditButtonClick = useCallback((elementId: string) => {
@@ -582,18 +584,39 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         dispatch({ type: 'CLEAR_CANVAS' })
     }, [])
 
-    // Insert a predefined multi-element template under mj-body as a single undoable action
+    // Open preview for a predefined or saved custom template before insertion
     const handleInsertTemplate = useCallback((templateId: string) => {
         try {
-            const block = CUSTOM_TEMPLATES.find(t => t.id === templateId)
+            const combined: TemplateBlock[] = [
+                ...(template.data.customTemplates || []),
+                ...CUSTOM_TEMPLATES,
+            ]
+            const block = combined.find(t => t.id === templateId)
             if (!block) {
                 toast.error('Template not found')
                 return
             }
+            setSelectedTemplateBlock(block)
+            setShowTemplatePreview(true)
+        } catch (e) {
+            console.error('Error opening template preview:', e)
+            toast.error('Failed to open template preview')
+        }
+    }, [template.data.customTemplates])
 
-            const clones = (block.elements || []).map(cloneWithNewIds)
+    // Confirm insertion: clone elements with new IDs and insert under <mj-body>
+    const handleConfirmInsertTemplate = useCallback(() => {
+        try {
+            if (!selectedTemplateBlock) {
+                toast.error('No template selected')
+                return
+            }
+
+            const clones = (selectedTemplateBlock.elements || []).map(cloneWithNewIds)
             if (clones.length === 0) {
                 toast('Nothing to insert from template')
+                setShowTemplatePreview(false)
+                setSelectedTemplateBlock(null)
                 return
             }
 
@@ -611,20 +634,21 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 }
                 const insertedFallback = insertManyUnderParent(fallback, fbBody.id, clones)
                 dispatch({ type: 'REPLACE_PRESENT', payload: { elements: insertedFallback, selectId: clones[0].id } })
-                setActiveRightTab('layers')
-                toast.success(`Inserted '${block.name}'`)
-                return
+            } else {
+                const inserted = insertManyUnderParent(base, mjBody.id, clones)
+                dispatch({ type: 'REPLACE_PRESENT', payload: { elements: inserted, selectId: clones[0].id } })
             }
 
-            const inserted = insertManyUnderParent(base, mjBody.id, clones)
-            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: inserted, selectId: clones[0].id } })
             setActiveRightTab('layers')
-            toast.success(`Inserted '${block.name}'`)
+            toast.success(`Inserted '${selectedTemplateBlock.name}'`)
         } catch (e) {
             console.error('Error inserting template:', e)
             toast.error('Failed to insert template')
+        } finally {
+            setShowTemplatePreview(false)
+            setSelectedTemplateBlock(null)
         }
-    }, [editorState.present])
+    }, [selectedTemplateBlock, editorState.present])
 
     // Clipboard: copy selected or given element to system clipboard and store internally
     const handleCopyElement = useCallback(async (elementId?: string) => {
@@ -822,6 +846,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     mjml: mjmlString,
                     html: htmlString,
                     elements: editorState.present,
+                    customTemplates: template.data.customTemplates ?? [],
                     metadata: {
                         ...template.data.metadata,
                         savedAt: new Date().toISOString(),
@@ -883,12 +908,6 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault()
                 void handleSave()
-            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
-                e.preventDefault()
-                void handleCopyElement()
-            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
-                e.preventDefault()
-                handlePasteElement()
             } else if (e.key === 'Delete' && editorState.selectedElementId) {
                 e.preventDefault()
                 handleElementDelete(editorState.selectedElementId)
@@ -1088,6 +1107,19 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     onClose={() => setShowEnhancedPreview(false)}
                     elements={editorState.present}
                     templateName={template.data.metadata?.name ?? 'Email Template'}
+                />
+
+                {/* Custom Template Preview Modal */}
+                <EnhancedPreviewModal
+                    isOpen={showTemplatePreview}
+                    onClose={() => {
+                        setShowTemplatePreview(false)
+                        setSelectedTemplateBlock(null)
+                    }}
+                    elements={selectedTemplateBlock?.elements || []}
+                    templateName={selectedTemplateBlock?.name || 'Template Block'}
+                    onConfirm={handleConfirmInsertTemplate}
+                    confirmLabel="Insert"
                 />
 
                 <ImportMjmlModal

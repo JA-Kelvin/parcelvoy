@@ -1,14 +1,9 @@
 // Prebuilt custom MJML templates for quick insertion
-import { EditorElement } from '../types'
+import { TemplateBlock } from '../types'
 
 // NOTE: IDs here are placeholders and will be reassigned on insertion
 
-export interface TemplateBlock {
-    id: string
-    name: string
-    description?: string
-    elements: EditorElement[] // elements to be appended under mj-body
-}
+// TemplateBlock interface moved to '../types' for global reuse
 
 export const CUSTOM_TEMPLATES: TemplateBlock[] = [
     {

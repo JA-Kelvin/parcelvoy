@@ -81,14 +81,41 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
             editorElement.attributes[attr.name] = attr.value
         }
 
-        // Parse text content for leaf nodes
-        if (child.children.length === 0 && child.textContent?.trim()) {
-            editorElement.content = child.textContent.trim()
-        }
+        // Tags whose inner HTML should be treated as content rather than parsed into child elements
+        const contentHtmlTags = new Set([
+            'mj-text',
+            'mj-button',
+            'mj-raw',
+            'mj-table',
+            'mj-accordion-title',
+            'mj-accordion-text',
+            'mj-navbar-link',
+        ])
 
-        // Parse children recursively
-        if (child.children.length > 0) {
-            editorElement.children = parseElementRecursive(child)
+        if (contentHtmlTags.has(editorElement.tagName)) {
+            // Serialize inner nodes to preserve HTML structure
+            const serializer = new XMLSerializer()
+            let inner = ''
+            for (let n = 0; n < child.childNodes.length; n++) {
+                inner += serializer.serializeToString(child.childNodes[n])
+            }
+            const innerTrimmed = inner.trim()
+            if (innerTrimmed) {
+                editorElement.content = innerTrimmed
+            } else if (child.textContent?.trim()) {
+                // Fallback to textContent if serializer produced empty string
+                editorElement.content = child.textContent.trim()
+            }
+        } else {
+            // Parse text content for leaf nodes
+            if (child.children.length === 0 && child.textContent?.trim()) {
+                editorElement.content = child.textContent.trim()
+            }
+
+            // Parse children recursively for structural MJML tags
+            if (child.children.length > 0) {
+                editorElement.children = parseElementRecursive(child)
+            }
         }
 
         result.push(editorElement)
@@ -140,7 +167,7 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
     const attributesPart = attributesString ? ` ${attributesString}` : ''
 
     // Handle void elements (self-closing)
-    const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-raw']
+    const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-carousel-image']
     if (voidElements.includes(tagName) && !content && (!children || children.length === 0)) {
         return `${indent}<${tagName}${attributesPart} />`
     }
