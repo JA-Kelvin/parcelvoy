@@ -3,9 +3,11 @@ import React from 'react'
 import { useDrag } from 'react-dnd'
 import { ComponentDefinition } from '../types'
 import './ComponentsPanel.css'
+import { CUSTOM_TEMPLATES } from '../templates/customTemplates'
 
 interface ComponentsPanelProps {
     onComponentDrag: (component: ComponentDefinition) => void
+    onTemplateInsert?: (templateId: string) => void
     isCollapsed?: boolean
     onToggleCollapse?: () => void
 }
@@ -205,11 +207,13 @@ const DraggableComponent: React.FC<DraggableComponentProps> = ({ component, onCo
 
 const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
     onComponentDrag,
+    onTemplateInsert,
     isCollapsed = false,
     onToggleCollapse,
 }) => {
     // Safety check for callback function
     const safeOnComponentDrag = onComponentDrag || (() => {})
+    const safeOnTemplateInsert = onTemplateInsert ?? (() => {})
 
     const categories = ['layout', 'content', 'media', 'social'] as const
     const getComponentsByCategory = (category: string) => {
@@ -265,6 +269,34 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                         </div>
                     )
                 })}
+
+                {/* Custom Templates Section */}
+                {CUSTOM_TEMPLATES.length > 0 && (
+                    <div className="component-category">
+                        <h4 className="category-title">Custom Templates</h4>
+                        <div className="component-grid">
+                            {CUSTOM_TEMPLATES.map(tpl => (
+                                <div
+                                    key={tpl.id}
+                                    className="component-item"
+                                    role="button"
+                                    title={`Insert: ${tpl.name}`}
+                                    onClick={() => safeOnTemplateInsert(tpl.id)}
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            safeOnTemplateInsert(tpl.id)
+                                        }
+                                    }}
+                                >
+                                    <div className="component-icon">📦</div>
+                                    <div className="component-name">{tpl.name}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="panel-footer">

@@ -6,6 +6,11 @@ export const generateId = (): string => {
     return `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
+// Public helper to serialize a single element subtree (without wrapping mjml/mj-body)
+export const serializeElementToMjml = (element: EditorElement): string => {
+    return elementToMjmlString(element, 0)
+}
+
 // Parse MJML string to editor elements
 export const parseMJMLString = (mjmlString: string): EditorElement[] => {
     try {

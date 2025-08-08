@@ -16,6 +16,8 @@ interface CanvasProps {
     onElementDelete: (elementId: string) => void
     onElementMove: (elementId: string, newParentId: string, newIndex: number) => void
     onEditButtonClick?: (elementId: string) => void
+    onCopyElement?: (elementId: string) => void
+    onDuplicateElement?: (elementId: string) => void
     isPreviewMode?: boolean
 }
 
@@ -28,6 +30,8 @@ const Canvas: React.FC<CanvasProps> = ({
     onElementDelete,
     onElementMove,
     onEditButtonClick,
+    onCopyElement,
+    onDuplicateElement,
     isPreviewMode = false,
 }) => {
     // Comprehensive safety checks
@@ -39,6 +43,8 @@ const Canvas: React.FC<CanvasProps> = ({
     const safeOnElementUpdate = onElementUpdate || (() => {})
     const safeOnElementDelete = onElementDelete || (() => {})
     const safeOnElementMove = onElementMove || (() => {})
+    const safeOnCopyElement = onCopyElement ?? (() => {})
+    const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
     const canvasRef = useRef<HTMLDivElement>(null)
 
     // Handle component drop from components panel
@@ -166,8 +172,9 @@ const Canvas: React.FC<CanvasProps> = ({
         }
     }
 
-    const renderElements = (elements: EditorElement[], _parentId?: string): React.ReactNode => {
-        return elements.map((element) => (
+    const renderElements = (elements: EditorElement[], parentId?: string): React.ReactNode => {
+        const siblingsCount = elements.length
+        return elements.map((element, index) => (
             <DroppableElement
                 key={element.id}
                 element={element}
@@ -179,6 +186,11 @@ const Canvas: React.FC<CanvasProps> = ({
                 onMove={safeOnElementMove}
                 onElementAdd={safeOnElementAdd}
                 onEditButtonClick={onEditButtonClick}
+                onCopyElement={safeOnCopyElement}
+                onDuplicateElement={safeOnDuplicateElement}
+                parentId={parentId}
+                index={index}
+                siblingsCount={siblingsCount}
             >
                 {element.children && element.children.length > 0
                     && renderElements(element.children, element.id)}
@@ -225,7 +237,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 {mjmlBody
                     ? (
                         <div className="mjml-body-wrapper">
-                            {renderElements(mjmlBody.children || [])}
+                            {renderElements(mjmlBody.children || [], mjmlBody.id)}
                         </div>
                     )
                     : (

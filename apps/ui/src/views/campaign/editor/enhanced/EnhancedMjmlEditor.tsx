@@ -8,6 +8,8 @@ import {
     editorElementsToMjmlString,
     mjmlToHtml,
     createDefaultMjmlStructure,
+    generateId,
+    serializeElementToMjml,
 } from './utils/mjmlParser'
 import ComponentsPanel from './components/ComponentsPanel'
 import Canvas from './components/Canvas'
@@ -16,6 +18,7 @@ import EnhancedPreviewModal from './components/EnhancedPreviewModal'
 import ImportMjmlModal from './components/ImportMjmlModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import LayersPanel from './components/LayersPanel'
+import { CUSTOM_TEMPLATES } from './templates/customTemplates'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
 
@@ -26,6 +29,42 @@ interface EnhancedMjmlEditorProps {
     _resources?: any[]
     isPreviewMode?: boolean
     isSaving?: boolean
+}
+
+// --- Clipboard & structure helpers ---
+const ALLOWED_CHILDREN: Record<string, string[]> = {
+    'mj-body': ['mj-section', 'mj-wrapper'],
+    'mj-section': ['mj-column', 'mj-group'],
+    'mj-column': ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-hero'],
+    'mj-group': ['mj-column'],
+    'mj-wrapper': ['mj-section'],
+    'mj-hero': ['mj-text', 'mj-button'],
+    'mj-navbar': ['mj-navbar-link'],
+    'mj-social': ['mj-social-element'],
+}
+
+const getAllowedChildren = (tagName: string): string[] => {
+    return ALLOWED_CHILDREN[tagName] || []
+}
+
+const findParentInfo = (
+    elements: EditorElement[],
+    childId: string,
+    parentId: string | null = null,
+): { parentId: string | null, parentTag: string | null, index: number | null } => {
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i]
+        if (el.id === childId) {
+            return { parentId, parentTag: null, index: i }
+        }
+        if (el.children?.length) {
+            const res = findParentInfo(el.children, childId, el.id)
+            if (res.parentId !== null || res.index !== null) {
+                return { parentId: res.parentId ?? el.id, parentTag: el.tagName, index: res.index }
+            }
+        }
+    }
+    return { parentId: null, parentTag: null, index: null }
 }
 
 // Reducer for managing editor state with history
@@ -131,6 +170,17 @@ const editorReducer = (state: HistoryState, action: EditorAction): HistoryState 
                 history: [...state.history.slice(-49), state.present],
                 future: [],
                 selectedElementId: null,
+                templateId: state.templateId,
+            }
+        }
+
+        case 'REPLACE_PRESENT': {
+            const { elements, selectId } = payload || {}
+            return {
+                present: elements,
+                history: [...state.history.slice(-49), state.present],
+                future: [],
+                selectedElementId: selectId ?? state.selectedElementId ?? null,
                 templateId: state.templateId,
             }
         }
@@ -319,17 +369,9 @@ const moveElementRecursive = (
         return { next: elements }
     }
 
-    // Adjust index if moving within same parent and forward
-    let targetIndex = newIndex ?? 0
-    if (
-        removal.originalParentId != null
-        && removal.originalParentId === newParentId
-        && typeof removal.originalIndex === 'number'
-        && typeof newIndex === 'number'
-        && newIndex > removal.originalIndex
-    ) {
-        targetIndex = newIndex - 1
-    }
+    // Use newIndex as the intended position relative to the pre-removal order.
+    // This avoids off-by-one issues when moving elements within the same parent.
+    const targetIndex = newIndex ?? 0
 
     // Ensure parent exists; if not, revert to original parent
     const parentExists = !!getElementByIdRecursive(removal.tree, newParentId)
@@ -339,6 +381,46 @@ const moveElementRecursive = (
 
     const inserted = insertElementAtParent(treeToUse, parentForInsert ?? null, indexForInsert, removal.removed)
     return { next: inserted, moved: removal.removed }
+}
+
+// ---- Template insertion helpers ----
+const cloneWithNewIds = (element: EditorElement): EditorElement => {
+    const newEl: EditorElement = {
+        id: generateId(),
+        type: element.type,
+        tagName: element.tagName,
+        attributes: { ...(element.attributes || {}) },
+        content: element.content,
+        children: [],
+    }
+    if (element.children?.length) {
+        newEl.children = element.children.map(cloneWithNewIds)
+    }
+    return newEl
+}
+
+const findFirstByTagName = (elements: EditorElement[], tag: string): EditorElement | null => {
+    for (const el of elements) {
+        if (el.tagName === tag) return el
+        if (el.children?.length) {
+            const found = findFirstByTagName(el.children, tag)
+            if (found) return found
+        }
+    }
+    return null
+}
+
+const insertManyUnderParent = (elements: EditorElement[], parentId: string, items: EditorElement[]): EditorElement[] => {
+    return elements.map(el => {
+        if (el.id === parentId) {
+            const children = [...(el.children || []), ...items]
+            return { ...el, children }
+        }
+        if (el.children?.length) {
+            return { ...el, children: insertManyUnderParent(el.children, parentId, items) }
+        }
+        return el
+    })
 }
 
 const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
@@ -352,6 +434,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [showImportModal, setShowImportModal] = useState(false)
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
     const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties' | 'layers'>('components')
+    const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
 
     // Function to focus on properties panel when edit button is clicked
     const handleEditButtonClick = useCallback((elementId: string) => {
@@ -499,6 +582,209 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         dispatch({ type: 'CLEAR_CANVAS' })
     }, [])
 
+    // Insert a predefined multi-element template under mj-body as a single undoable action
+    const handleInsertTemplate = useCallback((templateId: string) => {
+        try {
+            const block = CUSTOM_TEMPLATES.find(t => t.id === templateId)
+            if (!block) {
+                toast.error('Template not found')
+                return
+            }
+
+            const clones = (block.elements || []).map(cloneWithNewIds)
+            if (clones.length === 0) {
+                toast('Nothing to insert from template')
+                return
+            }
+
+            // Ensure we have a structure with mj-body
+            const hasMjml = editorState.present.some(el => el.tagName === 'mjml')
+            const base = hasMjml ? editorState.present : createDefaultMjmlStructure()
+            const mjBody = findFirstByTagName(base, 'mj-body')
+            if (!mjBody) {
+                // As a last resort, wrap in default structure
+                const fallback = createDefaultMjmlStructure()
+                const fbBody = findFirstByTagName(fallback, 'mj-body')
+                if (!fbBody) {
+                    toast.error('Failed to prepare editor structure')
+                    return
+                }
+                const insertedFallback = insertManyUnderParent(fallback, fbBody.id, clones)
+                dispatch({ type: 'REPLACE_PRESENT', payload: { elements: insertedFallback, selectId: clones[0].id } })
+                setActiveRightTab('layers')
+                toast.success(`Inserted '${block.name}'`)
+                return
+            }
+
+            const inserted = insertManyUnderParent(base, mjBody.id, clones)
+            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: inserted, selectId: clones[0].id } })
+            setActiveRightTab('layers')
+            toast.success(`Inserted '${block.name}'`)
+        } catch (e) {
+            console.error('Error inserting template:', e)
+            toast.error('Failed to insert template')
+        }
+    }, [editorState.present])
+
+    // Clipboard: copy selected or given element to system clipboard and store internally
+    const handleCopyElement = useCallback(async (elementId?: string) => {
+        try {
+            const idToUse = elementId ?? editorState.selectedElementId ?? null
+            const target = idToUse ? getElementByIdRecursive(editorState.present, idToUse) : null
+            if (!target) {
+                toast.error('No element selected to copy')
+                return
+            }
+
+            // Deep clone without changing IDs for internal clipboard storage
+            const internalClone: EditorElement = JSON.parse(JSON.stringify(target))
+            setClipboardElement(internalClone)
+
+            // Serialize subtree to MJML and copy to system clipboard
+            const mjmlSubtree = serializeElementToMjml(target)
+            const copyFallback = () => {
+                const textarea = document.createElement('textarea')
+                textarea.value = mjmlSubtree
+                textarea.style.position = 'fixed'
+                textarea.style.opacity = '0'
+                document.body.appendChild(textarea)
+                textarea.select()
+                try {
+                    document.execCommand('copy')
+                    toast.success(`Copied ${target.tagName} to clipboard`)
+                } catch (err) {
+                    console.error('Clipboard copy failed:', err)
+                    toast.error('Copy failed')
+                } finally {
+                    document.body.removeChild(textarea)
+                }
+            }
+
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(mjmlSubtree)
+                toast.success(`Copied ${target.tagName} to clipboard`)
+            } else {
+                copyFallback()
+            }
+        } catch (e) {
+            console.error('Error copying element:', e)
+            toast.error('Copy failed')
+        }
+    }, [editorState.present, editorState.selectedElementId])
+
+    // Helper to pick reasonable paste target when same-parent insertion invalid
+    const resolvePasteTarget = useCallback((rootTag: string): { parentId: string | null, index: number } | null => {
+        // Try mj-body first
+        const mjBody = findFirstByTagName(editorState.present, 'mj-body')
+        if (!mjBody) return null
+
+        // If mj-body allows it, append at end
+        if (getAllowedChildren('mj-body').includes(rootTag)) {
+            return { parentId: mjBody.id, index: (mjBody.children?.length ?? 0) }
+        }
+
+        // If column element, put into last section
+        if (rootTag === 'mj-column') {
+            const sections = (mjBody.children || []).filter((c) => c.tagName === 'mj-section')
+            const lastSection = sections[sections.length - 1]
+            if (lastSection) {
+                return { parentId: lastSection.id, index: (lastSection.children?.length ?? 0) }
+            }
+        }
+
+        // For content elements, try last column in last section
+        const sections = (mjBody.children || []).filter((c) => c.tagName === 'mj-section')
+        const lastSection = sections[sections.length - 1]
+        const lastColumn = lastSection?.children?.filter((c) => c.tagName === 'mj-column').slice(-1)[0]
+        if (lastColumn && getAllowedChildren('mj-column').includes(rootTag)) {
+            return { parentId: lastColumn.id, index: (lastColumn.children?.length ?? 0) }
+        }
+
+        return null
+    }, [editorState.present])
+
+    // Paste from internal clipboard into valid location
+    const handlePasteElement = useCallback(() => {
+        try {
+            if (!clipboardElement) {
+                toast('Clipboard is empty')
+                return
+            }
+
+            // Clone with new IDs on paste
+            const clone = cloneWithNewIds(clipboardElement)
+            const rootTag = clone.tagName
+
+            // Determine best insertion target
+            let targetParentId: string | null = null
+            let targetIndex = 0
+
+            const selectedId = editorState.selectedElementId ?? null
+            if (selectedId) {
+                const { parentId, parentTag, index } = findParentInfo(editorState.present, selectedId)
+                // Prefer inserting as sibling after selected if allowed by parent
+                if (parentId && parentTag && index != null && getAllowedChildren(parentTag).includes(rootTag)) {
+                    targetParentId = parentId
+                    targetIndex = index + 1
+                } else {
+                    const selectedNode = getElementByIdRecursive(editorState.present, selectedId)
+                    if (selectedNode && getAllowedChildren(selectedNode.tagName).includes(rootTag)) {
+                    // Otherwise insert as child of selected when valid
+                        targetParentId = selectedId
+                        targetIndex = selectedNode.children?.length ?? 0
+                    }
+                }
+            }
+
+            if (!targetParentId) {
+                const fallback = resolvePasteTarget(rootTag)
+                if (!fallback) {
+                    toast.error('No valid location to paste this element')
+                    return
+                }
+                targetParentId = fallback.parentId
+                targetIndex = fallback.index
+            }
+
+            const next = insertElementAtParent(editorState.present, targetParentId, targetIndex, clone)
+            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: next, selectId: clone.id } })
+            toast.success(`Pasted ${rootTag}`)
+        } catch (e) {
+            console.error('Error pasting element:', e)
+            toast.error('Paste failed')
+        }
+    }, [clipboardElement, editorState.present, editorState.selectedElementId, resolvePasteTarget])
+
+    // Duplicate selected (or provided) element under same parent at next index
+    const handleDuplicateElement = useCallback((elementId?: string) => {
+        try {
+            const idToUse = elementId ?? editorState.selectedElementId ?? null
+            const target = idToUse ? getElementByIdRecursive(editorState.present, idToUse) : null
+            if (!target) {
+                toast.error('No element selected to duplicate')
+                return
+            }
+            // Root elements (mjml/mj-body) should not be duplicated
+            if (target.tagName === 'mjml' || target.tagName === 'mj-body') {
+                toast.error('Cannot duplicate root element')
+                return
+            }
+
+            const { parentId, index } = findParentInfo(editorState.present, target.id)
+            if (parentId == null || index == null) {
+                toast.error('Cannot determine duplicate target')
+                return
+            }
+            const clone = cloneWithNewIds(target)
+            const next = insertElementAtParent(editorState.present, parentId, index + 1, clone)
+            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: next, selectId: clone.id } })
+            toast.success(`Duplicated ${target.tagName}`)
+        } catch (e) {
+            console.error('Error duplicating element:', e)
+            toast.error('Duplicate failed')
+        }
+    }, [editorState.present, editorState.selectedElementId])
+
     // Find selected element
     const findElementById = (elements: EditorElement[], id: string): EditorElement | null => {
         for (const element of elements) {
@@ -597,15 +883,21 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault()
                 void handleSave()
-            } else if (e.key === 'Delete' && selectedElement) {
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
                 e.preventDefault()
-                handleElementDelete(selectedElement.id)
+                void handleCopyElement()
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+                e.preventDefault()
+                handlePasteElement()
+            } else if (e.key === 'Delete' && editorState.selectedElementId) {
+                e.preventDefault()
+                handleElementDelete(editorState.selectedElementId)
             }
         }
 
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
-    }, [isPreviewMode, handleUndo, handleRedo, handleSave, selectedElement, handleElementDelete])
+    }, [isPreviewMode, handleUndo, handleRedo, handleSave, editorState.selectedElementId, handleElementDelete, handleCopyElement, handlePasteElement])
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -652,6 +944,14 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             )}
                             <button
                                 className="toolbar-button"
+                                onClick={handlePasteElement}
+                                disabled={!clipboardElement}
+                                title="Paste element (Ctrl+V)"
+                            >
+                                📋
+                            </button>
+                            <button
+                                className="toolbar-button"
                                 onClick={() => setShowImportModal(true)}
                                 title="Import MJML Content"
                             >
@@ -690,6 +990,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             onElementDelete={handleElementDelete}
                             onElementMove={handleElementMove}
                             onEditButtonClick={handleEditButtonClick}
+                            onCopyElement={handleCopyElement}
+                            onDuplicateElement={handleDuplicateElement}
                             isPreviewMode={isPreviewMode}
                         />
                     </ErrorBoundary>
@@ -741,6 +1043,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                     >
                                         <ComponentsPanel
                                             onComponentDrag={() => { /* Handle component drag */ }}
+                                            onTemplateInsert={handleInsertTemplate}
                                             isCollapsed={false}
                                             onToggleCollapse={() => {}}
                                         />

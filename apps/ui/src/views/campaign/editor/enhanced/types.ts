@@ -62,7 +62,7 @@ export interface ComponentDefinition {
 }
 
 export interface EditorAction {
-    type: 'ADD_ELEMENT' | 'UPDATE_ELEMENT' | 'DELETE_ELEMENT' | 'MOVE_ELEMENT' | 'SELECT_ELEMENT' | 'UNDO' | 'REDO' | 'LOAD_TEMPLATE' | 'CLEAR_CANVAS'
+    type: 'ADD_ELEMENT' | 'UPDATE_ELEMENT' | 'DELETE_ELEMENT' | 'MOVE_ELEMENT' | 'SELECT_ELEMENT' | 'UNDO' | 'REDO' | 'LOAD_TEMPLATE' | 'CLEAR_CANVAS' | 'REPLACE_PRESENT'
     payload?: any
 }
 

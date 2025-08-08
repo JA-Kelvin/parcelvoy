@@ -116,7 +116,7 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
                 <div className="import-modal-content">
                     <div className="content-input-section">
                         <label htmlFor="mjml-content" className="content-label">
-                            MJML/HTML Content:
+                            MJML Content:
                         </label>
                         <textarea
                             id="mjml-content"
@@ -148,7 +148,7 @@ const ImportMjmlModal: React.FC<ImportMjmlModalProps> = ({
                     <div className="import-tips">
                         <h4>💡 Tips:</h4>
                         <ul>
-                            <li>You can paste complete MJML documents or HTML email content</li>
+                            <li>You can paste complete MJML documents</li>
                             <li>The content will be parsed and converted to editable elements</li>
                             <li>Use Ctrl+Enter to quickly import after pasting</li>
                         </ul>

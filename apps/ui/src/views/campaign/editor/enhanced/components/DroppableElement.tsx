@@ -14,6 +14,11 @@ interface DroppableElementProps {
     onMove: (elementId: string, newParentId: string, newIndex: number) => void
     onElementAdd: (element: EditorElement, parentId?: string, index?: number) => void
     onEditButtonClick?: (elementId: string) => void
+    onCopyElement?: (elementId: string) => void
+    onDuplicateElement?: (elementId: string) => void
+    parentId?: string
+    index?: number
+    siblingsCount?: number
     children?: React.ReactNode
 }
 
@@ -27,6 +32,11 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     onMove,
     onElementAdd,
     onEditButtonClick,
+    onCopyElement,
+    onDuplicateElement,
+    parentId,
+    index,
+    siblingsCount,
     children,
 }) => {
     // Safety checks for props
@@ -42,6 +52,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const safeOnMove = onMove || (() => {})
     const safeOnElementAdd = onElementAdd || (() => {})
     const safeOnEditButtonClick = onEditButtonClick ?? (() => {})
+    const safeOnCopyElement = onCopyElement ?? (() => {})
+    const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
 
     const [isHovered, setIsHovered] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -368,6 +380,45 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
             {!isPreviewMode && (isSelected || isHovered) && (
                 <div className="element-controls">
+                    {element.tagName === 'mj-section' && (
+                        <>
+                            <button
+                                className="control-button move-up"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (parentId != null && typeof index === 'number' && index > 0) {
+                                        safeOnMove(element.id, parentId, index - 1)
+                                    }
+                                }}
+                                disabled={!(typeof index === 'number' && index > 0)}
+                                title="Move section up"
+                            >
+                                ⬆️
+                            </button>
+                            <button
+                                className="control-button move-down"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (
+                                        parentId != null
+                                        && typeof index === 'number'
+                                        && typeof siblingsCount === 'number'
+                                        && index < siblingsCount - 1
+                                    ) {
+                                        safeOnMove(element.id, parentId, index + 1)
+                                    }
+                                }}
+                                disabled={!(
+                                    typeof index === 'number'
+                                    && typeof siblingsCount === 'number'
+                                    && index < siblingsCount - 1
+                                )}
+                                title="Move section down"
+                            >
+                                ⬇️
+                            </button>
+                        </>
+                    )}
                     <button
                         className="control-button edit"
                         onClick={(e) => {
@@ -384,6 +435,32 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     >
                         ✏️
                     </button>
+                    {isSelected && (
+                        <>
+                            <button
+                                className="control-button copy"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    safeOnCopyElement(element.id)
+                                }}
+                                title="Copy element (Ctrl+C)"
+                            >
+                                📄
+                            </button>
+                            {element.tagName !== 'mjml' && element.tagName !== 'mj-body' && (
+                                <button
+                                    className="control-button duplicate"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        safeOnDuplicateElement(element.id)
+                                    }}
+                                    title="Duplicate element"
+                                >
+                                    ➕
+                                </button>
+                            )}
+                        </>
+                    )}
                     <button
                         className="control-button delete"
                         onClick={handleDelete}
