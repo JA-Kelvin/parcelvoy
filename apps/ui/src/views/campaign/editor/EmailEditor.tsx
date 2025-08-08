@@ -16,7 +16,6 @@ import ResourceModal from '../ResourceModal'
 import EnhancedVisualEditor from './EnhancedVisualEditor'
 
 const VisualEditor = lazy(async () => await import('./VisualEditor'))
-const LazyEnhancedVisualEditorDndKit = lazy(async () => await import('./EnhancedVisualEditorDndKit'))
 
 export default function EmailEditor() {
     const navigate = useNavigate()
@@ -32,7 +31,6 @@ export default function EmailEditor() {
     const [isSaving, setIsSaving] = useState(false)
     const [showConfig, setShowConfig] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-    const [useDndKit, setUseDndKit] = useState(false)
 
     useEffect(() => {
         api.resources.all(project.id)
@@ -92,11 +90,6 @@ export default function EmailEditor() {
                             <Button
                                 size="small"
                                 variant="secondary"
-                                onClick={() => setUseDndKit(!useDndKit)}
-                            >{useDndKit ? 'Use React-DnD' : 'Use DndKit'}</Button>
-                            <Button
-                                size="small"
-                                variant="secondary"
                                 onClick={() => setShowConfig(true)}
                             >Config</Button>
                             <LinkButton
@@ -122,25 +115,14 @@ export default function EmailEditor() {
                                 // Enhanced Visual Editor (new default)
                                 if (template.data.editor === 'enhanced-visual'
                                     || (template.data.editor === 'visual' && !template.data.mjml)) {
-                                    return useDndKit
-                                        ? (
-                                            <Suspense key={`${template.id}-dndkit-suspense`} fallback={<div className="loading-editor">Loading DndKit editor...</div>}>
-                                                <LazyEnhancedVisualEditorDndKit
-                                                    key={`${template.id}-dndkit`}
-                                                    template={template}
-                                                    setTemplate={handleTemplateChange}
-                                                    resources={resources}
-                                                />
-                                            </Suspense>
-                                        )
-                                        : (
-                                            <EnhancedVisualEditor
-                                                key={template.id}
-                                                template={template}
-                                                setTemplate={handleTemplateChange}
-                                                resources={resources}
-                                            />
-                                        )
+                                    return (
+                                        <EnhancedVisualEditor
+                                            key={template.id}
+                                            template={template}
+                                            setTemplate={handleTemplateChange}
+                                            resources={resources}
+                                        />
+                                    )
                                 }
                                 // Legacy Visual Editor (GrapesJS)
                                 if (template.data.editor === 'visual') {

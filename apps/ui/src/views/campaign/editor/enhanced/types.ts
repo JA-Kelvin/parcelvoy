@@ -41,7 +41,7 @@ export interface EnhancedTemplate {
     type: string
     locale: string
     data: {
-        editor: 'enhanced-visual' | 'enhanced-visual-dndkit' | 'visual' | 'html'
+        editor: 'enhanced-visual' | 'visual' | 'html'
         mjml: string
         html: string
         elements?: EditorElement[]
