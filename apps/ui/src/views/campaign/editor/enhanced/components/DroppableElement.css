@@ -1,0 +1,376 @@
+/* Droppable Element Styles for Enhanced MJML Editor */
+.droppable-element {
+    position: relative;
+    transition: all 0.2s ease;
+    min-height: 20px;
+}
+
+.droppable-element:not(.preview-mode):hover {
+    outline: 2px solid rgba(59, 130, 246, 0.3);
+    outline-offset: 2px;
+}
+
+.droppable-element.selected {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px;
+}
+
+.droppable-element.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+}
+
+.droppable-element.drop-target {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Element-specific styles */
+.element-mj-section {
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.element-mj-column {
+    padding: 0px;
+    border: 1px dashed transparent;
+    min-height: 50px;
+}
+
+.element-mj-column:hover:not(.preview-mode) {
+    border-color: #d1d5db;
+}
+
+.element-mj-text {
+    padding: 8px;
+    min-height: 30px;
+    cursor: text;
+}
+
+.element-mj-button {
+    padding: 8px;
+    text-align: center;
+}
+
+.element-mj-image {
+    text-align: center;
+    padding: 8px;
+}
+
+.element-mj-divider {
+    padding: 8px 0;
+}
+
+.element-mj-spacer {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(0, 0, 0, 0.1) 5px,
+        rgba(0, 0, 0, 0.1) 10px
+    );
+    border-radius: 2px;
+}
+
+/* Content styles */
+.mj-text-content {
+    min-height: 20px;
+    line-height: 1.5;
+}
+
+.mj-text-content:empty::before {
+    content: 'Click to edit text';
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.mj-button-content {
+    display: inline-block;
+    text-decoration: none;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mj-button-content:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mj-section-content {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.mj-column-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Element controls */
+.element-controls {
+    position: absolute;
+    top: -0px;
+    right: 0;
+    display: none;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    padding: 4px;
+}
+
+.droppable-element:hover .element-controls,
+.droppable-element.selected .element-controls {
+    display: flex;
+}
+
+.control-button {
+    background: none;
+    border: none;
+    padding: 0px 0px;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 14px;
+    border-radius: 0px;
+    transition: all 0.2s ease;
+    margin: 0 2px;
+}
+
+.control-button:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.control-button.delete:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Content editor */
+.content-editor {
+    position: relative;
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.content-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: transparent;
+    min-height: 60px;
+}
+
+.editor-hint {
+    position: absolute;
+    bottom: -25px;
+    left: 0;
+    font-size: 11px;
+    color: #6b7280;
+    background: #ffffff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+/* Inline edit hint badge */
+.inline-edit-hint {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 11px;
+    color: #6b7280;
+    background: #ffffff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 90;
+}
+
+/* Drop indicator */
+.drop-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px dashed #3b82f6;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 50;
+}
+
+/* Preview mode adjustments */
+.droppable-element.preview-mode {
+    cursor: default;
+}
+
+.droppable-element.preview-mode:hover {
+    outline: none;
+}
+
+.droppable-element.preview-mode .element-controls {
+    display: none !important;
+}
+
+.droppable-element.preview-mode .drop-indicator {
+    display: none;
+}
+
+.droppable-element.preview-mode .inline-edit-hint {
+    display: none !important;
+}
+
+/* Remove editor-only spacing/affordances in preview mode for parity */
+.droppable-element.preview-mode.element-mj-section {
+    margin-bottom: 0;
+}
+
+.droppable-element.preview-mode.element-mj-column {
+    padding: 0;
+    border: none;
+}
+
+.droppable-element.preview-mode.element-mj-text {
+    padding: 0;
+}
+
+.droppable-element.preview-mode.element-mj-button {
+    padding: 0;
+}
+
+.droppable-element.preview-mode .mj-button-content:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .element-controls {
+        top: -30px;
+        right: -5px;
+    }
+    
+    .control-button {
+        padding: 4px 6px;
+        font-size: 12px;
+    }
+    
+    .editor-hint {
+        font-size: 10px;
+        bottom: -20px;
+    }
+    
+    .mj-section-content {
+        flex-direction: column;
+    }
+    
+    .mj-column-content {
+        flex: none;
+        width: 100%;
+    }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .element-controls {
+        background: #374151;
+        border-color: #4b5563;
+    }
+    
+    .control-button {
+        color: #d1d5db;
+    }
+    
+    .control-button:hover {
+        background: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .control-button.delete:hover {
+        background: #7f1d1d;
+        color: #fca5a5;
+    }
+    
+    .content-editor {
+        background: #374151;
+        border-color: #60a5fa;
+    }
+    
+    .content-textarea {
+        color: #f9fafb;
+    }
+    
+    .editor-hint {
+        background: #374151;
+        border-color: #4b5563;
+        color: #d1d5db;
+    }
+    
+    .drop-indicator {
+        background: rgba(96, 165, 250, 0.1);
+        border-color: #60a5fa;
+        color: #60a5fa;
+    }
+
+    .inline-edit-hint {
+        background: #374151;
+        border-color: #4b5563;
+        color: #d1d5db;
+    }
+}
+
+/* Animation for smooth interactions */
+@keyframes elementHighlight {
+    0% { outline-color: transparent; }
+    50% { outline-color: #3b82f6; }
+    100% { outline-color: transparent; }
+}
+
+.droppable-element.just-added {
+    animation: elementHighlight 1s ease-in-out;
+}
+
+/* Accessibility improvements */
+.droppable-element:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.control-button:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+}
+
+/* Print styles */
+@media print {
+    .element-controls,
+    .drop-indicator,
+    .editor-hint,
+    .inline-edit-hint {
+        display: none !important;
+    }
+    
+    .droppable-element {
+        outline: none !important;
+    }
+}

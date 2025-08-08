@@ -19,7 +19,7 @@ module.exports = {
         'react',
     ],
     rules: {
-        indent: ['error', 4],
+        indent: ['error', 4, { 'SwitchCase': 1 }],
         'padded-blocks': 'off',
         camelcase: 'off',
         'no-use-before-define': 'off',
@@ -30,7 +30,7 @@ module.exports = {
             named: 'never',
             asyncArrow: 'always',
         }],
-        '@typescript-eslint/indent': ['error', 4],
+        '@typescript-eslint/indent': ['error', 4, { 'SwitchCase': 1 }],
         '@typescript-eslint/comma-dangle': ['error', 'always-multiline'],
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',

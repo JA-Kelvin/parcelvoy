@@ -13,6 +13,7 @@ import { toast } from 'react-hot-toast/headless'
 import { QuestionIcon } from '../../../ui/icons'
 import { useTranslation } from 'react-i18next'
 import ResourceModal from '../ResourceModal'
+import EnhancedVisualEditor from './EnhancedVisualEditor'
 
 const VisualEditor = lazy(async () => await import('./VisualEditor'))
 
@@ -110,9 +111,22 @@ export default function EmailEditor() {
                 >
                     <section className="email-editor">
                         {templates.filter(template => template.locale === locale.currentLocale?.key)
-                            .map(template => (
-                                template.data.editor === 'visual'
-                                    ? (
+                            .map(template => {
+                                // Enhanced Visual Editor (new default)
+                                if (template.data.editor === 'enhanced-visual'
+                                    || (template.data.editor === 'visual' && !template.data.mjml)) {
+                                    return (
+                                        <EnhancedVisualEditor
+                                            key={template.id}
+                                            template={template}
+                                            setTemplate={handleTemplateChange}
+                                            resources={resources}
+                                        />
+                                    )
+                                }
+                                // Legacy Visual Editor (GrapesJS)
+                                if (template.data.editor === 'visual') {
+                                    return (
                                         <Suspense key={template.id} fallback={null}>
                                             <VisualEditor
                                                 template={template}
@@ -121,11 +135,16 @@ export default function EmailEditor() {
                                             />
                                         </Suspense>
                                     )
-                                    : <HtmlEditor
+                                }
+                                // HTML Editor
+                                return (
+                                    <HtmlEditor
                                         template={template}
                                         key={template.id}
-                                        setTemplate={handleTemplateChange} />
-                            ))
+                                        setTemplate={handleTemplateChange}
+                                    />
+                                )
+                            })
                         }
                     </section>
 

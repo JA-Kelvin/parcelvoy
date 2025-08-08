@@ -1,0 +1,174 @@
+/* Error Boundary Styles for Enhanced MJML Editor */
+.error-boundary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.error-boundary-content {
+    text-align: center;
+    max-width: 500px;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.error-boundary h3 {
+    color: #dc3545;
+    margin: 0 0 12px 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.error-boundary p {
+    color: #6c757d;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.error-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.error-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.error-button.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.error-button.primary:hover {
+    background-color: #0056b3;
+}
+
+.error-button.secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.error-button.secondary:hover {
+    background-color: #545b62;
+}
+
+.error-details {
+    text-align: left;
+    margin-top: 20px;
+    border-top: 1px solid #dee2e6;
+    padding-top: 20px;
+}
+
+.error-details summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 12px;
+}
+
+.error-details summary:hover {
+    color: #007bff;
+}
+
+.error-stack {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 12px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    color: #495057;
+    overflow-x: auto;
+}
+
+.error-stack pre {
+    margin: 8px 0 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.error-stack strong {
+    color: #dc3545;
+    display: block;
+    margin-top: 8px;
+}
+
+.error-stack strong:first-child {
+    margin-top: 0;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .error-boundary {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+
+    .error-boundary-content {
+        background: #1a202c;
+        color: #e2e8f0;
+    }
+
+    .error-boundary p {
+        color: #a0aec0;
+    }
+
+    .error-details {
+        border-top-color: #4a5568;
+    }
+
+    .error-details summary {
+        color: #e2e8f0;
+    }
+
+    .error-stack {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+
+    .error-stack strong {
+        color: #fc8181;
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .error-boundary {
+        margin: 10px;
+        min-height: 300px;
+    }
+
+    .error-boundary-content {
+        padding: 20px;
+    }
+
+    .error-actions {
+        flex-direction: column;
+    }
+
+    .error-button {
+        width: 100%;
+    }
+}

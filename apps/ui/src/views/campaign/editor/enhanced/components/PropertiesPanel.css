@@ -1,0 +1,389 @@
+/* Enhanced Properties Panel Styles for Parcelvoy MJML Editor */
+.properties-panel {
+    width: 320px;
+    height: 100%;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.properties-panel.collapsed {
+    width: 60px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+.panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9fafb;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.toggle-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    color: #6b7280;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.toggle-button:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.element-info {
+    padding: 12px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.element-type {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.element-id {
+    font-size: 12px;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.tab {
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+    color: #374151;
+    background: #f3f4f6;
+}
+
+.tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    background: #ffffff;
+}
+
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.attributes-section,
+.content-section,
+.style-section {
+    padding: 16px 20px;
+}
+
+.property-group {
+    margin-bottom: 16px;
+}
+
+.property-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+.input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.text-input,
+.select-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    background: #ffffff;
+}
+
+.text-input:focus,
+.select-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.color-input {
+    width: 40px;
+    height: 36px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+}
+
+.content-textarea,
+.css-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    resize: vertical;
+    min-height: 80px;
+    transition: all 0.2s ease;
+}
+
+.content-textarea:focus,
+.css-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.no-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: #6b7280;
+    height: 200px;
+}
+
+.no-selection-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.no-selection p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Scrollbar styling */
+.panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .properties-panel {
+        width: 100%;
+    }
+    
+    .panel-header {
+        padding: 12px 16px;
+    }
+    
+    .element-info {
+        padding: 10px 16px;
+    }
+    
+    .attributes-section,
+    .content-section,
+    .style-section {
+        padding: 12px 16px;
+    }
+    
+    .property-group {
+        margin-bottom: 12px;
+    }
+    
+    .tab {
+        padding: 10px 6px;
+        font-size: 12px;
+    }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .properties-panel {
+        background: #1f2937;
+        border-left-color: #374151;
+    }
+    
+    .panel-header {
+        background: #111827;
+        border-bottom-color: #374151;
+    }
+    
+    .panel-header h3 {
+        color: #f9fafb;
+    }
+    
+    .element-info {
+        background: #374151;
+        border-bottom-color: #4b5563;
+    }
+    
+    .element-type {
+        color: #f9fafb;
+    }
+    
+    .element-id {
+        color: #9ca3af;
+    }
+    
+    .tabs {
+        background: #111827;
+        border-bottom-color: #374151;
+    }
+    
+    .tab {
+        color: #9ca3af;
+    }
+    
+    .tab:hover {
+        color: #f9fafb;
+        background: #374151;
+    }
+    
+    .tab.active {
+        color: #60a5fa;
+        background: #1f2937;
+        border-bottom-color: #60a5fa;
+    }
+    
+    .property-label {
+        color: #f9fafb;
+    }
+    
+    .text-input,
+    .select-input,
+    .content-textarea,
+    .css-textarea {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .text-input:focus,
+    .select-input:focus,
+    .content-textarea:focus,
+    .css-textarea:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    }
+    
+    .color-input {
+        border-color: #4b5563;
+    }
+    
+    .no-selection {
+        color: #9ca3af;
+    }
+    
+    .toggle-button {
+        color: #9ca3af;
+    }
+    
+    .toggle-button:hover {
+        background: #374151;
+        color: #f9fafb;
+    }
+    
+    .panel-content::-webkit-scrollbar-track {
+        background: #374151;
+    }
+    
+    .panel-content::-webkit-scrollbar-thumb {
+        background: #4b5563;
+    }
+    
+    .panel-content::-webkit-scrollbar-thumb:hover {
+        background: #6b7280;
+    }
+}
+
+/* Animation for property changes */
+.property-group {
+    transition: all 0.2s ease;
+}
+
+.property-group:hover {
+    background: rgba(59, 130, 246, 0.02);
+    border-radius: 6px;
+    margin: -4px;
+    padding: 4px;
+}
+
+/* Accessibility improvements */
+.text-input:focus,
+.select-input:focus,
+.content-textarea:focus,
+.css-textarea:focus {
+    outline: 2px solid transparent;
+}
+
+.tab:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: -2px;
+}
+
+/* Print styles */
+@media print {
+    .properties-panel {
+        display: none;
+    }
+}
