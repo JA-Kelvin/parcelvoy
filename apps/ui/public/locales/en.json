@@ -170,6 +170,8 @@
     "hour_one": "{{count}} Hour",
     "hour_other": "{{count}} Hours",
     "images": "Images",
+    "image_upload": "Click or drag file in to upload a new image. Note, files are uploaded at their original resolution and filesize.",
+    "image_url": "Enter an external URL for use for your image.",
     "import_users": "Import Users",
     "in_timezone": "In Timezone",
     "integrations": "Integrations",
