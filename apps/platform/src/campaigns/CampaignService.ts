@@ -4,7 +4,7 @@ import TextJob from '../providers/text/TextJob'
 import EmailJob from '../providers/email/EmailJob'
 import { logger } from '../config/logger'
 import { User } from '../users/User'
-import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendReferenceType, CampaignSendState, CampaignState, SentCampaign } from './Campaign'
+import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendParams, CampaignSendReferenceType, CampaignSendState, CampaignState, SentCampaign } from './Campaign'
 import List from '../lists/List'
 import Subscription, { SubscriptionState } from '../subscriptions/Subscription'
 import { RequestError } from '../core/errors'
@@ -12,7 +12,7 @@ import { PageParams } from '../core/searchParams'
 import { allLists } from '../lists/ListService'
 import { allTemplates, duplicateTemplate, screenshotHtml, templateInUserLocale, validateTemplates } from '../render/TemplateService'
 import { getSubscription, getUserSubscriptionState } from '../subscriptions/SubscriptionService'
-import { chunk, cleanString, pick, shallowEqual } from '../utilities'
+import { batch, chunk, cleanString, pick, shallowEqual } from '../utilities'
 import { getProvider } from '../providers/ProviderRepository'
 import { createTagSubquery, getTags, setTags } from '../tags/TagService'
 import { getProject } from '../projects/ProjectService'
@@ -362,6 +362,30 @@ export const populateSendList = async (campaign: SentCampaign) => {
     const progressCacheKey = CacheKeys.populationProgress(campaign)
     const totalCacheKey = CacheKeys.populationTotal(campaign)
 
+    const insertRows = async (rows: CampaignSendParams[]) => {
+        try {
+            await App.main.db.transaction(async (trx) => {
+                await CampaignSend.query(trx)
+                    .insert(rows)
+                    .onConflict(['campaign_id', 'user_id', 'reference_id'])
+                    .merge(['state', 'send_at'])
+            })
+        } catch (error: any) {
+
+            // If foreign key error, retry in smaller chunks
+            if (error.errno === 1452 && rows.length > 1) {
+                const size = Math.max(1, Math.floor(rows.length / 2))
+                const batches = batch(rows, size)
+                for (const items of batches) {
+                    await insertRows(items)
+                }
+                return
+            }
+
+            logger.error({ error, campaignId: campaign.id }, 'campaign:generate:progress:error')
+        }
+    }
+
     await processUsers({
         query: await recipientClickhouseQuery(campaign),
         cacheKey: CacheKeys.generate(campaign),
@@ -379,16 +403,7 @@ export const populateSendList = async (campaign: SentCampaign) => {
         },
         callback: async (pairs: DataPair[]) => {
             const items = pairs.map(({ key, value }) => CampaignSend.create(campaign, project, { id: parseInt(key), timezone: value }))
-            try {
-                await App.main.db.transaction(async (trx) => {
-                    await CampaignSend.query(trx)
-                        .insert(items)
-                        .onConflict(['campaign_id', 'user_id', 'reference_id'])
-                        .merge(['state', 'send_at'])
-                })
-            } catch (error) {
-                logger.error({ error, campaignId: campaign.id }, 'campaign:generate:progress:error')
-            }
+            await insertRows(items)
             await cacheIncr(redis, progressCacheKey, items.length, oneDay)
         },
         afterCallback: async () => {
