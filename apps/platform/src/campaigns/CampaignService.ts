@@ -362,7 +362,7 @@ export const populateSendList = async (campaign: SentCampaign) => {
     const progressCacheKey = CacheKeys.populationProgress(campaign)
     const totalCacheKey = CacheKeys.populationTotal(campaign)
 
-    const insertRows = async (rows: CampaignSendParams[]) => {
+    const insertRows = async (rows: CampaignSendParams[]): Promise<number[]> => {
         try {
             await App.main.db.transaction(async (trx) => {
                 await CampaignSend.query(trx)
@@ -372,18 +372,29 @@ export const populateSendList = async (campaign: SentCampaign) => {
             })
         } catch (error: any) {
 
+            const invalidUserIds: number[] = []
+
             // If foreign key error, retry in smaller chunks
-            if (error.errno === 1452 && rows.length > 1) {
-                const size = Math.max(1, Math.floor(rows.length / 2))
-                const batches = batch(rows, size)
-                for (const items of batches) {
-                    await insertRows(items)
+            if (error.errno === 1452) {
+                if (rows.length > 1) {
+                    const size = Math.max(1, Math.floor(rows.length / 2))
+                    const batches = batch(rows, size)
+                    for (const items of batches) {
+                        const userIds = await insertRows(items)
+                        invalidUserIds.push(...userIds)
+                    }
+                    return invalidUserIds
                 }
-                return
+
+                // Is related to the user_id foreign key
+                if (error.sqlMessage.includes('campaign_sends_user_id_foreign')) {
+                    return rows.map(r => r.user_id)
+                }
             }
 
-            logger.error({ error, campaignId: campaign.id }, 'campaign:generate:progress:error')
+            logger.error({ error, invalidUserIds, campaignId: campaign.id }, 'campaign:generate:progress:error')
         }
+        return []
     }
 
     await processUsers({
