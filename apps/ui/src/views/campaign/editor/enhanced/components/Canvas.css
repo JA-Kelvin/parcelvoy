@@ -235,6 +235,7 @@ linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
     .element-controls {
         background: #374151;
         border-color: #4b5563;
+        border-radius: 5px;
     }
     
     .element-controls button {

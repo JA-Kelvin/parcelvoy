@@ -588,7 +588,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const handleInsertTemplate = useCallback((templateId: string) => {
         try {
             const combined: TemplateBlock[] = [
-                ...(template.data.customTemplates || []),
+                ...(template.data.customTemplates ?? []),
                 ...CUSTOM_TEMPLATES,
             ]
             const block = combined.find(t => t.id === templateId)
@@ -967,28 +967,28 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                 disabled={!clipboardElement}
                                 title="Paste element (Ctrl+V)"
                             >
-                                📋
+                                📋 Paste
                             </button>
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowImportModal(true)}
                                 title="Import MJML Content"
                             >
-                                📥
+                                📥 Import
                             </button>
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowEnhancedPreview(true)}
                                 title="Preview Email with Code View"
                             >
-                                👁️
+                                🔍 Preview
                             </button>
                             <button
                                 className={`toolbar-button ${rightPanelCollapsed ? 'active' : ''}`}
                                 onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
                                 title="Toggle Right Panel"
                             >
-                                {rightPanelCollapsed ? '➡️' : '⬅️'}
+                                {rightPanelCollapsed ? '➡️ Expand' : '⬅️ Collapse'}
                             </button>
                         </div>
                     </div>
@@ -1116,8 +1116,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                         setShowTemplatePreview(false)
                         setSelectedTemplateBlock(null)
                     }}
-                    elements={selectedTemplateBlock?.elements || []}
-                    templateName={selectedTemplateBlock?.name || 'Template Block'}
+                    elements={selectedTemplateBlock?.elements ?? []}
+                    templateName={selectedTemplateBlock?.name ?? 'Template Block'}
                     onConfirm={handleConfirmInsertTemplate}
                     confirmLabel="Insert"
                 />

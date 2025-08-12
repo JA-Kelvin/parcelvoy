@@ -697,22 +697,6 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             </button>
                         </>
                     )}
-                    <button
-                        className="control-button edit"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            // Call the edit button click handler to focus properties panel
-                            safeOnEditButtonClick(element.id)
-
-                            // Enable inline editing for supported content tags
-                            if (inlineEditableTags.has(element.tagName)) {
-                                setIsEditing(true)
-                            }
-                        }}
-                        title="Edit properties"
-                    >
-                        ✏️
-                    </button>
                     {isSelected && (
                         <>
                             <button
@@ -744,7 +728,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         onClick={handleDelete}
                         title="Delete element"
                     >
-                        🗑️
+                        ❌
                     </button>
                 </div>
             )}

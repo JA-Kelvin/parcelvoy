@@ -1,7 +1,7 @@
 import { SetStateAction, Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { CampaignContext, LocaleContext, LocaleSelection, ProjectContext } from '../../../contexts'
 import './EmailEditor.css'
-import Button, { LinkButton } from '../../../ui/Button'
+import Button from '../../../ui/Button'
 import api from '../../../api'
 import { Campaign, Resource, Template } from '../../../types'
 import { useBlocker, useNavigate } from 'react-router'
@@ -10,7 +10,6 @@ import Modal from '../../../ui/Modal'
 import HtmlEditor from './HtmlEditor'
 import LocaleSelector from '../LocaleSelector'
 import { toast } from 'react-hot-toast/headless'
-import { QuestionIcon } from '../../../ui/icons'
 import { useTranslation } from 'react-i18next'
 import ResourceModal from '../ResourceModal'
 import EnhancedVisualEditor from './EnhancedVisualEditor'
@@ -92,12 +91,6 @@ export default function EmailEditor() {
                                 variant="secondary"
                                 onClick={() => setShowConfig(true)}
                             >Config</Button>
-                            <LinkButton
-                                icon={<QuestionIcon />}
-                                variant="secondary"
-                                size="small"
-                                to="https://docs.parcelvoy.com/how-to/campaigns/templates"
-                                target="_blank" />
                             <LocaleSelector campaignState={[campaign, campaignChange]} />
                             {template && (
                                 <Button
@@ -113,8 +106,7 @@ export default function EmailEditor() {
                         {templates.filter(template => template.locale === locale.currentLocale?.key)
                             .map(template => {
                                 // Enhanced Visual Editor (new default)
-                                if (template.data.editor === 'enhanced-visual'
-                                    || (template.data.editor === 'visual' && !template.data.mjml)) {
+                                if (template.data.editor === 'enhanced-visual') {
                                     return (
                                         <EnhancedVisualEditor
                                             key={template.id}

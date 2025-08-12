@@ -67,6 +67,7 @@ export default function CreateTemplateModal({ open, setIsOpen, campaign, onCreat
                             name="data.editor"
                             label={t('editor_type')}
                             options={[
+                                { key: 'enhanced-visual', label: t('enhanced_visual') },
                                 { key: 'visual', label: t('visual') },
                                 { key: 'code', label: t('code') },
                             ]}

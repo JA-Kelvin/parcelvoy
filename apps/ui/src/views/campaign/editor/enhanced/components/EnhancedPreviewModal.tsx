@@ -142,7 +142,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
             <div className="enhanced-preview-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="enhanced-preview-header">
                     <div className="preview-title">
-                        <h2>👁️ Preview: {templateName}</h2>
+                        <h2>🔍 Preview: {templateName}</h2>
                     </div>
 
                     <div className="preview-tabs">
@@ -151,7 +151,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                             onClick={() => handleTabChange('visual')}
                             title="Visual Preview"
                         >
-                            👁️ Visual
+                            🔍 Visual
                         </button>
                         <button
                             className={`tab-button ${activeTab === 'mjml' ? 'active' : ''}`}
