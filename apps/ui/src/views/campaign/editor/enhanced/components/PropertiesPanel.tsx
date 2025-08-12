@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { EditorElement } from '../types'
 import './PropertiesPanel.css'
 import ImageGalleryModal, { ImageUpload } from '../../../ImageGalleryModal'
-import { Image } from '../../../../../types'
 
 interface PropertiesPanelProps {
     selectedElement: EditorElement | null
