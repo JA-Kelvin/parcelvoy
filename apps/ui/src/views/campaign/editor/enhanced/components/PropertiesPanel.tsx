@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { EditorElement } from '../types'
 import './PropertiesPanel.css'
-import ImageGalleryModal from '../../../ImageGalleryModal'
+import ImageGalleryModal, { ImageUpload } from '../../../ImageGalleryModal'
 import { Image } from '../../../../../types'
 
 interface PropertiesPanelProps {
@@ -32,7 +32,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         setImageAttrKey(null)
     }
 
-    const handleImageInsert = (image: Image) => {
+    const handleImageInsert = (image: ImageUpload) => {
         if (!imageAttrKey) return
         handleAttributeChange(imageAttrKey, image.url)
         closeImagePicker()
