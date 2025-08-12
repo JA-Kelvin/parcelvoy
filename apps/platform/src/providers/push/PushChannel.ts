@@ -18,12 +18,7 @@ export default class PushChannel {
     async send(template: PushTemplate, devices: PushDevice[], variables: Variables): Promise<PushResponse | undefined> {
 
         // Find tokens from active devices with push enabled
-        // Temporarily include the old table
-        const oldDevices = variables.user?.devices?.filter(device => device.token != null) as PushDevice[] ?? []
-        const tokens: string[] = [...new Set([
-            ...devices.map(device => device.token),
-            ...oldDevices.map(device => device.token),
-        ])]
+        const tokens = devices.map(device => device.token)
 
         const push = {
             tokens,
