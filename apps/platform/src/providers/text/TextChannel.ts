@@ -65,7 +65,7 @@ export default class TextChannel {
         return Math.ceil(text.length / TEXT_SEGMENT_LENGTH)
     }
 
-    parseInbound(body: any): InboundTextMessage {
+    parseInbound(body: any): InboundTextMessage | undefined {
         return this.provider.parseInbound(body)
     }
 }
