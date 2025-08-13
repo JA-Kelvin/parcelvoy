@@ -131,6 +131,12 @@ export const updateCampaign = async (id: number, projectId: number, { tags, admi
         throw new RequestError(CampaignError.CampaignFinished)
     }
 
+    // Check that provider is valid
+    if (params.provider_id) {
+        const provider = await getProvider(params.provider_id, projectId)
+        if (provider?.deleted_at) throw new RequestError(CampaignError.CampaignInvalidProvider)
+    }
+
     const data: Partial<Campaign> = { ...params }
     let send_at: Date | undefined | null = data.send_at ? new Date(data.send_at) : undefined
 
