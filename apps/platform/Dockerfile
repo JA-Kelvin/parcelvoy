@@ -3,7 +3,7 @@ FROM node:22 AS compile
 WORKDIR /usr/src/app
 RUN corepack enable
 COPY . .
-RUN pnpm install --filter "@parcelvoy/platform" --frozen-lockfile --config.platform=linux --config.architecture=x64
+RUN pnpm install --filter "@parcelvoy/platform" --config.platform=linux --config.architecture=x64
 RUN pnpm --filter "@parcelvoy/platform" build
 RUN pnpm --filter "@parcelvoy/platform" --prod deploy packages
 
