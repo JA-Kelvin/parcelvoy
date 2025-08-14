@@ -5,6 +5,7 @@ import { EnhancedTemplate } from './enhanced/types'
 import EnhancedMjmlEditor from './enhanced/EnhancedMjmlEditor'
 import { ProjectContext } from '../../../contexts'
 import api from '../../../api'
+import { normalizeArrayShapes } from './enhanced/utils/arrayUtils'
 
 interface EnhancedVisualEditorProps {
     template: Template
@@ -21,6 +22,7 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
     const [isSaving, setIsSaving] = useState(false)
     // Convert Parcelvoy Template to Enhanced Template
     const convertToEnhancedTemplate = (parcelvoyTemplate: Template): EnhancedTemplate => {
+        const normalizedElements = normalizeArrayShapes(parcelvoyTemplate.data.elements)
         return {
             id: String(parcelvoyTemplate.id),
             type: parcelvoyTemplate.type,
@@ -29,7 +31,7 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
                 editor: 'enhanced-visual',
                 mjml: parcelvoyTemplate.data.mjml || '<mjml><mj-body></mj-body></mjml>',
                 html: parcelvoyTemplate.data.html || '',
-                elements: parcelvoyTemplate.data.elements,
+                elements: Array.isArray(normalizedElements) ? normalizedElements : undefined,
                 customTemplates: Array.isArray(parcelvoyTemplate.data.customTemplates)
                     ? parcelvoyTemplate.data.customTemplates
                     : [],

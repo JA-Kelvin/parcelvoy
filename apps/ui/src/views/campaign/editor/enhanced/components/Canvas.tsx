@@ -6,6 +6,7 @@ import { generateId } from '../utils/mjmlParser'
 // Import directly to avoid circular dependencies
 import DroppableElement from './DroppableElement'
 import './Canvas.css'
+import { toArray } from '../utils/arrayUtils'
 
 interface CanvasProps {
     elements: EditorElement[]
@@ -45,7 +46,9 @@ const Canvas: React.FC<CanvasProps> = ({
     const safeOnElementMove = onElementMove || (() => {})
     const safeOnCopyElement = onCopyElement ?? (() => {})
     const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
-    const canvasRef = useRef<HTMLDivElement>(null)
+    const canvasRef = useRef<HTMLDivElement | null>(null)
+
+    // toArray imported from shared utils to normalize children arrays consistently
 
     // Handle component drop from components panel
     const [{ isOver, canDrop }, drop] = useDrop({
@@ -75,7 +78,8 @@ const Canvas: React.FC<CanvasProps> = ({
                 console.error('No mjml root found in elements')
                 return
             }
-            const mjmlBody = mjmlRoot.children?.find((el: EditorElement) => el.tagName === 'mj-body')
+            const rootChildren = toArray(mjmlRoot?.children)
+            const mjmlBody = rootChildren.find((el: EditorElement) => el.tagName === 'mj-body')
             if (!mjmlBody) {
                 console.error('No mj-body found in mjml root')
                 return
@@ -89,7 +93,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
             // Groups must be direct children of sections
             if (item.type === 'mj-group') {
-                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
+                const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
                 const lastSection = sections[sections.length - 1]
                 if (lastSection) {
                     safeOnElementAdd(newElement, lastSection.id)
@@ -131,7 +135,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 || item.type === 'mj-accordion-title'
                 || item.type === 'mj-accordion-text'
             ) {
-                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
+                const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
                 let section = sections[sections.length - 1]
                 if (!section) {
                     section = {
@@ -212,10 +216,10 @@ const Canvas: React.FC<CanvasProps> = ({
             }
 
             // For content components, add to the last column or create structure
-            const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
+            const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
             const lastSection = sections[sections.length - 1]
             if (lastSection) {
-                const columns = lastSection.children?.filter((el: EditorElement) => el.tagName === 'mj-column') || []
+                const columns = toArray(lastSection.children).filter((el: EditorElement) => el.tagName === 'mj-column')
                 const lastColumn = columns[columns.length - 1]
                 if (lastColumn) {
                     safeOnElementAdd(newElement, lastColumn.id)
@@ -262,7 +266,7 @@ const Canvas: React.FC<CanvasProps> = ({
     // Combine refs for drop functionality
     const combinedRef = useCallback((node: HTMLDivElement | null) => {
         if (node) {
-            (canvasRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+            canvasRef.current = node
             drop(node)
         }
     }, [drop])
@@ -274,9 +278,10 @@ const Canvas: React.FC<CanvasProps> = ({
         }
     }
 
-    const renderElements = (elements: EditorElement[], parentId?: string): React.ReactNode => {
-        const siblingsCount = elements.length
-        return elements.map((element, index) => (
+    const renderElements = (elements: EditorElement[] | any, parentId?: string): React.ReactNode => {
+        const list = Array.isArray(elements) ? elements : []
+        const siblingsCount = list.length
+        return list.map((element, index) => (
             <DroppableElement
                 key={element.id}
                 element={element}
@@ -294,8 +299,8 @@ const Canvas: React.FC<CanvasProps> = ({
                 index={index}
                 siblingsCount={siblingsCount}
             >
-                {element.children && element.children.length > 0
-                    && renderElements(element.children, element.id)}
+                {toArray(element.children).length > 0
+                    && renderElements(toArray(element.children), element.id)}
             </DroppableElement>
         ))
     }
@@ -312,20 +317,22 @@ const Canvas: React.FC<CanvasProps> = ({
 
     // Find MJML structure for rendering
     const mjmlRoot = safeElements.find((el: EditorElement) => el.tagName === 'mjml')
-    const mjmlBody = mjmlRoot?.children?.find((el: EditorElement) => el.tagName === 'mj-body')
+    const mjmlBody = toArray(mjmlRoot?.children).find((el: EditorElement) => el.tagName === 'mj-body')
 
     // Detailed debug logging
     console.log('Canvas: Detailed Debug Info:')
     console.log('- Elements received:', safeElements.length)
-    console.log('- Elements structure:', safeElements.map(el => ({ id: el.id, tagName: el.tagName, childrenCount: el.children?.length || 0 })))
+    console.log('- Elements structure:', safeElements.map(el => ({ id: el.id, tagName: el.tagName, childrenCount: Array.isArray(el.children) ? el.children.length : toArray(el.children).length })))
     console.log('- MJML Root found:', !!mjmlRoot)
     if (mjmlRoot) {
-        console.log('- MJML Root children:', mjmlRoot.children?.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: child.children?.length || 0 })))
+        const rc = toArray(mjmlRoot.children)
+        console.log('- MJML Root children:', rc.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: Array.isArray(child.children) ? child.children.length : toArray(child.children).length })))
     }
     console.log('- MJML Body found:', !!mjmlBody)
     if (mjmlBody) {
-        console.log('- MJML Body children:', mjmlBody.children?.length || 0)
-        console.log('- MJML Body structure:', mjmlBody.children?.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: child.children?.length || 0 })))
+        const bc = toArray(mjmlBody.children)
+        console.log('- MJML Body children:', bc.length)
+        console.log('- MJML Body structure:', bc.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: Array.isArray(child.children) ? child.children.length : toArray(child.children).length })))
     }
     console.log('- Will show empty state:', !mjmlBody)
 
@@ -339,7 +346,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 {mjmlBody
                     ? (
                         <div className="mjml-body-wrapper">
-                            {renderElements(mjmlBody.children || [], mjmlBody.id)}
+                            {renderElements(toArray(mjmlBody.children), mjmlBody.id)}
                         </div>
                     )
                     : (

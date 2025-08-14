@@ -5,7 +5,7 @@ RUN corepack enable
 COPY . .
 RUN corepack enable
 WORKDIR /usr/src/app/apps/ui
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 RUN pnpm build
 
 # --------------> The production image

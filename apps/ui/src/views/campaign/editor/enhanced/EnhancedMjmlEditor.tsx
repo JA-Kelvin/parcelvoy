@@ -23,6 +23,7 @@ import SaveCustomTemplateModal from './components/SaveCustomTemplateModal'
 import { CUSTOM_TEMPLATES } from './templates/customTemplates'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
+import { toArray, normalizeArrayShapes } from './utils/arrayUtils'
 
 interface EnhancedMjmlEditorProps {
     template: EnhancedTemplate
@@ -32,6 +33,8 @@ interface EnhancedMjmlEditorProps {
     isPreviewMode?: boolean
     isSaving?: boolean
 }
+
+// Array helpers are centralized in './utils/arrayUtils'
 
 // --- Clipboard & structure helpers ---
 const ALLOWED_CHILDREN: Record<string, string[]> = {
@@ -60,10 +63,13 @@ const findParentInfo = (
         if (el.id === childId) {
             return { parentId, parentTag: null, index: i }
         }
-        if (el.children?.length) {
-            const res = findParentInfo(el.children, childId, el.id)
-            if (res.parentId !== null || res.index !== null) {
-                return { parentId: res.parentId ?? el.id, parentTag: el.tagName, index: res.index }
+        {
+            const childList = toArray<EditorElement>(el.children)
+            if (childList.length) {
+                const res = findParentInfo(childList, childId, el.id)
+                if (res.parentId !== null || res.index !== null) {
+                    return { parentId: res.parentId ?? el.id, parentTag: el.tagName, index: res.index }
+                }
             }
         }
     }
@@ -207,16 +213,14 @@ const addElementRecursive = (elements: EditorElement[], newElement: EditorElemen
 
     return elements.map(el => {
         if (el.id === parentId) {
-            const newChildren = [...el.children]
-            if (index === undefined || index < 0 || index > newChildren.length) {
-                newChildren.push(newElement)
-            } else {
-                newChildren.splice(index, 0, newElement)
-            }
+            const newChildren = [...toArray<EditorElement>(el.children)]
+            const insertAt = (index === undefined || index < 0 || index > newChildren.length) ? newChildren.length : index
+            newChildren.splice(insertAt, 0, newElement)
             return { ...el, children: newChildren }
         }
-        if (el.children && el.children.length > 0) {
-            return { ...el, children: addElementRecursive(el.children, newElement, parentId, index) }
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length > 0) {
+            return { ...el, children: addElementRecursive(childList, newElement, parentId, index) }
         }
         return el
     })
@@ -234,8 +238,9 @@ const updateElementRecursive = (elements: EditorElement[], elementId: string, up
             }
             return newEl
         }
-        if (el.children && el.children.length > 0) {
-            return { ...el, children: updateElementRecursive(el.children, elementId, updatedAttributes, updatedContent) }
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length > 0) {
+            return { ...el, children: updateElementRecursive(childList, elementId, updatedAttributes, updatedContent) }
         }
         return el
     })
@@ -246,10 +251,11 @@ const deleteElementRecursive = (elements: EditorElement[], elementId: string): E
         if (element.id === elementId) {
             return null // This will be filtered out
         }
-        if (element.children) {
+        const childList = toArray<EditorElement>(element.children)
+        if (childList.length > 0) {
             return {
                 ...element,
-                children: deleteElementRecursive(element.children, elementId).filter(Boolean),
+                children: deleteElementRecursive(childList, elementId).filter(Boolean),
             }
         }
         return element
@@ -260,8 +266,9 @@ const deleteElementRecursive = (elements: EditorElement[], elementId: string): E
 const getElementByIdRecursive = (elements: EditorElement[], id: string): EditorElement | null => {
     for (const el of elements) {
         if (el.id === id) return el
-        if (el?.children.length) {
-            const found = getElementByIdRecursive(el.children, id)
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length) {
+            const found = getElementByIdRecursive(childList, id)
             if (found) return found
         }
     }
@@ -291,8 +298,9 @@ const findAndRemoveElement = (
             originalIndex = i
             continue // skip adding this element
         }
-        if (el.children && el.children.length > 0) {
-            const childResult = findAndRemoveElement(el.children, elementId, el.id)
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length > 0) {
+            const childResult = findAndRemoveElement(childList, elementId, el.id)
             if (childResult.removed) {
                 removed = childResult.removed
                 originalParentId = childResult.originalParentId
@@ -307,6 +315,7 @@ const findAndRemoveElement = (
     return { tree: newTree, removed, originalParentId, originalIndex }
 }
 
+// ... (rest of the code remains the same)
 const insertElementAtParent = (
     elements: EditorElement[],
     parentId: string | null | undefined,
@@ -322,13 +331,14 @@ const insertElementAtParent = (
 
     return elements.map(el => {
         if (el.id === parentId) {
-            const children = [...(el.children || [])]
+            const children = [...toArray<EditorElement>(el.children)]
             const insertAt = Math.max(0, Math.min(index ?? children.length, children.length))
             children.splice(insertAt, 0, element)
             return { ...el, children }
         }
-        if (el.children && el.children.length > 0) {
-            return { ...el, children: insertElementAtParent(el.children, parentId, index, element) }
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length > 0) {
+            return { ...el, children: insertElementAtParent(childList, parentId, index, element) }
         }
         return el
     })
@@ -340,11 +350,12 @@ const isDescendant = (elements: EditorElement[], ancestorId: string, candidateId
     const contains = (nodes: EditorElement[]): boolean => {
         for (const n of nodes) {
             if (n.id === candidateId) return true
-            if (n.children?.length && contains(n.children)) return true
+            const childList = toArray<EditorElement>(n.children)
+            if (childList.length && contains(childList)) return true
         }
         return false
     }
-    return contains(ancestor.children || [])
+    return contains(toArray<EditorElement>(ancestor.children))
 }
 
 const moveElementRecursive = (
@@ -396,8 +407,9 @@ const cloneWithNewIds = (element: EditorElement): EditorElement => {
         content: element.content,
         children: [],
     }
-    if (element.children?.length) {
-        newEl.children = element.children.map(cloneWithNewIds)
+    const childList = toArray<EditorElement>(element.children)
+    if (childList.length) {
+        newEl.children = childList.map(cloneWithNewIds)
     }
     return newEl
 }
@@ -405,8 +417,9 @@ const cloneWithNewIds = (element: EditorElement): EditorElement => {
 const findFirstByTagName = (elements: EditorElement[], tag: string): EditorElement | null => {
     for (const el of elements) {
         if (el.tagName === tag) return el
-        if (el.children?.length) {
-            const found = findFirstByTagName(el.children, tag)
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length) {
+            const found = findFirstByTagName(childList, tag)
             if (found) return found
         }
     }
@@ -418,8 +431,9 @@ const getPathToElement = (elements: EditorElement[], id: string, path: EditorEle
     for (const el of elements) {
         const newPath = [...path, el]
         if (el.id === id) return newPath
-        if (el.children?.length) {
-            const found = getPathToElement(el.children, id, newPath)
+        const childList = toArray<EditorElement>(el.children)
+        if (childList.length) {
+            const found = getPathToElement(childList, id, newPath)
             if (found.length) return found
         }
     }
@@ -441,7 +455,7 @@ const findNearestAncestorByTags = (elements: EditorElement[], targetId: string, 
 const insertManyUnderParent = (elements: EditorElement[], parentId: string, items: EditorElement[]): EditorElement[] => {
     return elements.map(el => {
         if (el.id === parentId) {
-            const children = [...(el.children || []), ...items]
+            const children = [...toArray<EditorElement>(el.children), ...items]
             return { ...el, children }
         }
         if (el.children?.length) {
@@ -479,10 +493,11 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     // Initialize editor state with a function to ensure proper initialization
     const getInitialState = (): HistoryState => {
         // Try to use elements from template data first
-        if (template.data.elements && Array.isArray(template.data.elements) && template.data.elements.length > 0) {
-            console.log('Using saved elements from template data:', template.data.elements.length)
+        const fromData = normalizeArrayShapes(template.data.elements)
+        if (Array.isArray(fromData) && fromData.length > 0) {
+            console.log('Using saved elements from template data (normalized):', fromData.length)
             return {
-                present: template.data.elements,
+                present: fromData,
                 history: [],
                 future: [],
                 selectedElementId: null,
@@ -495,10 +510,11 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             try {
                 console.log('Parsing MJML string for initial state')
                 const parsedElements = parseMJMLString(template.data.mjml)
-                if (Array.isArray(parsedElements) && parsedElements.length > 0) {
-                    console.log('Using parsed elements for initial state:', parsedElements.length)
+                const normalizedParsed = normalizeArrayShapes(parsedElements)
+                if (Array.isArray(normalizedParsed) && normalizedParsed.length > 0) {
+                    console.log('Using parsed elements for initial state (normalized):', normalizedParsed.length)
                     return {
-                        present: parsedElements,
+                        present: normalizedParsed,
                         history: [],
                         future: [],
                         selectedElementId: null,
@@ -521,18 +537,22 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         }
     }
 
-    const [editorState, dispatch] = useReducer(editorReducer, getInitialState())
+    const [editorState, dispatch] = useReducer(editorReducer, undefined as any, () => getInitialState())
 
     // Load template data when template prop changes (for saved template restoration)
     useEffect(() => {
         // Always reload template data when template changes
         console.log('Template changed, loading data:', template.id)
 
-        if (template.data.elements && Array.isArray(template.data.elements) && template.data.elements.length > 0) {
-            // Template has saved elements, load them into editor
-            console.log('Loading saved elements:', template.data.elements.length)
-            console.log('Saved elements structure:', template.data.elements.map(el => ({ id: el.id, type: el.type, tagName: el.tagName, childrenCount: el.children?.length || 0 })))
-            dispatch({ type: 'LOAD_TEMPLATE', payload: { elements: template.data.elements, templateId: template.id } })
+        if (template.data.elements && (Array.isArray(template.data.elements) || typeof template.data.elements === 'object')) {
+            // Template has saved elements (array or numeric-keyed object), normalize and load
+            const normalized = normalizeArrayShapes(template.data.elements)
+            if (Array.isArray(normalized) && normalized.length > 0) {
+                console.log('Loading saved elements (normalized):', normalized.length)
+                console.log('Saved elements structure (normalized):', normalized.map((el: any) => ({ id: el.id, type: el.type, tagName: el.tagName, childrenCount: Array.isArray(el.children) ? el.children.length : 0 })))
+                dispatch({ type: 'LOAD_TEMPLATE', payload: { elements: normalized, templateId: template.id } })
+                return
+            }
         } else if (template.data.mjml && template.data.mjml.trim() !== '' && template.data.mjml !== '<mjml><mj-body></mj-body></mjml>') {
             // Template has meaningful MJML string (not just the minimal default), parse it and load
             try {
@@ -552,7 +572,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         console.log('Template has no meaningful content, creating default structure')
         const defaultElements = createDefaultMjmlStructure()
         dispatch({ type: 'LOAD_TEMPLATE', payload: { elements: defaultElements, templateId: template.id } })
-    }, [template.id, template.data.elements, template.data.mjml]) // Watch for changes in template ID and content
+    }, [template.id]) // Only reload when switching templates
 
     // Update template when editor state changes
     useEffect(() => {
@@ -617,7 +637,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     // Reusable insertion logic for a template block
     const insertTemplateBlock = useCallback((block: TemplateBlock) => {
         try {
-            const clones = (block.elements || []).map(cloneWithNewIds)
+            const clones = toArray<EditorElement>(block.elements).map(cloneWithNewIds)
             if (clones.length === 0) {
                 toast('Nothing to insert from template')
                 return
@@ -699,30 +719,31 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
 
     // Helper to pick reasonable paste target when same-parent insertion invalid
     const resolvePasteTarget = useCallback((rootTag: string): { parentId: string | null, index: number } | null => {
-        // Try mj-body first
+        // Find mj-body within current document
         const mjBody = findFirstByTagName(editorState.present, 'mj-body')
         if (!mjBody) return null
 
-        // If mj-body allows it, append at end
+        // 1) If the element can be placed directly under mj-body, append to mj-body
         if (getAllowedChildren('mj-body').includes(rootTag)) {
-            return { parentId: mjBody.id, index: (mjBody.children?.length ?? 0) }
+            const bodyChildren = toArray<EditorElement>(mjBody.children)
+            return { parentId: mjBody.id, index: bodyChildren.length }
         }
 
-        // If column element, put into last section
-        if (rootTag === 'mj-column') {
-            const sections = (mjBody.children || []).filter((c) => c.tagName === 'mj-section')
-            const lastSection = sections[sections.length - 1]
-            if (lastSection) {
-                return { parentId: lastSection.id, index: (lastSection.children?.length ?? 0) }
-            }
-        }
-
-        // For content elements, try last column in last section
-        const sections = (mjBody.children || []).filter((c) => c.tagName === 'mj-section')
+        // 2) If the element can be placed under a section, use the last section
+        const sections = toArray<EditorElement>(mjBody.children).filter(
+            (c) => c.tagName === 'mj-section' || c.tagName === 'enhanced-section',
+        )
         const lastSection = sections[sections.length - 1]
-        const lastColumn = lastSection?.children?.filter((c) => c.tagName === 'mj-column').slice(-1)[0]
+        if (lastSection && getAllowedChildren(lastSection.tagName).includes(rootTag)) {
+            return { parentId: lastSection.id, index: toArray<EditorElement>(lastSection.children).length }
+        }
+
+        // 3) For content elements, try the last column in the last section
+        const lastColumn = toArray<EditorElement>(lastSection?.children)
+            .filter((c) => c.tagName === 'mj-column')
+            .slice(-1)[0]
         if (lastColumn && getAllowedChildren('mj-column').includes(rootTag)) {
-            return { parentId: lastColumn.id, index: (lastColumn.children?.length ?? 0) }
+            return { parentId: lastColumn.id, index: toArray<EditorElement>(lastColumn.children).length }
         }
 
         return null
@@ -754,9 +775,9 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 } else {
                     const selectedNode = getElementByIdRecursive(editorState.present, selectedId)
                     if (selectedNode && getAllowedChildren(selectedNode.tagName).includes(rootTag)) {
-                    // Otherwise insert as child of selected when valid
+                        // Otherwise insert as child of selected when valid
                         targetParentId = selectedId
-                        targetIndex = selectedNode.children?.length ?? 0
+                        targetIndex = toArray<EditorElement>(selectedNode.children).length
                     }
                 }
             }
@@ -861,7 +882,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     toast.error('Email body not found')
                     return
                 }
-                elementsToClone = [...(mjBody.children || [])]
+                elementsToClone = [...toArray<EditorElement>(mjBody.children)]
             }
 
             if (!elementsToClone.length) {
