@@ -1,5 +1,5 @@
 // Enhanced MJML Editor for Parcelvoy
-import React, { useCallback, useEffect, useReducer, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { EditorElement, HistoryState, EnhancedTemplate, EditorAction, TemplateBlock } from './types'
@@ -19,6 +19,7 @@ import ImportMjmlModal from './components/ImportMjmlModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import LayersPanel from './components/LayersPanel'
 import CustomTemplatesModal from './components/CustomTemplatesModal'
+import SaveCustomTemplateModal from './components/SaveCustomTemplateModal'
 import { CUSTOM_TEMPLATES } from './templates/customTemplates'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
@@ -34,11 +35,12 @@ interface EnhancedMjmlEditorProps {
 
 // --- Clipboard & structure helpers ---
 const ALLOWED_CHILDREN: Record<string, string[]> = {
-    'mj-body': ['mj-section', 'mj-wrapper'],
+    'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper'],
     'mj-section': ['mj-column', 'mj-group'],
+    'enhanced-section': ['mj-column', 'mj-group'],
     'mj-column': ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-hero'],
     'mj-group': ['mj-column'],
-    'mj-wrapper': ['mj-section'],
+    'mj-wrapper': ['mj-section', 'enhanced-section'],
     'mj-hero': ['mj-text', 'mj-button'],
     'mj-navbar': ['mj-navbar-link'],
     'mj-social': ['mj-social-element'],
@@ -411,6 +413,31 @@ const findFirstByTagName = (elements: EditorElement[], tag: string): EditorEleme
     return null
 }
 
+// Find path from root to a given element id
+const getPathToElement = (elements: EditorElement[], id: string, path: EditorElement[] = []): EditorElement[] => {
+    for (const el of elements) {
+        const newPath = [...path, el]
+        if (el.id === id) return newPath
+        if (el.children?.length) {
+            const found = getPathToElement(el.children, id, newPath)
+            if (found.length) return found
+        }
+    }
+    return []
+}
+
+// Find nearest ancestor by tag names from a target element id
+const findNearestAncestorByTags = (elements: EditorElement[], targetId: string, tags: string[]): EditorElement | null => {
+    const path = getPathToElement(elements, targetId)
+    if (!path.length) return null
+    // Walk from target upwards (exclude the target itself if needed)
+    for (let i = path.length - 1; i >= 0; i--) {
+        const node = path[i]
+        if (tags.includes(node.tagName)) return node
+    }
+    return null
+}
+
 const insertManyUnderParent = (elements: EditorElement[], parentId: string, items: EditorElement[]): EditorElement[] => {
     return elements.map(el => {
         if (el.id === parentId) {
@@ -437,6 +464,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties' | 'layers'>('components')
     const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
     const [showCustomTemplatesModal, setShowCustomTemplatesModal] = useState(false)
+    const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
 
     // Function to focus on properties panel when edit button is clicked
     const handleEditButtonClick = useCallback((elementId: string) => {
@@ -798,6 +826,89 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         ? findElementById(editorState.present, editorState.selectedElementId)
         : null
 
+    // Whether we can save the selected section
+    const canSaveSelected = useMemo(() => {
+        const selectedId = editorState.selectedElementId
+        if (!selectedId) return false
+        const section = findNearestAncestorByTags(editorState.present, selectedId, ['mj-section', 'enhanced-section'])
+        return !!section
+    }, [editorState.present, editorState.selectedElementId])
+
+    // Save selected section or full email as a reusable template block
+    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected' }) => {
+        try {
+            const { name, description, scope } = payload
+
+            // Determine elements to save
+            let elementsToClone: EditorElement[] = []
+            if (scope === 'selected') {
+                const selId = editorState.selectedElementId
+                if (!selId) {
+                    toast.error('No section selected')
+                    return
+                }
+                const section = findNearestAncestorByTags(editorState.present, selId, ['mj-section', 'enhanced-section'])
+                if (!section) {
+                    toast.error('Please select a section')
+                    return
+                }
+                elementsToClone = [section]
+            } else {
+                // full email: use all children under mj-body
+                const base = editorState.present
+                const mjBody = findFirstByTagName(base, 'mj-body')
+                if (!mjBody) {
+                    toast.error('Email body not found')
+                    return
+                }
+                elementsToClone = [...(mjBody.children || [])]
+            }
+
+            if (!elementsToClone.length) {
+                toast('Nothing to save')
+                return
+            }
+
+            // Clone with new IDs
+            const cloned = elementsToClone.map(cloneWithNewIds)
+
+            const newBlock: TemplateBlock = {
+                id: generateId(),
+                name,
+                description,
+                elements: cloned,
+            }
+
+            const nextCustomTemplates = [...(Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []), newBlock]
+
+            const updatedTemplate: EnhancedTemplate = {
+                ...template,
+                data: {
+                    ...template.data,
+                    customTemplates: nextCustomTemplates,
+                    metadata: {
+                        ...template.data.metadata,
+                        lastModified: new Date().toISOString(),
+                    },
+                },
+            }
+
+            // Update local state
+            onTemplateChange(updatedTemplate)
+
+            // Persist via API if available
+            if (onTemplateSave) {
+                await onTemplateSave(updatedTemplate)
+            }
+
+            toast.success(`Saved '${name}' to Custom Templates`)
+            setShowSaveTemplateModal(false)
+        } catch (e) {
+            console.error('Error saving custom template block:', e)
+            toast.error('Failed to save template block')
+        }
+    }, [editorState.present, editorState.selectedElementId, onTemplateChange, onTemplateSave, template])
+
     // Handle template save
     const handleSave = useCallback(async () => {
         if (!onTemplateSave) {
@@ -819,7 +930,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     mjml: mjmlString,
                     html: htmlString,
                     elements: editorState.present,
-                    customTemplates: template.data.customTemplates ?? [],
+                    customTemplates: Array.isArray(template.data.customTemplates) ? template.data.customTemplates : [],
                     metadata: {
                         ...template.data.metadata,
                         savedAt: new Date().toISOString(),
@@ -936,6 +1047,13 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             )}
                             <button
                                 className="toolbar-button"
+                                onClick={() => setShowSaveTemplateModal(true)}
+                                title="Save selected section or full email as reusable template"
+                            >
+                                🧩 Save as Template
+                            </button>
+                            <button
+                                className="toolbar-button"
                                 onClick={handlePasteElement}
                                 disabled={!clipboardElement}
                                 title="Paste element (Ctrl+V)"
@@ -961,7 +1079,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                 onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
                                 title="Toggle Right Panel"
                             >
-                                {rightPanelCollapsed ? '➡️ Expand' : '⬅️ Collapse'}
+                                {rightPanelCollapsed ? '⬅️ Expand' : '➡️ Collapse'}
                             </button>
                         </div>
                     </div>
@@ -1086,11 +1204,19 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 <CustomTemplatesModal
                     isOpen={showCustomTemplatesModal}
                     onClose={() => setShowCustomTemplatesModal(false)}
-                    templates={[...(template.data.customTemplates ?? []), ...CUSTOM_TEMPLATES]}
+                    templates={[...(Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []), ...CUSTOM_TEMPLATES]}
                     onConfirm={(block) => {
                         insertTemplateBlock(block)
                         setShowCustomTemplatesModal(false)
                     }}
+                />
+
+                {/* Save as Template Modal */}
+                <SaveCustomTemplateModal
+                    isOpen={showSaveTemplateModal}
+                    onClose={() => setShowSaveTemplateModal(false)}
+                    canSaveSelected={canSaveSelected}
+                    onConfirm={handleSaveCustomBlock}
                 />
 
                 <ImportMjmlModal

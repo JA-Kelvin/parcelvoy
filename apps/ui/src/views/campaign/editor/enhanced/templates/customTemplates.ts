@@ -7,6 +7,130 @@ import { TemplateBlock } from '../types'
 
 export const CUSTOM_TEMPLATES: TemplateBlock[] = [
     {
+        id: 'tpl_enh_basic',
+        name: 'Enhanced Section - Basic',
+        description: 'Single enhanced section with centered text',
+        elements: [
+            {
+                id: 'tpl_es1',
+                type: 'enhanced-section',
+                tagName: 'enhanced-section',
+                attributes: {
+                    'background-color': '#ffffff',
+                    padding: '24px 0',
+                },
+                children: [
+                    {
+                        id: 'tpl_ec1',
+                        type: 'mj-column',
+                        tagName: 'mj-column',
+                        attributes: { width: '100%' },
+                        children: [
+                            {
+                                id: 'tpl_et1',
+                                type: 'mj-text',
+                                tagName: 'mj-text',
+                                attributes: {
+                                    'font-size': '18px',
+                                    'line-height': '1.6',
+                                    'text-align': 'center',
+                                    color: '#374151',
+                                },
+                                children: [],
+                                content: 'This is an Enhanced Section block. It behaves like an mj-section in the editor.',
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'tpl_enh_feature',
+        name: 'Enhanced Feature Highlight',
+        description: 'Enhanced two-column feature highlight with image and text',
+        elements: [
+            {
+                id: 'tpl_es2',
+                type: 'enhanced-section',
+                tagName: 'enhanced-section',
+                attributes: {
+                    'background-color': '#ffffff',
+                    padding: '24px 0',
+                },
+                children: [
+                    {
+                        id: 'tpl_ec2a',
+                        type: 'mj-column',
+                        tagName: 'mj-column',
+                        attributes: { width: '40%' },
+                        children: [
+                            {
+                                id: 'tpl_eimg1',
+                                type: 'mj-image',
+                                tagName: 'mj-image',
+                                attributes: {
+                                    src: 'https://via.placeholder.com/400x240?text=Feature',
+                                    width: '400px',
+                                    alt: 'Feature Image',
+                                },
+                                children: [],
+                            },
+                        ],
+                    },
+                    {
+                        id: 'tpl_ec2b',
+                        type: 'mj-column',
+                        tagName: 'mj-column',
+                        attributes: { width: '60%' },
+                        children: [
+                            {
+                                id: 'tpl_et2',
+                                type: 'mj-text',
+                                tagName: 'mj-text',
+                                attributes: {
+                                    'font-size': '22px',
+                                    'font-weight': '700',
+                                    color: '#111827',
+                                },
+                                children: [],
+                                content: 'Feature headline goes here',
+                            },
+                            {
+                                id: 'tpl_et3',
+                                type: 'mj-text',
+                                tagName: 'mj-text',
+                                attributes: {
+                                    'font-size': '16px',
+                                    color: '#374151',
+                                    'line-height': '1.6',
+                                },
+                                children: [],
+                                content: 'Describe your feature benefits succinctly. Enhanced Section supports all mj-section children.',
+                            },
+                            {
+                                id: 'tpl_eb1',
+                                type: 'mj-button',
+                                tagName: 'mj-button',
+                                attributes: {
+                                    'background-color': '#2563eb',
+                                    color: '#ffffff',
+                                    'border-radius': '6px',
+                                    padding: '12px 20px',
+                                    'font-size': '16px',
+                                    href: '#',
+                                    align: 'left',
+                                },
+                                children: [],
+                                content: 'Learn More',
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    },
+    {
         id: 'tpl_hero_cta',
         name: 'Hero with CTA',
         description: 'Headline, subtext and primary button in a full-width section',

@@ -29,6 +29,18 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         allowedChildren: ['mj-column', 'mj-group'],
     },
     {
+        type: 'enhanced-section',
+        tagName: 'enhanced-section',
+        displayName: 'Enhanced Section',
+        category: 'layout',
+        icon: '✨',
+        defaultAttributes: {
+            'background-color': '#ffffff',
+            padding: '20px 0',
+        },
+        allowedChildren: ['mj-column', 'mj-group'],
+    },
+    {
         type: 'mj-column',
         tagName: 'mj-column',
         displayName: 'Column',
@@ -58,7 +70,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
             padding: '0',
             'background-color': '#ffffff',
         },
-        allowedChildren: ['mj-section'],
+        allowedChildren: ['mj-section', 'enhanced-section'],
     },
 
     // Content Components

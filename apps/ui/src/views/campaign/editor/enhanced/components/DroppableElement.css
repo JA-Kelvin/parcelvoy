@@ -30,6 +30,12 @@
     border-radius: 4px;
 }
 
+/* Enhanced section mirrors mj-section styling */
+.element-enhanced-section {
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
 .element-mj-column {
     padding: 0px;
     border: 1px dashed transparent;
@@ -242,6 +248,10 @@
 
 /* Remove editor-only spacing/affordances in preview mode for parity */
 .droppable-element.preview-mode.element-mj-section {
+    margin-bottom: 0;
+}
+
+.droppable-element.preview-mode.element-enhanced-section {
     margin-bottom: 0;
 }
 

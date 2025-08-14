@@ -119,14 +119,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
     const getElementAllowedChildren = (tagName: string): string[] => {
         const rules: Record<string, string[]> = {
-            'mj-body': ['mj-section', 'mj-wrapper', 'mj-hero'],
+            'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper', 'mj-hero'],
             'mj-section': ['mj-column', 'mj-group'],
+            'enhanced-section': ['mj-column', 'mj-group'],
             'mj-column': [
                 'mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar',
                 'mj-table', 'mj-accordion', 'mj-carousel',
             ],
             'mj-group': ['mj-column'],
-            'mj-wrapper': ['mj-section'],
+            'mj-wrapper': ['mj-section', 'enhanced-section'],
             'mj-hero': ['mj-text', 'mj-button', 'mj-image', 'mj-spacer'],
             'mj-navbar': ['mj-navbar-link'],
             'mj-social': ['mj-social-element'],
@@ -226,6 +227,16 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         // Per-tag specifics
         switch (element.tagName) {
             case 'mj-section': {
+                if (attributes['background-url']) {
+                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
+                    baseStyle.backgroundSize = attributes['background-size'] || 'cover'
+                    baseStyle.backgroundPosition = attributes['background-position'] || 'center'
+                }
+                baseStyle.width = '100%'
+                break
+            }
+            case 'enhanced-section': {
                 if (attributes['background-url']) {
                     baseStyle.backgroundImage = `url(${attributes['background-url']})`
                     baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
@@ -398,6 +409,13 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             backgroundColor: 'transparent',
                         }}
                     />
+                )
+
+            case 'enhanced-section':
+                return (
+                    <div className="mj-section-content">
+                        {children}
+                    </div>
                 )
 
             case 'mj-section':
@@ -658,7 +676,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
             {!isPreviewMode && (isSelected || isHovered) && (
                 <div className="element-controls">
-                    {element.tagName === 'mj-section' && (
+                    {(element.tagName === 'mj-section' || element.tagName === 'enhanced-section') && (
                         <>
                             <button
                                 className="control-button move-up"

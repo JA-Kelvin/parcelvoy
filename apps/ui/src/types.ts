@@ -430,10 +430,14 @@ export interface EmailTemplateData {
     reply_to?: string
     subject: string
     preheader?: string
-    editor: 'code' | 'visual'
+    editor: 'code' | 'visual' | 'enhanced-visual'
     text: string
     html: string
     mjml: string
+    // Enhanced visual editor extensions (optional)
+    elements?: any[]
+    customTemplates?: any[]
+    metadata?: any
 }
 
 export interface TextTemplateData {

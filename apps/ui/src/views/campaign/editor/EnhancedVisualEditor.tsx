@@ -30,7 +30,10 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
                 mjml: parcelvoyTemplate.data.mjml || '<mjml><mj-body></mj-body></mjml>',
                 html: parcelvoyTemplate.data.html || '',
                 elements: parcelvoyTemplate.data.elements,
-                metadata: {
+                customTemplates: Array.isArray(parcelvoyTemplate.data.customTemplates)
+                    ? parcelvoyTemplate.data.customTemplates
+                    : [],
+                metadata: parcelvoyTemplate.data.metadata ?? {
                     id: String(parcelvoyTemplate.id),
                     name: `Template ${parcelvoyTemplate.id}`,
                     savedAt: new Date().toISOString(),
@@ -48,6 +51,10 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
                 mjml: enhancedTemplate.data.mjml,
                 html: enhancedTemplate.data.html,
                 ...(enhancedTemplate.data.elements && { elements: enhancedTemplate.data.elements }),
+                customTemplates: Array.isArray(enhancedTemplate.data.customTemplates)
+                    ? enhancedTemplate.data.customTemplates
+                    : [],
+                ...(enhancedTemplate.data.metadata && { metadata: enhancedTemplate.data.metadata }),
             },
         }
     }
@@ -74,8 +81,29 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
                 },
             )
 
-            // Update the template state with the response from API
-            setTemplate(updatedTemplate)
+            // Some backends may not persist or echo customTemplates/metadata yet.
+            // Merge them back from the local payload if missing in the server response
+            const serverHasCustoms = Array.isArray(updatedTemplate?.data?.customTemplates)
+            const finalTemplate = {
+                ...updatedTemplate,
+                data: {
+                    ...updatedTemplate.data,
+                    customTemplates: serverHasCustoms
+                        ? updatedTemplate.data.customTemplates
+                        : (Array.isArray(parcelvoyTemplate.data.customTemplates)
+                            ? parcelvoyTemplate.data.customTemplates
+                            : []),
+                    metadata: updatedTemplate.data?.metadata ?? parcelvoyTemplate.data.metadata,
+                },
+            }
+
+            if (!serverHasCustoms) {
+                // Helpful debug log for diagnosing persistence gaps
+                console.warn('[EnhancedVisualEditor] API response missing data.customTemplates; using local copy instead')
+            }
+
+            // Update the template state with the merged result
+            setTemplate(finalTemplate)
 
         } catch (error) {
             console.error('Failed to save template:', error)

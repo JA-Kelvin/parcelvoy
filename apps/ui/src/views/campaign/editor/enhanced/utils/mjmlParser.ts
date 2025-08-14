@@ -159,6 +159,9 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
     const indent = '  '.repeat(indentLevel)
     const childIndent = '  '.repeat(indentLevel + 1)
 
+    // Map editor-only/custom tags to valid MJML tags
+    const actualTagName = tagName === 'enhanced-section' ? 'mj-section' : tagName
+
     // Build attributes string
     const attributesString = Object.entries(attributes || {})
         .map(([key, value]) => `${key}="${value}"`)
@@ -168,17 +171,17 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
 
     // Handle void elements (self-closing)
     const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-carousel-image']
-    if (voidElements.includes(tagName) && !content && (!children || children.length === 0)) {
-        return `${indent}<${tagName}${attributesPart} />`
+    if (voidElements.includes(actualTagName) && !content && (!children || children.length === 0)) {
+        return `${indent}<${actualTagName}${attributesPart} />`
     }
 
     // Handle elements with content only (no children)
     if (content && (!children || children.length === 0)) {
         // For text elements, preserve content formatting
-        if (tagName === 'mj-text' || tagName === 'mj-button') {
-            return `${indent}<${tagName}${attributesPart}>\n${childIndent}${content}\n${indent}</${tagName}>`
+        if (actualTagName === 'mj-text' || actualTagName === 'mj-button') {
+            return `${indent}<${actualTagName}${attributesPart}>\n${childIndent}${content}\n${indent}</${actualTagName}>`
         } else {
-            return `${indent}<${tagName}${attributesPart}>${content}</${tagName}>`
+            return `${indent}<${actualTagName}${attributesPart}>${content}</${actualTagName}>`
         }
     }
 
@@ -187,11 +190,11 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
         const childrenString = children
             .map(child => elementToMjmlString(child, indentLevel + 1))
             .join('\n')
-        return `${indent}<${tagName}${attributesPart}>\n${childrenString}\n${indent}</${tagName}>`
+        return `${indent}<${actualTagName}${attributesPart}>\n${childrenString}\n${indent}</${actualTagName}>`
     }
 
     // Handle empty elements
-    return `${indent}<${tagName}${attributesPart}></${tagName}>`
+    return `${indent}<${actualTagName}${attributesPart}></${actualTagName}>`
 }
 
 // Convert MJML to HTML using mjml-browser

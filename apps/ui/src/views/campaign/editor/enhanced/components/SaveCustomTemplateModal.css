@@ -1,0 +1,93 @@
+/* Styles specific to SaveCustomTemplateModal form controls */
+
+/* Scope styles within the shared modal container to avoid bleed-over */
+.custom-templates-modal .ctm-content {
+    display: flex;
+    padding: 16px;
+    gap: 12px;
+    min-height: auto;
+    height: auto;
+}
+
+.custom-templates-modal .ctm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.custom-templates-modal .ctm-field-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 13px;
+}
+
+.custom-templates-modal .ctm-input,
+.custom-templates-modal .ctm-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.custom-templates-modal .ctm-textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.custom-templates-modal .ctm-input::placeholder,
+.custom-templates-modal .ctm-textarea::placeholder {
+    color: #9ca3af;
+}
+
+.custom-templates-modal .ctm-input:focus,
+.custom-templates-modal .ctm-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    background-color: #ffffff;
+}
+
+.custom-templates-modal .ctm-input:disabled,
+.custom-templates-modal .ctm-textarea:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* Radio group */
+.custom-templates-modal .ctm-radio-group {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.custom-templates-modal .ctm-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    user-select: none;
+}
+
+.custom-templates-modal .ctm-radio input[type="radio"] {
+    accent-color: #3b82f6;
+}
+
+.custom-templates-modal .ctm-radio.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Error text (reuses color scale) */
+.custom-templates-modal .ctm-error {
+    margin-top: 4px;
+}

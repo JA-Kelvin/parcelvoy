@@ -82,14 +82,14 @@ const Canvas: React.FC<CanvasProps> = ({
             }
 
             // If it's a layout component (section), add to mj-body
-            if (item.type === 'mj-section') {
+            if (item.type === 'mj-section' || item.type === 'enhanced-section') {
                 safeOnElementAdd(newElement, mjmlBody.id)
                 return
             }
 
             // Groups must be direct children of sections
             if (item.type === 'mj-group') {
-                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
                 const lastSection = sections[sections.length - 1]
                 if (lastSection) {
                     safeOnElementAdd(newElement, lastSection.id)
@@ -131,7 +131,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 || item.type === 'mj-accordion-title'
                 || item.type === 'mj-accordion-text'
             ) {
-                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
                 let section = sections[sections.length - 1]
                 if (!section) {
                     section = {
@@ -192,7 +192,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
             // If it's a column, add to the last section or create a new section
             if (item.type === 'mj-column') {
-                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+                const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
                 const lastSection = sections[sections.length - 1]
                 if (lastSection) {
                     safeOnElementAdd(newElement, lastSection.id)
@@ -212,7 +212,7 @@ const Canvas: React.FC<CanvasProps> = ({
             }
 
             // For content components, add to the last column or create structure
-            const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section') || []
+            const sections = mjmlBody.children?.filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section') || []
             const lastSection = sections[sections.length - 1]
             if (lastSection) {
                 const columns = lastSection.children?.filter((el: EditorElement) => el.tagName === 'mj-column') || []
