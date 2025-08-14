@@ -8,6 +8,7 @@ import { CUSTOM_TEMPLATES } from '../templates/customTemplates'
 interface ComponentsPanelProps {
     onComponentDrag: (component: ComponentDefinition) => void
     onTemplateInsert?: (templateId: string) => void
+    onOpenCustomTemplates?: () => void
     isCollapsed?: boolean
     onToggleCollapse?: () => void
 }
@@ -347,13 +348,14 @@ const DraggableComponent: React.FC<DraggableComponentProps> = ({ component, onCo
 
 const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
     onComponentDrag,
-    onTemplateInsert,
+    onTemplateInsert: _onTemplateInsert,
+    onOpenCustomTemplates,
     isCollapsed = false,
     onToggleCollapse,
 }) => {
     // Safety check for callback function
     const safeOnComponentDrag = onComponentDrag || (() => {})
-    const safeOnTemplateInsert = onTemplateInsert ?? (() => {})
+    const safeOnOpenCustomTemplates = onOpenCustomTemplates ?? (() => {})
 
     const categories = ['layout', 'content', 'media', 'social'] as const
     const getComponentsByCategory = (category: string) => {
@@ -410,30 +412,27 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                     )
                 })}
 
-                {/* Custom Templates Section */}
+                {/* Custom Templates Section (single entry to open modal) */}
                 {CUSTOM_TEMPLATES.length > 0 && (
                     <div className="component-category">
                         <h4 className="category-title">Custom Templates</h4>
                         <div className="component-grid">
-                            {CUSTOM_TEMPLATES.map(tpl => (
-                                <div
-                                    key={tpl.id}
-                                    className="component-item"
-                                    role="button"
-                                    title={`Preview & Insert: ${tpl.name}`}
-                                    onClick={() => safeOnTemplateInsert(tpl.id)}
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault()
-                                            safeOnTemplateInsert(tpl.id)
-                                        }
-                                    }}
-                                >
-                                    <div className="component-icon">📦</div>
-                                    <div className="component-name">{tpl.name}</div>
-                                </div>
-                            ))}
+                            <div
+                                className="component-item custom"
+                                role="button"
+                                title={`Open Custom Templates (${CUSTOM_TEMPLATES.length})`}
+                                onClick={safeOnOpenCustomTemplates}
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        safeOnOpenCustomTemplates()
+                                    }
+                                }}
+                            >
+                                <div className="component-icon">🧩</div>
+                                <div className="component-name">Open Custom Templates</div>
+                            </div>
                         </div>
                     </div>
                 )}
