@@ -70,6 +70,33 @@ const templateDataEmailParams = {
             type: 'string',
             nullable: true,
         },
+        // Editor type used by visual/enhanced editors (stored as data.type)
+        type: {
+            type: 'string',
+            nullable: true,
+        },
+        // Visual editor content arrays
+        elements: {
+            type: 'array',
+            nullable: true,
+            items: {
+                type: 'object',
+                additionalProperties: true,
+            },
+        },
+        customTemplates: {
+            type: 'array',
+            nullable: true,
+            items: {
+                type: 'object',
+                additionalProperties: true,
+            },
+        },
+        metadata: {
+            type: 'object',
+            nullable: true,
+            additionalProperties: true,
+        },
     },
     nullable: true,
 }

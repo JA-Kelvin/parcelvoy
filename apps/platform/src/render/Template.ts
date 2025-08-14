@@ -18,6 +18,39 @@ export default class Template extends Model {
 
     static jsonAttributes = ['data']
 
+    // Normalize any object-with-numeric-keys back into arrays, recursively
+    private static normalizeArrayShapes(input: any): any {
+        if (Array.isArray(input)) {
+            return input.map(item => Template.normalizeArrayShapes(item))
+        }
+        if (input && typeof input === 'object') {
+            const keys = Object.keys(input)
+            const isNumericObject = keys.length > 0 && keys.every(k => /^\d+$/.test(k))
+            if (isNumericObject) {
+                const arr: any[] = []
+                for (let i = 0; i < keys.length; i++) {
+                    const v = (input as any)[String(i)]
+                    arr.push(Template.normalizeArrayShapes(v))
+                }
+                return arr
+            }
+            const out: Record<string, any> = {}
+            for (const [k, v] of Object.entries(input)) {
+                out[k] = Template.normalizeArrayShapes(v)
+            }
+            return out
+        }
+        return input
+    }
+
+    toJSON() {
+        const json: any = (this.constructor as any).toJson(this)
+        if (this.data != null) {
+            json.data = Template.normalizeArrayShapes(this.data)
+        }
+        return json
+    }
+
     map(): TemplateType {
         const json = this as any
         if (this.type === 'email') {
@@ -57,7 +90,7 @@ export class EmailTemplate extends Template {
     reply_to?: string
     subject!: string
     preheader?: string
-    editor!: 'code' | 'visual'
+    editor!: 'code' | 'visual' | 'enhanced-visual'
     text?: string
     html!: string
     mjml?: string

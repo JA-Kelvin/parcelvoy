@@ -40,12 +40,20 @@ export const randomInt = (min = 0, max = 100): number => {
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-export const prune = (obj: Record<string, any>): Record<string, any> => {
-    return Object.fromEntries(
-        Object.entries(obj)
-            .filter(([_, v]) => v != null && v !== '')
-            .map(([k, v]) => [k, v === Object(v) ? prune(v) : v]),
-    )
+export const prune = (obj: any): any => {
+    // Preserve arrays; recursively prune their elements without converting to objects
+    if (Array.isArray(obj)) {
+        return obj.map(v => (v != null && typeof v === 'object' ? prune(v) : v))
+    }
+    // Only handle plain objects here
+    if (obj !== null && typeof obj === 'object') {
+        return Object.fromEntries(
+            Object.entries(obj)
+                .filter(([_, v]) => v != null && v !== '')
+                .map(([k, v]) => [k, (v != null && typeof v === 'object') ? prune(v) : v]),
+        )
+    }
+    return obj
 }
 
 export const isValidUrl = (url: string) => {
