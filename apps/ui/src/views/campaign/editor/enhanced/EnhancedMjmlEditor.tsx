@@ -386,13 +386,31 @@ const moveElementRecursive = (
         return { next: elements }
     }
 
-    // Use newIndex as the intended position relative to the pre-removal order.
-    // This avoids off-by-one issues when moving elements within the same parent.
-    const targetIndex = newIndex ?? 0
+    // Determine target parent (post-removal tree)
+    const targetParent = getElementByIdRecursive(removal.tree, newParentId)
+
+    // Backend safety: validate allowed children. Frontend should prevent this already.
+    if (targetParent) {
+        const childTag = removal.removed.tagName
+        const allowed = getAllowedChildren(targetParent.tagName)
+        if (!allowed.includes(childTag)) {
+            console.warn('MOVE_ELEMENT aborted: target parent disallows child', { parent: targetParent.tagName, child: childTag })
+            return { next: elements }
+        }
+    }
+
+    // Use newIndex as intended position relative to pre-removal order,
+    // then adjust when moving within the same parent and moving down.
+    let targetIndex = newIndex ?? 0
+    if (removal.originalParentId === newParentId && typeof removal.originalIndex === 'number') {
+        if (removal.originalIndex < targetIndex) {
+            targetIndex = Math.max(0, targetIndex - 1)
+        }
+    }
 
     // Ensure parent exists; if not, revert to original parent
-    const parentExists = !!getElementByIdRecursive(removal.tree, newParentId)
-    const treeToUse = parentExists ? removal.tree : removal.tree
+    const parentExists = !!targetParent
+    const treeToUse = removal.tree
     const parentForInsert = parentExists ? newParentId : removal.originalParentId
     const indexForInsert = parentExists ? targetIndex : (removal.originalIndex ?? 0)
 
@@ -677,7 +695,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 dispatch({ type: 'REPLACE_PRESENT', payload: { elements: inserted, selectId: clones[0].id } })
             }
 
-            setActiveRightTab('layers')
+            setRightPanelCollapsed(false)
+            setActiveRightTab('components')
             toast.success(`Inserted '${block.name}'`)
         } catch (e) {
             console.error('Error inserting template:', e)
@@ -871,8 +890,16 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         return !!section
     }, [editorState.present, editorState.selectedElementId])
 
+    // Whether we can save the nearest wrapper
+    const canSaveWrapper = useMemo(() => {
+        const selectedId = editorState.selectedElementId
+        if (!selectedId) return false
+        const wrapper = findNearestAncestorByTags(editorState.present, selectedId, ['mj-wrapper'])
+        return !!wrapper
+    }, [editorState.present, editorState.selectedElementId])
+
     // Save selected section or full email as a reusable template block (supports override)
-    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected', overrideId?: string }) => {
+    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected' | 'wrapper' | 'body', overrideId?: string }) => {
         try {
             const { name, description, scope } = payload
 
@@ -890,8 +917,20 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     return
                 }
                 elementsToClone = [section]
+            } else if (scope === 'wrapper') {
+                const selId = editorState.selectedElementId
+                if (!selId) {
+                    toast.error('No element selected')
+                    return
+                }
+                const wrapper = findNearestAncestorByTags(editorState.present, selId, ['mj-wrapper'])
+                if (!wrapper) {
+                    toast.error('Please select inside a wrapper')
+                    return
+                }
+                elementsToClone = [wrapper]
             } else {
-                // full email: use all children under mj-body
+                // 'full' or 'body': use all children under mj-body
                 const base = editorState.present
                 const mjBody = findFirstByTagName(base, 'mj-body')
                 if (!mjBody) {
@@ -1306,7 +1345,6 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     templates={availableCustomTemplates}
                     onConfirm={(block) => {
                         insertTemplateBlock(block)
-                        setShowCustomTemplatesModal(false)
                     }}
                     onDelete={(id) => { void handleDeleteCustomBlock(id) }}
                     deletableIds={Array.isArray(template.data.customTemplates) ? template.data.customTemplates.map(t => t.id) : []}
@@ -1317,6 +1355,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     isOpen={showSaveTemplateModal}
                     onClose={() => setShowSaveTemplateModal(false)}
                     canSaveSelected={canSaveSelected}
+                    canSaveWrapper={canSaveWrapper}
                     existingTemplates={Array.isArray(template.data.customTemplates) ? template.data.customTemplates.map(t => ({ id: t.id, name: t.name, description: t.description })) : []}
                     onConfirm={handleSaveCustomBlock}
                 />

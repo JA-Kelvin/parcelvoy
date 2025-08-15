@@ -8,8 +8,9 @@ interface MinimalTemplateInfo { id: string, name: string, description?: string }
 interface SaveCustomTemplateModalProps {
     isOpen: boolean
     onClose: () => void
-    onConfirm: (payload: { name: string, description?: string, scope: 'full' | 'selected', overrideId?: string }) => void
+    onConfirm: (payload: { name: string, description?: string, scope: 'full' | 'selected' | 'wrapper' | 'body', overrideId?: string }) => void
     canSaveSelected: boolean
+    canSaveWrapper?: boolean
     existingTemplates?: MinimalTemplateInfo[]
 }
 
@@ -18,11 +19,12 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
     onClose,
     onConfirm,
     canSaveSelected,
+    canSaveWrapper = false,
     existingTemplates = [],
 }) => {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
-    const [scope, setScope] = useState<'full' | 'selected'>('selected')
+    const [scope, setScope] = useState<'full' | 'selected' | 'wrapper' | 'body'>('selected')
     const [mode, setMode] = useState<'create' | 'override'>('create')
     const [overrideId, setOverrideId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
@@ -33,12 +35,12 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
         if (isOpen) {
             setName('')
             setDescription('')
-            setScope(canSaveSelected ? 'selected' : 'full')
+            setScope(canSaveSelected ? 'selected' : (canSaveWrapper ? 'wrapper' : 'full'))
             setMode('create')
             setOverrideId('')
             setError(null)
         }
-    }, [isOpen, canSaveSelected])
+    }, [isOpen, canSaveSelected, canSaveWrapper])
 
     // Prefill when switching to override or changing selected override
     useEffect(() => {
@@ -123,6 +125,17 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
                                 />
                                 <span>Selected section</span>
                             </label>
+                            <label className={`ctm-radio ${!canSaveWrapper ? 'disabled' : ''}`} title={!canSaveWrapper ? 'Select inside a wrapper to enable' : ''}>
+                                <input
+                                    type="radio"
+                                    name="scope"
+                                    value="wrapper"
+                                    checked={scope === 'wrapper'}
+                                    onChange={() => canSaveWrapper && setScope('wrapper')}
+                                    disabled={!canSaveWrapper}
+                                />
+                                <span>Nearest wrapper</span>
+                            </label>
                             <label className="ctm-radio">
                                 <input
                                     type="radio"
@@ -131,7 +144,7 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
                                     checked={scope === 'full'}
                                     onChange={() => setScope('full')}
                                 />
-                                <span>Full email (all sections)</span>
+                                <span>Full email (mj-body)</span>
                             </label>
                         </div>
                     </div>

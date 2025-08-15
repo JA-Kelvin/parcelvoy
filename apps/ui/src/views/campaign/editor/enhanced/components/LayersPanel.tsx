@@ -35,17 +35,18 @@ const iconForTag = (tag: string): string => {
     return map[tag] || '🔹'
 }
 
-// Allowed-children rules (duplicated from DroppableElement with additions for mjml/mj-body)
+// Allowed-children rules (keep in sync with editor's allowed children)
 const getElementAllowedChildren = (tagName: string): string[] => {
     const rules: Record<string, string[]> = {
         mjml: ['mj-body'],
-        'mj-body': ['mj-section', 'mj-wrapper', 'mj-raw'],
+        'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper'],
         'mj-section': ['mj-column', 'mj-group'],
+        'enhanced-section': ['mj-column', 'mj-group'],
         'mj-column': [
             'mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-hero',
         ],
         'mj-group': ['mj-column'],
-        'mj-wrapper': ['mj-section'],
+        'mj-wrapper': ['mj-section', 'enhanced-section'],
         'mj-hero': ['mj-text', 'mj-button'],
         'mj-navbar': ['mj-navbar-link'],
         'mj-social': ['mj-social-element'],
@@ -102,16 +103,25 @@ const LayerItem: React.FC<LayerItemProps> = ({
     const [{ isOver, dropMode }, drop] = useDrop({
         accept: ['element'],
         hover: (item: any, monitor) => {
-            // Only to trigger re-render for visual state, handled in collect below
-            console.log('hover', item, monitor)
+            if (!ref.current) return
+            const clientOffset = monitor.getClientOffset()
+            if (!clientOffset) return
+            const rect = ref.current.getBoundingClientRect()
+            const y = clientOffset.y - rect.top
+            const ratio = y / Math.max(rect.height, 1)
+            const mode: 'before' | 'inside' | 'after' = ratio < 0.33 ? 'before' : ratio > 0.67 ? 'after' : 'inside'
+            // Auto-expand on inside hover for easier dropping
+            if (mode === 'inside' && hasChildren && !expanded) {
+                setExpanded(true)
+            }
         },
         drop: (item: any, monitor) => {
             if (!ref.current) return
             const clientOffset = monitor.getClientOffset()
             const rect = ref.current.getBoundingClientRect()
             const y = clientOffset ? clientOffset.y - rect.top : 0
-            const ratio = y / rect.height
-            const mode: 'before' | 'inside' | 'after' = ratio < 0.2 ? 'before' : ratio > 0.8 ? 'after' : 'inside'
+            const ratio = y / Math.max(rect.height, 1)
+            const mode: 'before' | 'inside' | 'after' = ratio < 0.33 ? 'before' : ratio > 0.67 ? 'after' : 'inside'
 
             const draggedTag = item.type || item.tagName
             if (!draggedTag) return
@@ -136,7 +146,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
                 const rect = ref.current.getBoundingClientRect()
                 const y = clientOffset ? clientOffset.y - rect.top : 0
                 const ratio = y / Math.max(rect.height, 1)
-                mode = ratio < 0.2 ? 'before' : ratio > 0.8 ? 'after' : 'inside'
+                mode = ratio < 0.33 ? 'before' : ratio > 0.67 ? 'after' : 'inside'
             }
             return {
                 isOver: monitor.isOver({ shallow: true }),
