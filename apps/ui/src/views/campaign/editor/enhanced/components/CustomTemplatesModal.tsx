@@ -9,6 +9,8 @@ interface CustomTemplatesModalProps {
     onClose: () => void
     templates: TemplateBlock[]
     onConfirm: (template: TemplateBlock) => void
+    onDelete?: (id: string) => void
+    deletableIds?: string[]
 }
 
 const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
@@ -16,6 +18,8 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
     onClose,
     templates,
     onConfirm,
+    onDelete,
+    deletableIds = [],
 }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [htmlPreview, setHtmlPreview] = useState<string>('')
@@ -23,6 +27,7 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
     const [error, setError] = useState<string | null>(null)
 
     const selectedTemplate = useMemo(() => templates.find(t => t.id === selectedId) ?? null, [templates, selectedId])
+    const deletableSet = useMemo(() => new Set(deletableIds), [deletableIds])
 
     // Default select first template when opened
     useEffect(() => {
@@ -91,7 +96,7 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
                         </div>
                         <div className="ctm-items">
                             {templates.map(tpl => (
-                                <button
+                                <div
                                     key={tpl.id}
                                     className={`ctm-item ${tpl.id === selectedId ? 'active' : ''}`}
                                     onClick={() => setSelectedId(tpl.id)}
@@ -104,7 +109,20 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
                                             <span className="ctm-item-desc">{tpl.description}</span>
                                         )}
                                     </span>
-                                </button>
+                                    {onDelete && deletableSet.has(tpl.id) && (
+                                        <button
+                                            className="ctm-item-delete"
+                                            title="Delete this template"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                const confirmed = window.confirm(`Delete '${tpl.name}'? This cannot be undone.`)
+                                                if (confirmed) onDelete(tpl.id)
+                                            }}
+                                        >
+                                            🗑️
+                                        </button>
+                                    )}
+                                </div>
                             ))}
                             {templates.length === 0 && (
                                 <div className="ctm-empty">No custom templates available</div>

@@ -63,8 +63,12 @@
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 0;
-    min-height: 480px;
-    height: 100%;
+    /* Make content occupy remaining space between header and footer */
+    flex: 1 1 auto;
+    /* Critical: allow this area to shrink so footer remains visible */
+    min-height: 0;
+    /* Delegate scrolling to the inner panes (list/preview) */
+    overflow: auto;
 }
 
 /* List */

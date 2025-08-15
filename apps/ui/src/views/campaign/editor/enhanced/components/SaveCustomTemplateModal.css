@@ -66,6 +66,10 @@
     flex-wrap: wrap;
 }
 
+.custom-templates-modal label > span {
+    min-width: 180px;
+}
+
 .custom-templates-modal .ctm-radio {
     display: inline-flex;
     align-items: center;

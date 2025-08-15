@@ -1,13 +1,16 @@
 // Save Custom Template Modal for Enhanced MJML Editor
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import './CustomTemplatesModal.css'
 import './SaveCustomTemplateModal.css'
+
+interface MinimalTemplateInfo { id: string, name: string, description?: string }
 
 interface SaveCustomTemplateModalProps {
     isOpen: boolean
     onClose: () => void
-    onConfirm: (payload: { name: string, description?: string, scope: 'full' | 'selected' }) => void
+    onConfirm: (payload: { name: string, description?: string, scope: 'full' | 'selected', overrideId?: string }) => void
     canSaveSelected: boolean
+    existingTemplates?: MinimalTemplateInfo[]
 }
 
 const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
@@ -15,20 +18,41 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
     onClose,
     onConfirm,
     canSaveSelected,
+    existingTemplates = [],
 }) => {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [scope, setScope] = useState<'full' | 'selected'>('selected')
+    const [mode, setMode] = useState<'create' | 'override'>('create')
+    const [overrideId, setOverrideId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
+
+    const hasExisting = useMemo(() => existingTemplates.length > 0, [existingTemplates])
 
     useEffect(() => {
         if (isOpen) {
             setName('')
             setDescription('')
             setScope(canSaveSelected ? 'selected' : 'full')
+            setMode('create')
+            setOverrideId('')
             setError(null)
         }
     }, [isOpen, canSaveSelected])
+
+    // Prefill when switching to override or changing selected override
+    useEffect(() => {
+        if (!isOpen) return
+        if (mode !== 'override') return
+        const id = overrideId || existingTemplates[0]?.id
+        if (!id) return
+        const tpl = existingTemplates.find(t => t.id === id)
+        if (!tpl) return
+        // Only prefill if fields are empty to avoid overwriting user edits
+        setOverrideId(id)
+        setName(prev => prev || tpl.name)
+        setDescription(prev => prev || (tpl.description ?? ''))
+    }, [mode, overrideId, existingTemplates, isOpen])
 
     if (!isOpen) return null
 
@@ -36,6 +60,15 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
         e?.preventDefault()
         if (!name.trim()) {
             setError('Please provide a name')
+            return
+        }
+        if (mode === 'override') {
+            const id = overrideId || existingTemplates[0]?.id
+            if (!id) {
+                setError('Please select a template to override')
+                return
+            }
+            onConfirm({ name: name.trim(), description: description.trim() || undefined, scope, overrideId: id })
             return
         }
         onConfirm({ name: name.trim(), description: description.trim() || undefined, scope })
@@ -46,7 +79,7 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
             <div className="custom-templates-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="ctm-header">
                     <div className="ctm-title">
-                        <h2>🧩 Save as Template</h2>
+                        <h2>🧩 Create Template</h2>
                         <p>Create a reusable block you can insert later</p>
                     </div>
                     <button className="ctm-close" onClick={onClose} title="Close">✕</button>
@@ -102,6 +135,50 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
                             </label>
                         </div>
                     </div>
+
+                    <div className="ctm-field">
+                        <div className="ctm-field-label">Action</div>
+                        <div className="ctm-radio-group">
+                            <label className="ctm-radio">
+                                <input
+                                    type="radio"
+                                    name="mode"
+                                    value="create"
+                                    checked={mode === 'create'}
+                                    onChange={() => setMode('create')}
+                                />
+                                <span>Create new</span>
+                            </label>
+                            <label className={`ctm-radio ${!hasExisting ? 'disabled' : ''}`} title={!hasExisting ? 'No existing templates to override' : ''}>
+                                <input
+                                    type="radio"
+                                    name="mode"
+                                    value="override"
+                                    checked={mode === 'override'}
+                                    onChange={() => hasExisting && setMode('override')}
+                                    disabled={!hasExisting}
+                                />
+                                <span>Override existing</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {mode === 'override' && hasExisting && (
+                        <label className="ctm-field">
+                            <div className="ctm-field-label">Select template to override</div>
+                            <select
+                                className="ctm-input"
+                                value={overrideId || existingTemplates[0]?.id || ''}
+                                onChange={(e) => setOverrideId(e.target.value)}
+                            >
+                                {existingTemplates.map(t => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    )}
 
                     {error && <div className="ctm-error" role="alert">{error}</div>}
                 </form>

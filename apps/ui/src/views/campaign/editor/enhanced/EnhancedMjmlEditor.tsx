@@ -32,6 +32,9 @@ interface EnhancedMjmlEditorProps {
     _resources?: any[]
     isPreviewMode?: boolean
     isSaving?: boolean
+    projectWideCustomTemplates?: TemplateBlock[]
+    customTemplatesLoading?: boolean
+    customTemplatesError?: string | null
 }
 
 // Array helpers are centralized in './utils/arrayUtils'
@@ -471,6 +474,9 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     onTemplateSave,
     isPreviewMode = false,
     isSaving = false,
+    projectWideCustomTemplates,
+    customTemplatesLoading = false,
+    customTemplatesError = null,
 }) => {
     const [showEnhancedPreview, setShowEnhancedPreview] = useState(false)
     const [showImportModal, setShowImportModal] = useState(false)
@@ -479,6 +485,16 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
     const [showCustomTemplatesModal, setShowCustomTemplatesModal] = useState(false)
     const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
+
+    // Prefer project-wide list when available; otherwise fallback to local (current template)
+    const availableCustomTemplates = useMemo(() => {
+        const local = Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []
+        const projectWide = Array.isArray(projectWideCustomTemplates) ? projectWideCustomTemplates : []
+        if (customTemplatesLoading ?? customTemplatesError ?? projectWide.length === 0) {
+            return [...local, ...CUSTOM_TEMPLATES]
+        }
+        return [...projectWide, ...CUSTOM_TEMPLATES]
+    }, [template.data.customTemplates, projectWideCustomTemplates, customTemplatesLoading, customTemplatesError])
 
     // Function to focus on properties panel when edit button is clicked
     const handleEditButtonClick = useCallback((elementId: string) => {
@@ -855,8 +871,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         return !!section
     }, [editorState.present, editorState.selectedElementId])
 
-    // Save selected section or full email as a reusable template block
-    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected' }) => {
+    // Save selected section or full email as a reusable template block (supports override)
+    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected', overrideId?: string }) => {
         try {
             const { name, description, scope } = payload
 
@@ -893,14 +909,36 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             // Clone with new IDs
             const cloned = elementsToClone.map(cloneWithNewIds)
 
-            const newBlock: TemplateBlock = {
-                id: generateId(),
-                name,
-                description,
-                elements: cloned,
-            }
+            const currentCustoms = Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []
 
-            const nextCustomTemplates = [...(Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []), newBlock]
+            let nextCustomTemplates: TemplateBlock[]
+            let successMsg = ''
+            if (payload.overrideId) {
+                const idx = currentCustoms.findIndex(t => t.id === payload.overrideId)
+                if (idx === -1) {
+                    toast.error('Selected template to override was not found')
+                    return
+                }
+                const prev = currentCustoms[idx]
+                const updatedBlock: TemplateBlock = {
+                    ...prev,
+                    name,
+                    description,
+                    elements: cloned,
+                }
+                nextCustomTemplates = [...currentCustoms]
+                nextCustomTemplates[idx] = updatedBlock
+                successMsg = `Overridden '${name}'`
+            } else {
+                const newBlock: TemplateBlock = {
+                    id: generateId(),
+                    name,
+                    description,
+                    elements: cloned,
+                }
+                nextCustomTemplates = [...currentCustoms, newBlock]
+                successMsg = `Saved '${name}' to Custom Templates`
+            }
 
             const updatedTemplate: EnhancedTemplate = {
                 ...template,
@@ -922,13 +960,45 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 await onTemplateSave(updatedTemplate)
             }
 
-            toast.success(`Saved '${name}' to Custom Templates`)
+            toast.success(successMsg)
             setShowSaveTemplateModal(false)
         } catch (e) {
             console.error('Error saving custom template block:', e)
             toast.error('Failed to save template block')
         }
     }, [editorState.present, editorState.selectedElementId, onTemplateChange, onTemplateSave, template])
+
+    // Delete a saved custom template block by id
+    const handleDeleteCustomBlock = useCallback(async (id: string) => {
+        try {
+            const current = Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []
+            const target = current.find(t => t.id === id)
+            if (!target) {
+                toast.error('Template not found')
+                return
+            }
+            const next = current.filter(t => t.id !== id)
+            const updatedTemplate: EnhancedTemplate = {
+                ...template,
+                data: {
+                    ...template.data,
+                    customTemplates: next,
+                    metadata: {
+                        ...template.data.metadata,
+                        lastModified: new Date().toISOString(),
+                    },
+                },
+            }
+            onTemplateChange(updatedTemplate)
+            if (onTemplateSave) {
+                await onTemplateSave(updatedTemplate)
+            }
+            toast.success(`Deleted '${target.name}'`)
+        } catch (e) {
+            console.error('Error deleting custom template block:', e)
+            toast.error('Failed to delete template block')
+        }
+    }, [onTemplateChange, onTemplateSave, template])
 
     // Handle template save
     const handleSave = useCallback(async () => {
@@ -1066,12 +1136,20 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                     <div className="toolbar-divider" />
                                 </>
                             )}
+                            {/* Project-wide custom templates status */}
+                            {customTemplatesLoading && (
+                                <span title="Loading project templates">📡</span>
+                            )}
+                            {customTemplatesError && !customTemplatesLoading && (
+                                <span title={customTemplatesError}>⚠️</span>
+                            )}
+                            {(customTemplatesLoading || customTemplatesError) && <div className="toolbar-divider" />}
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowSaveTemplateModal(true)}
                                 title="Save selected section or full email as reusable template"
                             >
-                                🧩 Save as Template
+                                🧩 Create Template
                             </button>
                             <button
                                 className="toolbar-button"
@@ -1225,11 +1303,13 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 <CustomTemplatesModal
                     isOpen={showCustomTemplatesModal}
                     onClose={() => setShowCustomTemplatesModal(false)}
-                    templates={[...(Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []), ...CUSTOM_TEMPLATES]}
+                    templates={availableCustomTemplates}
                     onConfirm={(block) => {
                         insertTemplateBlock(block)
                         setShowCustomTemplatesModal(false)
                     }}
+                    onDelete={(id) => { void handleDeleteCustomBlock(id) }}
+                    deletableIds={Array.isArray(template.data.customTemplates) ? template.data.customTemplates.map(t => t.id) : []}
                 />
 
                 {/* Save as Template Modal */}
@@ -1237,6 +1317,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     isOpen={showSaveTemplateModal}
                     onClose={() => setShowSaveTemplateModal(false)}
                     canSaveSelected={canSaveSelected}
+                    existingTemplates={Array.isArray(template.data.customTemplates) ? template.data.customTemplates.map(t => ({ id: t.id, name: t.name, description: t.description })) : []}
                     onConfirm={handleSaveCustomBlock}
                 />
 

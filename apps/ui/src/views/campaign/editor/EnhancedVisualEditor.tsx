@@ -1,7 +1,7 @@
 // Enhanced Visual Editor Integration for Parcelvoy
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { Template } from '../../../types'
-import { EnhancedTemplate } from './enhanced/types'
+import { EnhancedTemplate, TemplateBlock } from './enhanced/types'
 import EnhancedMjmlEditor from './enhanced/EnhancedMjmlEditor'
 import { ProjectContext } from '../../../contexts'
 import api from '../../../api'
@@ -20,6 +20,9 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
 }) => {
     const [project] = useContext(ProjectContext)
     const [isSaving, setIsSaving] = useState(false)
+    const [projectWideCustomTemplates, setProjectWideCustomTemplates] = useState<TemplateBlock[]>([])
+    const [templatesLoading, setTemplatesLoading] = useState<boolean>(false)
+    const [templatesError, setTemplatesError] = useState<string | null>(null)
     // Convert Parcelvoy Template to Enhanced Template
     const convertToEnhancedTemplate = (parcelvoyTemplate: Template): EnhancedTemplate => {
         const normalizedElements = normalizeArrayShapes(parcelvoyTemplate.data.elements)
@@ -117,6 +120,39 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
 
     const enhancedTemplate = convertToEnhancedTemplate(template)
 
+    // Fetch and merge project-wide custom templates
+    useEffect(() => {
+        let cancelled = false
+        const fetchTemplates = async () => {
+            setTemplatesLoading(true)
+            setTemplatesError(null)
+            try {
+                const res: any = await api.templates.search(project.id, { limit: 1000 })
+                const results: any[] = Array.isArray(res?.results) ? res.results : []
+                const merged: TemplateBlock[] = []
+                const seen = new Set<string>()
+                for (const tpl of results) {
+                    const customs: TemplateBlock[] = Array.isArray(tpl?.data?.customTemplates) ? tpl.data.customTemplates : []
+                    for (const block of customs) {
+                        const key = String(block?.id ?? `${block?.name ?? 'untitled'}:${(block?.elements ?? []).length}`)
+                        if (!seen.has(key)) {
+                            seen.add(key)
+                            merged.push(block)
+                        }
+                    }
+                }
+                if (!cancelled) setProjectWideCustomTemplates(merged)
+            } catch (e) {
+                console.error('[EnhancedVisualEditor] Failed to fetch project-wide templates:', e)
+                if (!cancelled) setTemplatesError('Failed to load project templates')
+            } finally {
+                if (!cancelled) setTemplatesLoading(false)
+            }
+        }
+        if (project?.id) void fetchTemplates()
+        return () => { cancelled = true }
+    }, [project?.id])
+
     return (
         <div className="enhanced-visual-editor-wrapper">
             <EnhancedMjmlEditor
@@ -126,6 +162,9 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
                 _resources={resources}
                 isPreviewMode={false}
                 isSaving={isSaving}
+                projectWideCustomTemplates={projectWideCustomTemplates}
+                customTemplatesLoading={templatesLoading}
+                customTemplatesError={templatesError}
             />
         </div>
     )
