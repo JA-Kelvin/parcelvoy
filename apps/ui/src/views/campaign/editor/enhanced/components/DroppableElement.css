@@ -39,7 +39,7 @@
 .element-mj-column {
     padding: 0px;
     border: 1px dashed transparent;
-    min-height: 50px;
+    min-height: 30px;
 }
 
 .element-mj-column:hover:not(.preview-mode) {
@@ -47,8 +47,7 @@
 }
 
 .element-mj-text {
-    padding: 8px;
-    min-height: 30px;
+    min-height: 10px;
     cursor: text;
 }
 
@@ -187,6 +186,55 @@
     border-radius: 4px;
     border: 1px solid #e5e7eb;
     white-space: nowrap;
+}
+
+/* Quill Rich Text Editor overrides */
+.rich-text-editor {
+    position: relative;
+    background: rgba(255, 255, 255, 0.7);
+    border: 2px solid #3b82f6;
+    border-radius: 6px;
+    padding: 6px 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.rich-text-editor .ql-editor {
+    min-height: 60px;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    padding: 4px 0;
+}
+
+.rich-text-editor .ql-editor p {
+    margin: 0 0 6px 0;
+}
+
+.rich-text-editor .ql-editor p:last-child {
+    margin-bottom: 0;
+}
+
+/* ensure the tooltip sits above element controls */
+.ql-bubble .ql-tooltip,
+.ql-snow .ql-tooltip {
+    z-index: 250;
+}
+
+/* Snow theme toolbar sticky at top of editor */
+.rich-text-editor .ql-toolbar.ql-snow {
+    position: sticky;
+    top: 0;
+    z-index: 260; /* above tooltip and controls when needed */
+    background: #ffffff;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+/* Remove inner borders to avoid double border inside our wrapper */
+.rich-text-editor .ql-container.ql-snow {
+    border: none;
 }
 
 /* Inline edit hint badge */

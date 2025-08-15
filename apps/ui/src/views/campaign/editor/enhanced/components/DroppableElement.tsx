@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react'
 import { useDrag, useDrop } from 'react-dnd'
 import { EditorElement } from '../types'
 import './DroppableElement.css'
+import RichTextEditor from './RichTextEditor'
 
 interface DroppableElementProps {
     element: EditorElement
@@ -66,7 +67,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
-        canDrag: !isPreviewMode,
+        canDrag: !isPreviewMode && !(isEditing && element.tagName === 'mj-text'),
     })
 
     // Drop functionality for accepting other elements
@@ -74,6 +75,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         accept: ['element', 'component'],
         drop: (item: any, monitor) => {
             if (monitor.didDrop()) return
+            // Disable dropping into this element while editing mj-text
+            if (isEditing && element.tagName === 'mj-text') return
 
             if (item.id && item.id !== element.id) {
                 // Moving existing element
@@ -100,6 +103,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             canDrop: monitor.canDrop(),
         }),
         canDrop: (item) => {
+            // Disable dropping while this element is editing mj-text
+            if (isEditing && element.tagName === 'mj-text') return false
             // Define drop rules based on MJML structure
             const allowedChildren = getElementAllowedChildren(element.tagName)
             return allowedChildren.includes(item.type || item.tagName)
@@ -110,7 +115,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const combinedRef = (node: HTMLDivElement | null) => {
         if (node) {
             (elementRef as React.MutableRefObject<HTMLDivElement | null>).current = node
-            if (!isPreviewMode) {
+            // Do not attach drag/drop handlers while editing mj-text
+            if (!isPreviewMode && !(isEditing && element.tagName === 'mj-text')) {
                 drag(node)
                 drop(node)
             }
@@ -326,7 +332,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             case 'mj-text':
                 return isEditing
                     ? (
-                        <ContentEditor
+                        <RichTextEditor
                             content={content ?? ''}
                             onSave={handleContentEdit}
                             onCancel={() => setIsEditing(false)}
