@@ -1,5 +1,5 @@
 // Enhanced Canvas Component for Parcelvoy MJML Editor
-import React, { useRef, useCallback, useEffect } from 'react'
+import React, { useRef, useCallback, useEffect, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { EditorElement, ComponentDefinition } from '../types'
 import { generateId } from '../utils/mjmlParser'
@@ -38,6 +38,9 @@ const Canvas: React.FC<CanvasProps> = ({
     // Comprehensive safety checks
     const safeElements = !elements || !Array.isArray(elements) ? [] : elements
 
+    // Global editing lock: when true, disable ALL drag/drop operations
+    const [isEditingAny, setIsEditingAny] = useState(false)
+
     // Safety checks for callback functions
     const safeOnElementAdd = onElementAdd || (() => {})
     const safeOnElementSelect = onElementSelect || (() => {})
@@ -55,6 +58,7 @@ const Canvas: React.FC<CanvasProps> = ({
         accept: 'component',
         drop: (item: ComponentDefinition, monitor) => {
             if (monitor.didDrop()) return // Prevent duplicate drops
+            if (isPreviewMode || isEditingAny) return // Disable drop while preview or editing inline
 
             // Create new element from component definition
             const newElement: EditorElement = {
@@ -261,6 +265,7 @@ const Canvas: React.FC<CanvasProps> = ({
             isOver: monitor.isOver({ shallow: true }),
             canDrop: monitor.canDrop(),
         }),
+        canDrop: () => !isPreviewMode && !isEditingAny,
     })
 
     // Combine refs for drop functionality
@@ -298,6 +303,9 @@ const Canvas: React.FC<CanvasProps> = ({
                 parentId={parentId}
                 index={index}
                 siblingsCount={siblingsCount}
+                globalEditingLock={isEditingAny}
+                onInlineEditStart={() => setIsEditingAny(true)}
+                onInlineEditEnd={() => setIsEditingAny(false)}
             >
                 {toArray(element.children).length > 0
                     && renderElements(toArray(element.children), element.id)}

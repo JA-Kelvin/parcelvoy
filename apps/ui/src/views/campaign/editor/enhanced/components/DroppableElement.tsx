@@ -21,6 +21,10 @@ interface DroppableElementProps {
     index?: number
     siblingsCount?: number
     children?: React.ReactNode
+    // Global editing lock props
+    globalEditingLock?: boolean
+    onInlineEditStart?: () => void
+    onInlineEditEnd?: () => void
 }
 
 const DroppableElement: React.FC<DroppableElementProps> = ({
@@ -39,6 +43,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     index,
     siblingsCount,
     children,
+    globalEditingLock,
+    onInlineEditStart,
+    onInlineEditEnd,
 }) => {
     // Safety checks for props
     if (!element) {
@@ -55,10 +62,24 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const safeOnEditButtonClick = onEditButtonClick ?? (() => {})
     const safeOnCopyElement = onCopyElement ?? (() => {})
     const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
+    const isGlobalLock = !!globalEditingLock
+    const safeOnInlineEditStart = onInlineEditStart ?? (() => {})
+    const safeOnInlineEditEnd = onInlineEditEnd ?? (() => {})
 
     const [isHovered, setIsHovered] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const elementRef = useRef<HTMLDivElement>(null)
+
+    // Tags that support inline content editing (must be declared before usage)
+    const inlineEditableTags = new Set([
+        'mj-text',
+        'mj-button',
+        'mj-raw',
+        'mj-table',
+        'mj-navbar-link',
+        'mj-accordion-title',
+        'mj-accordion-text',
+    ])
 
     // Drag functionality for moving elements
     const [{ isDragging }, drag] = useDrag({
@@ -67,7 +88,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
-        canDrag: !isPreviewMode && !(isEditing && element.tagName === 'mj-text'),
+        canDrag: !isPreviewMode && !isGlobalLock && !(isEditing && inlineEditableTags.has(element.tagName)),
     })
 
     // Drop functionality for accepting other elements
@@ -75,8 +96,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         accept: ['element', 'component'],
         drop: (item: any, monitor) => {
             if (monitor.didDrop()) return
+            if (isPreviewMode || isGlobalLock) return
             // Disable dropping into this element while editing mj-text
-            if (isEditing && element.tagName === 'mj-text') return
+            if (isEditing && inlineEditableTags.has(element.tagName)) return
 
             if (item.id && item.id !== element.id) {
                 // Moving existing element
@@ -103,8 +125,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             canDrop: monitor.canDrop(),
         }),
         canDrop: (item) => {
+            if (isPreviewMode || isGlobalLock) return false
             // Disable dropping while this element is editing mj-text
-            if (isEditing && element.tagName === 'mj-text') return false
+            if (isEditing && inlineEditableTags.has(element.tagName)) return false
             // Define drop rules based on MJML structure
             const allowedChildren = getElementAllowedChildren(element.tagName)
             return allowedChildren.includes(item.type || item.tagName)
@@ -116,7 +139,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         if (node) {
             (elementRef as React.MutableRefObject<HTMLDivElement | null>).current = node
             // Do not attach drag/drop handlers while editing mj-text
-            if (!isPreviewMode && !(isEditing && element.tagName === 'mj-text')) {
+            if (!isPreviewMode && !isGlobalLock && !(isEditing && inlineEditableTags.has(element.tagName))) {
                 drag(node)
                 drop(node)
             }
@@ -144,16 +167,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         return rules[tagName] || []
     }
 
-    // Tags that support inline content editing
-    const inlineEditableTags = new Set([
-        'mj-text',
-        'mj-button',
-        'mj-raw',
-        'mj-table',
-        'mj-navbar-link',
-        'mj-accordion-title',
-        'mj-accordion-text',
-    ])
+    // inlineEditableTags declared above
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -164,19 +178,26 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
-        if (isPreviewMode) return
+        if (isPreviewMode || isGlobalLock) return
         // Focus properties panel on double-click
         safeOnSelect(element.id)
         safeOnEditButtonClick(element.id)
         // Enable inline editing for supported tags
         if (inlineEditableTags.has(element.tagName)) {
             setIsEditing(true)
+            safeOnInlineEditStart()
         }
     }
 
     const handleContentEdit = (newContent: string) => {
         safeOnUpdate(element.id, element.attributes, newContent)
         setIsEditing(false)
+        safeOnInlineEditEnd()
+    }
+
+    const handleCancelEdit = () => {
+        setIsEditing(false)
+        safeOnInlineEditEnd()
     }
 
     const handleDelete = (e: React.MouseEvent) => {
@@ -335,7 +356,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         <RichTextEditor
                             content={content ?? ''}
                             onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
+                            onCancel={handleCancelEdit}
                         />
                     )
                     : (
@@ -351,7 +372,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         <ContentEditor
                             content={content ?? ''}
                             onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
+                            onCancel={handleCancelEdit}
                         />
                     )
                     : (
@@ -471,7 +492,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         <ContentEditor
                             content={content ?? ''}
                             onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
+                            onCancel={handleCancelEdit}
                         />
                     )
                     : (
@@ -484,8 +505,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                 color: linkColor,
                                 padding: linkPadding,
                                 textDecoration: 'none',
-                                fontSize: fontSize,
-                                fontFamily: fontFamily,
+                                fontSize,
+                                fontFamily,
                             }}
                             dangerouslySetInnerHTML={{ __html: content ?? 'Link' }}
                         />
@@ -550,99 +571,31 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 const width = attributes.width || '100%'
                 const cellpadding = attributes.cellpadding || '0'
                 const cellspacing = attributes.cellspacing || '0'
-                const tableHtml = content ?? '<tr><td>Cell 1</td><td>Cell 2</td></tr>'
-                return isEditing
-                    ? (
-                        <ContentEditor
-                            content={content ?? ''}
-                            onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
-                        />
-                    )
-                    : (
-                        <div className="mj-table-content" style={{ overflowX: 'auto' }}>
-                            <table style={{ width }} cellPadding={parseInt(cellpadding) || 0} cellSpacing={parseInt(cellspacing) || 0} align={align}>
-                                <tbody dangerouslySetInnerHTML={{ __html: tableHtml }} />
-                            </table>
-                        </div>
-                    )
+                return (
+                    <table
+                        style={{ width, textAlign: align, borderCollapse: 'collapse' }}
+                        cellPadding={parseInt(String(cellpadding), 10)}
+                        cellSpacing={parseInt(String(cellspacing), 10)}
+                    >
+                        <tbody>
+                            <tr>
+                                <td dangerouslySetInnerHTML={{ __html: content ?? '' }} />
+                            </tr>
+                        </tbody>
+                    </table>
+                )
             }
-
-            case 'mj-accordion':
-                return (
-                    <div className="mj-accordion-content">
-                        {children}
-                    </div>
-                )
-
-            case 'mj-accordion-element':
-                return (
-                    <div className="mj-accordion-element">
-                        {children}
-                    </div>
-                )
-
-            case 'mj-accordion-title':
-                return isEditing
-                    ? (
-                        <ContentEditor
-                            content={content ?? ''}
-                            onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
-                        />
-                    )
-                    : (
-                        <div className="mj-accordion-title" dangerouslySetInnerHTML={{ __html: content ?? 'Accordion Title' }} />
-                    )
-
-            case 'mj-accordion-text':
-                return isEditing
-                    ? (
-                        <ContentEditor
-                            content={content ?? ''}
-                            onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
-                        />
-                    )
-                    : (
-                        <div className="mj-accordion-text" dangerouslySetInnerHTML={{ __html: content ?? 'Accordion content goes here.' }} />
-                    )
-
-            case 'mj-carousel':
-                return (
-                    <div className="mj-carousel-content">
-                        {children}
-                    </div>
-                )
-
-            case 'mj-carousel-image':
-                return (
-                    <img
-                        src={attributes.src || 'https://via.placeholder.com/300x200'}
-                        alt={attributes.alt || 'Carousel image'}
-                        style={{ height: 'auto', display: 'block' }}
-                    />
-                )
-
-            case 'mj-raw':
-                return isEditing
-                    ? (
-                        <ContentEditor
-                            content={content ?? ''}
-                            onSave={handleContentEdit}
-                            onCancel={() => setIsEditing(false)}
-                        />
-                    )
-                    : (
-                        <div className="mj-raw-content" dangerouslySetInnerHTML={{ __html: content ?? '<!-- Raw HTML here -->' }} />
-                    )
-
             default:
-                return (
-                    <div className={`${tagName}-content`}>
-                        {children ?? content ?? `${tagName} element`}
-                    </div>
-                )
+                return content
+                    ? (
+                        <div
+                            className={`${tagName}-content`}
+                            dangerouslySetInnerHTML={{ __html: content }}
+                        />
+                    )
+                    : (
+                        <>{children}</>
+                    )
         }
     }
 
@@ -673,6 +626,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             onMouseLeave={() => setIsHovered(false)}
             data-element-id={element.id}
             data-element-type={element.tagName}
+            draggable={!isGlobalLock}
         >
             {renderElementContent()}
 
@@ -692,7 +646,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                         safeOnMove(element.id, parentId, index - 1)
                                     }
                                 }}
-                                disabled={!(typeof index === 'number' && index > 0)}
+                                disabled={!(typeof index === 'number' && index > 0) || isGlobalLock}
                                 title="Move section up"
                             >
                                 ⬆️
@@ -714,7 +668,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                     typeof index === 'number'
                                     && typeof siblingsCount === 'number'
                                     && index < siblingsCount - 1
-                                )}
+                                ) || isGlobalLock}
                                 title="Move section down"
                             >
                                 ⬇️
@@ -730,6 +684,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                     safeOnCopyElement(element.id)
                                 }}
                                 title="Copy element (Ctrl+C)"
+                                disabled={isGlobalLock}
                             >
                                 📄
                             </button>
@@ -741,6 +696,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                         safeOnDuplicateElement(element.id)
                                     }}
                                     title="Duplicate element"
+                                    disabled={isGlobalLock}
                                 >
                                     ➕
                                 </button>
@@ -751,6 +707,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         className="control-button delete"
                         onClick={handleDelete}
                         title="Delete element"
+                        disabled={isGlobalLock}
                     >
                         ❌
                     </button>
