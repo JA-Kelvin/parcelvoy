@@ -513,21 +513,24 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <div className="content-section">
                         <div className="property-group">
                             <label className="property-label">Content</label>
-                            {useRichEditor ? (
-                                <RichTextEditor
-                                    content={selectedElement.content ?? ''}
-                                    onSave={(html) => handleContentChange(html)}
-                                    onCancel={() => { /* no-op cancel retains prior content */ }}
-                                />
-                            ) : (
-                                <textarea
-                                    value={selectedElement.content ?? ''}
-                                    onChange={(e) => handleContentChange(e.target.value)}
-                                    placeholder="Enter content..."
-                                    className="content-textarea"
-                                    rows={6}
-                                />
-                            )}
+                            {useRichEditor
+                                ? (
+                                    <RichTextEditor
+                                        content={selectedElement.content ?? ''}
+                                        onSave={(html) => handleContentChange(html)}
+                                        onCancel={() => { /* no-op cancel retains prior content */ }}
+                                    />
+                                )
+                                : (
+                                    <textarea
+                                        value={selectedElement.content ?? ''}
+                                        onChange={(e) => handleContentChange(e.target.value)}
+                                        placeholder="Enter content..."
+                                        className="content-textarea"
+                                        rows={6}
+                                    />
+                                )
+                            }
                         </div>
                     </div>
                 )}
