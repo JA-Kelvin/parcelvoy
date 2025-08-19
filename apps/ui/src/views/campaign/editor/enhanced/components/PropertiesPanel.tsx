@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { EditorElement } from '../types'
 import './PropertiesPanel.css'
 import ImageGalleryModal, { ImageUpload } from '../../../ImageGalleryModal'
+import RichTextEditor from './RichTextEditor'
 
 interface PropertiesPanelProps {
     selectedElement: EditorElement | null
@@ -32,8 +33,22 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     }
 
     const handleImageInsert = (image: ImageUpload) => {
-        if (!imageAttrKey) return
-        handleAttributeChange(imageAttrKey, image.url)
+        if (!imageAttrKey || !selectedElement) return
+        // Update the chosen attribute (e.g., src or background-url)
+        const updatedAttributes: Record<string, any> = { ...selectedElement.attributes }
+        updatedAttributes[imageAttrKey] = image.url
+
+        // For image-like tags that support alt, populate alt if not set
+        const tag = selectedElement.tagName
+        const supportsAlt = imageAttrKey === 'src' && ['mj-image', 'mj-carousel-image', 'mj-social-element'].includes(tag)
+        if (supportsAlt) {
+            const nextAlt = image.alt || image.name || ''
+            if (!updatedAttributes.alt && nextAlt) {
+                updatedAttributes.alt = nextAlt
+            }
+        }
+
+        onElementUpdate(selectedElement.id, updatedAttributes)
         closeImagePicker()
     }
 
@@ -61,6 +76,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         onClick={onToggleCollapse}
                         title="Collapse Properties Panel"
                     >
+                        ⏴
                     </button>
                 </div>
                 <div className="panel-content">
@@ -334,6 +350,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
     const properties = getElementProperties()
 
+    // Elements that benefit from a rich text editor for content editing
+    const richTextSupportedTags = new Set(['mj-text', 'mj-accordion-title', 'mj-accordion-text', 'mj-navbar-link'])
+    const useRichEditor = richTextSupportedTags.has(selectedElement.tagName)
+
     const renderAttributeInput = (attr: any) => {
         const value = selectedElement.attributes[attr.key] || ''
         const isImageAttribute = attr.type === 'url' && (attr.key === 'src' || attr.key === 'background-url')
@@ -445,6 +465,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     onClick={onToggleCollapse}
                     title="Collapse Properties Panel"
                 >
+                    ⏴
                 </button>
             </div>
 
@@ -492,13 +513,21 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <div className="content-section">
                         <div className="property-group">
                             <label className="property-label">Content</label>
-                            <textarea
-                                value={selectedElement.content ?? ''}
-                                onChange={(e) => handleContentChange(e.target.value)}
-                                placeholder="Enter content..."
-                                className="content-textarea"
-                                rows={6}
-                            />
+                            {useRichEditor ? (
+                                <RichTextEditor
+                                    content={selectedElement.content ?? ''}
+                                    onSave={(html) => handleContentChange(html)}
+                                    onCancel={() => { /* no-op cancel retains prior content */ }}
+                                />
+                            ) : (
+                                <textarea
+                                    value={selectedElement.content ?? ''}
+                                    onChange={(e) => handleContentChange(e.target.value)}
+                                    placeholder="Enter content..."
+                                    className="content-textarea"
+                                    rows={6}
+                                />
+                            )}
                         </div>
                     </div>
                 )}

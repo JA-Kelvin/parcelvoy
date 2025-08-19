@@ -459,8 +459,6 @@
 .property-group:hover {
     background: rgba(59, 130, 246, 0.02);
     border-radius: 6px;
-    margin: -4px;
-    padding: 4px;
 }
 
 /* Accessibility improvements */
