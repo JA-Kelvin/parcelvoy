@@ -64,19 +64,23 @@ export const encodedLinkToParts = async (link: string | URL): Promise<TrackedLin
 }
 
 export const clickWrapHtml = (html: string, params: TrackedLinkParams) => {
-    const regex = /a.*\s*href\s*=\s*(['"])(https?:\/\/.+?)\1/gi
-    let link
+    const trackingBase = combineURLs([App.main.env.baseUrl, 'c']).toLowerCase()
+    const A_HREF_REGEX = /(<a\b[^>]*\bhref\s*=\s*)(['"])(https?:\/\/[^"']+?)\2/gi
 
-    while ((link = regex.exec(html)) !== null) {
-        const redirect = link[2]
+    return html.replace(A_HREF_REGEX, (full, prefix: string, quote: string, url: string) => {
+        // Skip if already a tracking link to /c
+        try {
+            const u = new URL(url)
+            const isTracking = (u.origin + u.pathname).toLowerCase() === trackingBase
+            if (isTracking) return full
+        } catch {
+            // If URL parsing fails, leave it unchanged
+            return full
+        }
 
-        html = html.replace(
-            redirect,
-            paramsToEncodedLink({ ...params, redirect, path: 'c' }),
-        )
-    }
-
-    return html
+        const wrapped = paramsToEncodedLink({ ...params, redirect: url, path: 'c' })
+        return `${prefix}${quote}${wrapped}${quote}`
+    })
 }
 
 export const openWrapHtml = (html: string, params: TrackedLinkParams) => {
