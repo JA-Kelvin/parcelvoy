@@ -431,7 +431,8 @@ export default function JourneyEditor() {
     const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
     const journeyId = journey.id
-    const isDraft = journey.status === 'draft'
+    const isDeleted = !!journey.deleted_at
+    const isDraft = journey.status === 'draft' && !isDeleted
     const draftId = journey.draft_id
     const parentId = journey.parent_id
 
@@ -696,60 +697,64 @@ export default function JourneyEditor() {
             open={true}
             onClose={async () => { await navigate('../journeys') }}
             actions={
-                isDraft
-                    ? <>
-                        {!parentId && <Button
-                            variant="secondary"
-                            onClick={() => setEditOpen(true)}
-                        >
-                            {t('edit_details')}
-                        </Button>}
-                        {checkProjectRole('publisher', project.role) && (
-                            <Button
-                                onClick={publishJourney}
-                                isLoading={saving}
+                isDeleted
+                    ? <Tag variant="error" size="large">
+                        {t('journey_archived')}
+                    </Tag>
+                    : isDraft
+                        ? <>
+                            {!parentId && <Button
                                 variant="secondary"
+                                onClick={() => setEditOpen(true)}
                             >
-                                {t('publish')}
-                            </Button>
-                        )}
-                        <Button
-                            onClick={saveSteps}
-                            isLoading={saving}
-                            variant="primary"
-                        >
-                            {t('journey_draft_save')}
-                        </Button>
-                    </>
-                    : <>
-                        <Tag
-                            variant={journey.status === 'live' ? 'success' : 'plain'}
-                            size="large">
-                            {t(journey.status)}
-                        </Tag>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setEditOpen(true)}
-                        >
-                            {t('edit_details')}
-                        </Button>
-                        {draftId
-                            ? <Button
-                                onClick={() => editDraft(draftId)}
+                                {t('edit_details')}
+                            </Button>}
+                            {checkProjectRole('publisher', project.role) && (
+                                <Button
+                                    onClick={publishJourney}
+                                    isLoading={saving}
+                                    variant="secondary"
+                                >
+                                    {t('publish')}
+                                </Button>
+                            )}
+                            <Button
+                                onClick={saveSteps}
                                 isLoading={saving}
                                 variant="primary"
                             >
-                                {t('journey_draft_edit')}
+                                {t('journey_draft_save')}
                             </Button>
-                            : <Button
-                                onClick={createDraft}
-                                isLoading={saving}
-                                variant="primary"
+                        </>
+                        : <>
+                            <Tag
+                                variant={journey.status === 'live' ? 'success' : 'plain'}
+                                size="large">
+                                {t(journey.status)}
+                            </Tag>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setEditOpen(true)}
                             >
-                                {t('journey_draft_create')}
+                                {t('edit_details')}
                             </Button>
-                        }
-                    </>
+                            {draftId
+                                ? <Button
+                                    onClick={() => editDraft(draftId)}
+                                    isLoading={saving}
+                                    variant="primary"
+                                >
+                                    {t('journey_draft_edit')}
+                                </Button>
+                                : <Button
+                                    onClick={createDraft}
+                                    isLoading={saving}
+                                    variant="primary"
+                                >
+                                    {t('journey_draft_create')}
+                                </Button>
+                            }
+                        </>
             }
         >
             <div className={clsx('journey', editNode && 'editing')}>
