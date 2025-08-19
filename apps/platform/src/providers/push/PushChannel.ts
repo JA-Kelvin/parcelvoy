@@ -15,7 +15,7 @@ export default class PushChannel {
         }
     }
 
-    async send(template: PushTemplate, devices: PushDevice[], variables: Variables): Promise<PushResponse | undefined> {
+    async send(template: PushTemplate, devices: PushDevice[], variables: Variables): Promise<PushResponse> {
 
         // Find tokens from active devices with push enabled
         const tokens = devices.map(device => device.token)
