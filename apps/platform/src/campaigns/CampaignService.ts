@@ -29,6 +29,7 @@ import { getJourneysForCampaign } from '../journey/JourneyService'
 import { createAuditLog } from '../core/audit/AuditService'
 import { WithAdmin } from '../core/audit/Audit'
 import { processUsers } from '../users/ProcessUsers'
+import { raw } from '../core/Model'
 
 export const CacheKeys = {
     pendingStats: 'campaigns:pending_stats',
@@ -129,6 +130,12 @@ export const updateCampaign = async (id: number, projectId: number, { tags, admi
     const campaign = await getCampaign(id, projectId) as Campaign
     if (campaign.state === 'finished') {
         throw new RequestError(CampaignError.CampaignFinished)
+    }
+
+    // Check that provider is valid
+    if (params.provider_id) {
+        const provider = await getProvider(params.provider_id, projectId)
+        if (provider?.deleted_at) throw new RequestError(CampaignError.CampaignInvalidProvider)
     }
 
     const data: Partial<Campaign> = { ...params }
@@ -365,10 +372,20 @@ export const populateSendList = async (campaign: SentCampaign) => {
     const insertRows = async (rows: CampaignSendParams[]): Promise<number[]> => {
         try {
             await App.main.db.transaction(async (trx) => {
+                // Inserts records but merge on conflict if record
+                // already exists. We don't want to remove the sent
+                // state from existing records so checks for that
                 await CampaignSend.query(trx)
                     .insert(rows)
                     .onConflict(['campaign_id', 'user_id', 'reference_id'])
-                    .merge(['state', 'send_at'])
+                    .merge({
+                        send_at: raw(
+                            "CASE WHEN `campaign_sends`.`state` = 'sent' THEN `campaign_sends`.`send_at` ELSE VALUES(`send_at`) END",
+                        ),
+                        state: raw(
+                            "CASE WHEN `campaign_sends`.`state` = 'sent' THEN `campaign_sends`.`state` ELSE VALUES(`state`) END",
+                        ),
+                    })
             })
         } catch (error: any) {
 
