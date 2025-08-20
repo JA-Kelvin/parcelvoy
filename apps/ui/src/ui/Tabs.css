@@ -34,9 +34,13 @@
     border-bottom: 3px solid var(--color-grey);
 }
 
+.ui-tabs .tab:focus {
+    outline: none;
+}
+
 .ui-tabs .tab.selected {
     color: var(--color-primary);
-    border-bottom: 3px solid var(--color-on-background);
+    border-bottom: 3px solid var(--color-orange);
 }
 
 .ui-tabs-panels .panel {

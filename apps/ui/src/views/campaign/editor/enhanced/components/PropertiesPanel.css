@@ -2,8 +2,8 @@
 .properties-panel {
     width: 320px;
     height: 100%;
-    background: #ffffff;
-    border-left: 1px solid #e5e7eb;
+    background: var(--color-background);
+    border-left: 1px solid var(--color-grey-hard);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -19,18 +19,18 @@
 
 .panel-header {
     padding: 16px 20px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-grey-hard);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f9fafb;
+    background: var(--color-background-soft);
 }
 
 .panel-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-on-background);
 }
 
 .toggle-button {
@@ -39,39 +39,39 @@
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    color: #6b7280;
+    color: var(--color-primary-soft);
     font-size: 14px;
     transition: all 0.2s ease;
 }
 
 .toggle-button:hover {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--color-grey-hard);
+    color: var(--color-on-background);
 }
 
 .element-info {
     padding: 12px 20px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f8fafc;
+    border-bottom: 1px solid var(--color-grey-hard);
+    background: var(--color-background-soft);
 }
 
 .element-type {
     font-weight: 600;
-    color: #1f2937;
+    color: var(--color-on-background);
     font-size: 14px;
     margin-bottom: 4px;
 }
 
 .element-id {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--color-primary-soft);
     font-family: monospace;
 }
 
 .tabs {
     display: flex;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
+    border-bottom: 1px solid var(--color-grey-hard);
+    background: var(--color-background-soft);
 }
 
 .tab {
@@ -82,20 +82,20 @@
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--color-primary-soft);
     transition: all 0.2s ease;
     border-bottom: 2px solid transparent;
 }
 
 .tab:hover {
-    color: #374151;
-    background: #f3f4f6;
+    color: var(--color-on-background);
+    background: var(--color-grey-soft);
 }
 
 .tab.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
-    background: #ffffff;
+    color: var(--color-blue);
+    border-bottom-color: var(--color-blue);
+    background: var(--color-background);
 }
 
 .panel-content {
@@ -118,7 +118,7 @@
     display: block;
     font-size: 13px;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-on-background);
     margin-bottom: 6px;
 }
 
@@ -139,10 +139,10 @@
 .image-thumb {
     width: 64px;
     height: 64px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-grey-hard);
     border-radius: 6px;
     overflow: hidden;
-    background: #f3f4f6;
+    background: var(--color-grey-soft);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,12 +155,12 @@
 }
 
 .image-thumb.empty {
-    background: #f9fafb;
+    background: var(--color-background-soft);
 }
 
 .image-thumb-placeholder {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--color-primary-soft);
 }
 
 .image-controls {
@@ -179,46 +179,46 @@
     padding: 6px 10px;
     font-size: 12px;
     border-radius: 6px;
-    border: 1px solid #d1d5db;
-    background: #ffffff;
-    color: #374151;
+    border: 1px solid var(--color-grey-hard);
+    background: var(--color-background);
+    color: var(--color-on-background);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .image-button:hover,
 .unlink-button:hover {
-    background: #f3f4f6;
+    background: var(--color-grey-soft);
 }
 
 .unlink-button {
-    color: #b91c1c;
-    border-color: #fecaca;
-    background: #fff7f7;
+    color: var(--color-red-hard);
+    border-color: var(--color-red-soft);
+    background: var(--color-red-soft);
 }
 
 .text-input,
 .select-input {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-grey-hard);
     border-radius: 6px;
     font-size: 13px;
     transition: all 0.2s ease;
-    background: #ffffff;
+    background: var(--color-background);
 }
 
 .text-input:focus,
 .select-input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px var(--color-blue-soft);
 }
 
 .color-input {
     width: 40px;
     height: 36px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-grey-hard);
     border-radius: 6px;
     cursor: pointer;
     background: none;
@@ -238,20 +238,21 @@
 .css-textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-grey-hard);
     border-radius: 6px;
     font-size: 13px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     resize: vertical;
     min-height: 80px;
     transition: all 0.2s ease;
+    background: var(--color-background);
 }
 
 .content-textarea:focus,
 .css-textarea:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px var(--color-blue-soft);
 }
 
 .no-selection {
@@ -261,7 +262,7 @@
     justify-content: center;
     padding: 40px 20px;
     text-align: center;
-    color: #6b7280;
+    color: var(--color-primary-soft);
     height: 200px;
 }
 
@@ -283,16 +284,16 @@
 }
 
 .panel-content::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--color-grey-soft);
 }
 
 .panel-content::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--color-grey);
     border-radius: 3px;
 }
 
 .panel-content::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--color-grey-hard);
 }
 
 /* Responsive adjustments */
@@ -325,131 +326,10 @@
     }
 }
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-    .properties-panel {
-        background: #1f2937;
-        border-left-color: #374151;
-    }
-    
-    .panel-header {
-        background: #111827;
-        border-bottom-color: #374151;
-    }
-    
-    .panel-header h3 {
-        color: #f9fafb;
-    }
-    
-    .element-info {
-        background: #374151;
-        border-bottom-color: #4b5563;
-    }
-    
-    .element-type {
-        color: #f9fafb;
-    }
-    
-    .element-id {
-        color: #9ca3af;
-    }
-    
-    .tabs {
-        background: #111827;
-        border-bottom-color: #374151;
-    }
-    
-    .tab {
-        color: #9ca3af;
-    }
-    
-    .tab:hover {
-        color: #f9fafb;
-        background: #374151;
-    }
-    
-    .tab.active {
-        color: #60a5fa;
-        background: #1f2937;
-        border-bottom-color: #60a5fa;
-    }
-    
-    .property-label {
-        color: #f9fafb;
-    }
-    
-    .text-input,
-    .select-input,
-    .content-textarea,
-    .css-textarea {
-        background: #374151;
-        border-color: #4b5563;
-        color: #f9fafb;
-    }
-    
-    .text-input:focus,
-    .select-input:focus,
-    .content-textarea:focus,
-    .css-textarea:focus {
-        border-color: #60a5fa;
-        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
-    }
-    
-    .color-input {
-        border-color: #4b5563;
-    }
-
-    .image-thumb {
-        border-color: #4b5563;
-        background: #374151;
-    }
-
-    .image-thumb-placeholder {
-        color: #9ca3af;
-    }
-
-    .image-button,
-    .unlink-button {
-        background: #374151;
-        border-color: #4b5563;
-        color: #f9fafb;
-    }
-
-    .image-button:hover,
-    .unlink-button:hover {
-        background: #4b5563;
-    }
-
-    .unlink-button {
-        color: #fca5a5;
-        border-color: #b91c1c;
-    }
-    
-    .no-selection {
-        color: #9ca3af;
-    }
-    
-    .toggle-button {
-        color: #9ca3af;
-    }
-    
-    .toggle-button:hover {
-        background: #374151;
-        color: #f9fafb;
-    }
-    
-    .panel-content::-webkit-scrollbar-track {
-        background: #374151;
-    }
-    
-    .panel-content::-webkit-scrollbar-thumb {
-        background: #4b5563;
-    }
-    
-    .panel-content::-webkit-scrollbar-thumb:hover {
-        background: #6b7280;
-    }
-}
+/* Dark theme support via tokens; no explicit overrides needed.
+   Add targeted tweaks here if needed in the future, e.g.:
+   [data-theme="dark"] .toggle-button:hover { background: var(--color-grey-soft); }
+*/
 
 /* Animation for property changes */
 .property-group {
@@ -457,7 +337,7 @@
 }
 
 .property-group:hover {
-    background: rgba(59, 130, 246, 0.02);
+    background: var(--color-blue-tint-soft);
     border-radius: 6px;
 }
 
@@ -470,7 +350,7 @@
 }
 
 .tab:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-blue);
     outline-offset: -2px;
 }
 

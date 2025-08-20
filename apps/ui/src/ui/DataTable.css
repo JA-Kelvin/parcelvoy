@@ -1,9 +1,10 @@
 .ui-table {
     width: 100%;
     display: table;
-    border-radius: var(--border-radius);
+    border-radius: 1.5rem;
     border: 1px solid var(--color-grey);
     overflow: hidden;
+    box-shadow: var(--table-shadow);
 }
 
 .ui-table .table-row, .ui-table .table-header {

@@ -76,7 +76,7 @@
 }
 
 .toolbar-button:active:not(:disabled) {
-    background: #e5e7eb;
+    background: var(--color-grey);
     transform: translateY(1px);
 }
 
@@ -105,7 +105,7 @@
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background-color: #ffffff;
+    background-color: var(--color-white);
     border-radius: 50%;
 }
 
@@ -438,7 +438,7 @@
         height: 100%;
         z-index: 20;
         border-left: none;
-        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+        box-shadow: -4px 0 16px var(--color-shadow);
     }
     
     .panel-tabs {
@@ -479,7 +479,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
+    background: color-mix(in srgb, var(--color-background) 80%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -488,14 +488,14 @@
 
 /* Focus Management */
 .enhanced-mjml-editor:focus-within .toolbar-button:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-blue);
     outline-offset: 2px;
 }
 
 /* Print Styles */
 @media print {
     .enhanced-mjml-editor {
-        background: #ffffff;
+        background: var(--color-white);
     }
     
     .editor-toolbar {

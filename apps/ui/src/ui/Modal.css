@@ -27,7 +27,7 @@
     padding: 30px;
     box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.12);
     max-height: 90vh;
-    overflow-y: scroll;
+    overflow-y: auto;
     position: relative;
 }
 

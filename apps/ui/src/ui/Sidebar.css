@@ -4,8 +4,8 @@
     left: 0;
     bottom: 0;
     width: 225px;
-    background: var(--color-background);
-    border-right: 1px solid var(--color-grey);
+    background: var(--color-background-gradient);
+    border-right: 0px solid var(--color-grey);
     display: flex;
     flex-direction: column;
     z-index: 1;
@@ -13,12 +13,13 @@
 
 main {
     margin-left: 225px;
+    background: var(--color-background-gradient);
 }
 
 header, .sidebar .sidebar-header {
     display: flex;
     position: relative;
-    border-bottom: 1px solid var(--color-grey);
+    border-bottom: 0px solid var(--color-grey);
     padding: 15px 40px;
     gap: 10px;
     align-items: center;
@@ -33,6 +34,7 @@ header .logo svg, .sidebar-header .logo svg {
     height: 30px;
     flex-shrink: 0;
     fill: var(--color-primary);
+    color: var(--color-white);
 }
 
 .sidebar .project-switcher.select-button {
@@ -60,15 +62,15 @@ header {
 nav {
     padding: 20px;
     flex-grow: 1;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 nav a {
     display: flex;
     padding: 15px;
     text-decoration: none;
-    color: var(--color-primary);
-    border-radius: var(--border-radius);
+    color: var(--color-white);
+    border-radius: var(--border-rounder-radius);
     font-size: 15px;
     font-weight: 500;
     margin-bottom: 5px;
@@ -78,13 +80,15 @@ nav a {
 
 nav a:hover {
     color: var(--color-primary);
-    background: var(--color-grey);
+    background: var(--color-grey-soft);
     text-decoration: none;
 }
 
 nav a.selected {
-    color: var(--color-on-primary);
-    background: var(--color-primary);
+    color: var(--color-white);
+    background: rgba(16, 24, 40, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 1px 1px 2px rgba(79, 170, 79, 0.05);
 }
 
 nav a .nav-icon {
@@ -95,7 +99,7 @@ nav a .nav-icon {
 }
 
 .sidebar-profile {
-    border-top: 1px solid var(--color-grey);
+    border-top: 0px solid var(--color-grey);
     width: 100%;
 }
 
@@ -108,10 +112,11 @@ nav a .nav-icon {
     align-items: center;
     cursor: pointer;
     padding: 15px 20px;
+    color: var(--color-white);
 }
 
 .sidebar-profile .sidebar-profile-inner:hover {
-    background-color: var(--color-background-soft);
+    background-color: var(--color-background-gradient-soft);
 }
 
 .sidebar-profile .profile-image {

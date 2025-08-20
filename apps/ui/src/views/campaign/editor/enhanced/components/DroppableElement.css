@@ -6,12 +6,12 @@
 }
 
 .droppable-element:not(.preview-mode):hover {
-    outline: 2px solid rgba(59, 130, 246, 0.3);
+    outline: 2px solid color-mix(in srgb, var(--color-blue) 30%, transparent);
     outline-offset: 2px;
 }
 
 .droppable-element.selected {
-    outline: 2px solid #3b82f6 !important;
+    outline: 2px solid var(--color-blue) !important;
     outline-offset: 2px;
 }
 
@@ -21,7 +21,7 @@
 }
 
 .droppable-element.drop-target {
-    background-color: rgba(59, 130, 246, 0.1);
+    background-color: color-mix(in srgb, var(--color-blue) 10%, transparent);
 }
 
 /* Element-specific styles */
@@ -43,7 +43,7 @@
 }
 
 .element-mj-column:hover:not(.preview-mode) {
-    border-color: #d1d5db;
+    border-color: var(--color-grey);
 }
 
 .element-mj-text {
@@ -70,8 +70,8 @@
         45deg,
         transparent,
         transparent 5px,
-        rgba(0, 0, 0, 0.1) 5px,
-        rgba(0, 0, 0, 0.1) 10px
+        color-mix(in srgb, var(--color-on-background) 10%, transparent) 5px,
+        color-mix(in srgb, var(--color-on-background) 10%, transparent) 10px
     );
     border-radius: 2px;
 }
@@ -84,7 +84,7 @@
 
 .mj-text-content:empty::before {
     content: 'Click to edit text';
-    color: #9ca3af;
+    color: var(--color-primary-soft);
     font-style: italic;
 }
 
@@ -98,7 +98,7 @@
 
 .mj-button-content:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px var(--color-shadow);
 }
 
 .mj-section-content {
@@ -118,10 +118,10 @@
     top: -0px;
     right: 0;
     display: none;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--color-background);
+    border: 1px solid var(--color-grey);
     border-radius: 6px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px var(--color-shadow);
     z-index: 100;
     padding: 4px;
 }
@@ -136,7 +136,7 @@
     border: none;
     padding: 0px 0px;
     cursor: pointer;
-    color: #6b7280;
+    color: var(--color-primary-soft);
     font-size: 14px;
     border-radius: 0px;
     transition: all 0.2s ease;
@@ -144,23 +144,23 @@
 }
 
 .control-button:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--color-grey-soft);
+    color: var(--color-on-background);
 }
 
 .control-button.delete:hover {
-    background: #fee2e2;
-    color: #dc2626;
+    background: var(--color-red-soft);
+    color: var(--color-red);
 }
 
 /* Content editor */
 .content-editor {
     position: relative;
-    background: #ffffff;
-    border: 2px solid #3b82f6;
+    background: var(--color-background);
+    border: 2px solid var(--color-blue);
     border-radius: 6px;
     padding: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px var(--color-shadow);
 }
 
 .content-textarea {
@@ -180,22 +180,22 @@
     bottom: -25px;
     left: 0;
     font-size: 11px;
-    color: #6b7280;
-    background: #ffffff;
+    color: var(--color-primary-soft);
+    background: var(--color-background);
     padding: 2px 6px;
     border-radius: 4px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-grey);
     white-space: nowrap;
 }
 
 /* Quill Rich Text Editor overrides */
 .rich-text-editor {
     position: relative;
-    background: rgba(255, 255, 255, 0.7);
-    border: 2px solid #3b82f6;
+    background: color-mix(in srgb, var(--color-background) 70%, transparent);
+    border: 2px solid var(--color-blue);
     border-radius: 6px;
     padding: 6px 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px var(--color-shadow);
 }
 
 .rich-text-editor .ql-editor {
@@ -225,9 +225,9 @@
     position: sticky;
     top: 0;
     z-index: 260; /* above tooltip and controls when needed */
-    background: #ffffff;
+    background: var(--color-background);
     border: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-grey);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
 }
@@ -243,11 +243,11 @@
     top: 4px;
     left: 4px;
     font-size: 11px;
-    color: #6b7280;
-    background: #ffffff;
+    color: var(--color-primary-soft);
+    background: var(--color-background);
     padding: 2px 6px;
     border-radius: 4px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-grey);
     white-space: nowrap;
     pointer-events: none;
     z-index: 90;
@@ -260,13 +260,13 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(59, 130, 246, 0.1);
-    border: 2px dashed #3b82f6;
+    background: color-mix(in srgb, var(--color-blue) 10%, transparent);
+    border: 2px dashed var(--color-blue);
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #3b82f6;
+    color: var(--color-blue);
     font-weight: 600;
     font-size: 12px;
     pointer-events: none;
@@ -348,59 +348,12 @@
     }
 }
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-    .element-controls {
-        background: #374151;
-        border-color: #4b5563;
-    }
-    
-    .control-button {
-        color: #d1d5db;
-    }
-    
-    .control-button:hover {
-        background: #4b5563;
-        color: #f9fafb;
-    }
-    
-    .control-button.delete:hover {
-        background: #7f1d1d;
-        color: #fca5a5;
-    }
-    
-    .content-editor {
-        background: #374151;
-        border-color: #60a5fa;
-    }
-    
-    .content-textarea {
-        color: #f9fafb;
-    }
-    
-    .editor-hint {
-        background: #374151;
-        border-color: #4b5563;
-        color: #d1d5db;
-    }
-    
-    .drop-indicator {
-        background: rgba(96, 165, 250, 0.1);
-        border-color: #60a5fa;
-        color: #60a5fa;
-    }
-
-    .inline-edit-hint {
-        background: #374151;
-        border-color: #4b5563;
-        color: #d1d5db;
-    }
-}
+/* Dark theme driven via [data-theme="dark"] tokens in variables.css */
 
 /* Animation for smooth interactions */
 @keyframes elementHighlight {
     0% { outline-color: transparent; }
-    50% { outline-color: #3b82f6; }
+    50% { outline-color: var(--color-blue); }
     100% { outline-color: transparent; }
 }
 
@@ -410,12 +363,12 @@
 
 /* Accessibility improvements */
 .droppable-element:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-blue);
     outline-offset: 2px;
 }
 
 .control-button:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-blue);
     outline-offset: 1px;
 }
 

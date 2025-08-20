@@ -363,7 +363,7 @@ const Canvas: React.FC<CanvasProps> = ({
                                 <div className="empty-icon">📧</div>
                                 <h3>Start Building Your Email</h3>
                                 <p>Drag components from the left panel to begin creating your email template.</p>
-                                <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                                <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--color-primary-soft)' }}>
                                     Debug: {safeElements.length} elements, mjmlRoot: {mjmlRoot ? 'found' : 'missing'}, mjmlBody: {mjmlBody ? 'found' : 'missing'}
                                 </div>
                             </div>

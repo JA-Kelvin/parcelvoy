@@ -379,8 +379,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         <button
                             className="mj-button-content"
                             style={{
-                                backgroundColor: attributes['background-color'] || '#007bff',
-                                color: attributes.color || '#ffffff',
+                                backgroundColor: attributes['background-color'] || 'var(--color-blue)',
+                                color: attributes.color || 'var(--color-on-primary)',
                                 borderRadius: attributes['border-radius'] || '4px',
                                 padding: attributes['inner-padding'] || attributes.padding || '10px 25px',
                                 border: attributes.border || 'none',
@@ -420,7 +420,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 return (
                     <hr
                         style={{
-                            borderColor: attributes['border-color'] || '#cccccc',
+                            borderColor: attributes['border-color'] || 'var(--color-grey-hard)',
                             borderWidth: attributes['border-width'] || '1px',
                             borderStyle: 'solid',
                             margin: '10px 0',
@@ -483,7 +483,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             case 'mj-navbar-link': {
                 const href = attributes.href || '#'
                 const target = attributes.target || '_blank'
-                const linkColor = attributes.color || '#111827'
+                const linkColor = attributes.color || 'var(--color-on-background)'
                 const linkPadding = attributes.padding || '10px 15px'
                 const fontSize = attributes['font-size']
                 const fontFamily = attributes['font-family']
@@ -543,7 +543,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             height: iconSize,
                             borderRadius: '4px',
                             backgroundColor: bg ?? 'transparent',
-                            color: fg ?? '#111827',
+                            color: fg ?? 'var(--color-on-background)',
                             textDecoration: 'none',
                             overflow: 'hidden',
                         }}

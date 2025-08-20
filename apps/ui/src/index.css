@@ -22,6 +22,12 @@ a:hover {
 
 .page-content {
     padding: 0 40px 40px;
+    min-height: 100vh;
+    min-width: 0;
+    transition: border-radius .3s;
+    flex: 1;
+    border-radius: 1.5rem 0 0 1.5rem;
+    background: var(--color-background);
 }
 
 .page-content.fullscreen {
@@ -256,5 +262,8 @@ code {
 @media only screen and (max-width: 600px) {
     .page-content {
         padding: 0 20px 20px;
+        min-height: 100vh;
+        min-width: 0;
+        border-radius: 0rem 0 0 0rem;
     }
 }

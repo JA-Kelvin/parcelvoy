@@ -111,7 +111,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onSave, onCanc
                 formats={formats}
                 placeholder="Type your text..."
             />
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: 'var(--color-primary-soft)', marginTop: 6 }}>
                 Ctrl+Enter to save • Esc to cancel
             </div>
         </div>
