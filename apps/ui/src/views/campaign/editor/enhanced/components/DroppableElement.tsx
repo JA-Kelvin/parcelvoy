@@ -4,6 +4,7 @@ import { useDrag, useDrop } from 'react-dnd'
 import { EditorElement } from '../types'
 import './DroppableElement.css'
 import RichTextEditor from './RichTextEditor'
+import { generateId } from '../utils/mjmlParser'
 
 interface DroppableElementProps {
     element: EditorElement
@@ -100,13 +101,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             // Disable dropping into this element while editing mj-text
             if (isEditing && inlineEditableTags.has(element.tagName)) return
 
+            const targetIndex = Array.isArray(element.children) ? element.children.length : 0
+
             if (item.id && item.id !== element.id) {
-                // Moving existing element
-                safeOnMove(item.id, element.id, 0)
+                // Moving existing element - append to end by default
+                safeOnMove(item.id, element.id, targetIndex)
             } else if (item.type && !item.id) {
                 // Adding new component
                 const newElement: EditorElement = {
-                    id: `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    id: generateId(),
                     type: item.type,
                     tagName: item.tagName || item.type,
                     attributes: { ...item.defaultAttributes },
@@ -117,7 +120,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             ? 'Click me'
                             : undefined,
                 }
-                safeOnElementAdd(newElement, element.id)
+                safeOnElementAdd(newElement, element.id, targetIndex)
             }
         },
         collect: (monitor) => ({
@@ -626,7 +629,6 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             onMouseLeave={() => setIsHovered(false)}
             data-element-id={element.id}
             data-element-type={element.tagName}
-            draggable={!isGlobalLock}
         >
             {renderElementContent()}
 

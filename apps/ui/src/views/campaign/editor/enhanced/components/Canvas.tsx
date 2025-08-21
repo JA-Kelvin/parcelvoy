@@ -1,7 +1,7 @@
 // Enhanced Canvas Component for Parcelvoy MJML Editor
 import React, { useRef, useCallback, useEffect, useState } from 'react'
 import { useDrop } from 'react-dnd'
-import { EditorElement, ComponentDefinition } from '../types'
+import { EditorElement } from '../types'
 import { generateId } from '../utils/mjmlParser'
 // Import directly to avoid circular dependencies
 import DroppableElement from './DroppableElement'
@@ -35,6 +35,7 @@ const Canvas: React.FC<CanvasProps> = ({
     onDuplicateElement,
     isPreviewMode = false,
 }) => {
+    const __DEV__ = process.env.NODE_ENV !== 'production'
     // Comprehensive safety checks
     const safeElements = !elements || !Array.isArray(elements) ? [] : elements
 
@@ -55,12 +56,162 @@ const Canvas: React.FC<CanvasProps> = ({
 
     // Handle component drop from components panel
     const [{ isOver, canDrop }, drop] = useDrop({
-        accept: 'component',
-        drop: (item: ComponentDefinition, monitor) => {
+        accept: ['component', 'element'],
+        drop: (item: any, monitor) => {
             if (monitor.didDrop()) return // Prevent duplicate drops
             if (isPreviewMode || isEditingAny) return // Disable drop while preview or editing inline
 
-            // Create new element from component definition
+            const isExisting = !!item.id
+            const itemType: string = item.type || item.tagName
+
+            // Find the appropriate parent (mj-body or mj-column)
+            if (__DEV__) console.log('Drop handler - elements:', safeElements.length)
+
+            const mjmlRoot = safeElements.find((el: EditorElement) => el.tagName === 'mjml')
+            if (!mjmlRoot) {
+                if (__DEV__) console.error('No mjml root found in elements')
+                return
+            }
+            const rootChildren = toArray(mjmlRoot?.children)
+            const mjmlBody = rootChildren.find((el: EditorElement) => el.tagName === 'mj-body')
+            if (!mjmlBody) {
+                if (__DEV__) console.error('No mj-body found in mjml root')
+                return
+            }
+
+            // Helper to compute append index
+            const appendIndex = (parent: EditorElement) => toArray(parent.children).length
+
+            // If moving an existing element, handle placement rules
+            if (isExisting) {
+                // Sections/Wrappers/Hero go directly under body
+                if (itemType === 'mj-section' || itemType === 'enhanced-section' || itemType === 'mj-wrapper' || itemType === 'mj-hero') {
+                    safeOnElementMove(item.id, mjmlBody.id, appendIndex(mjmlBody))
+                    return
+                }
+
+                // Groups must be under a section
+                if (itemType === 'mj-group') {
+                    const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
+                    let section = sections[sections.length - 1]
+                    if (!section) {
+                        section = {
+                            id: generateId(),
+                            type: 'mj-section',
+                            tagName: 'mj-section',
+                            attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                            children: [],
+                        }
+                        safeOnElementAdd(section, mjmlBody.id)
+                    }
+                    safeOnElementMove(item.id, section.id, appendIndex(section))
+                    return
+                }
+
+                // Columns go under last section (or create one)
+                if (itemType === 'mj-column') {
+                    const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
+                    let section = sections[sections.length - 1]
+                    if (!section) {
+                        section = {
+                            id: generateId(),
+                            type: 'mj-section',
+                            tagName: 'mj-section',
+                            attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                            children: [],
+                        }
+                        safeOnElementAdd(section, mjmlBody.id)
+                    }
+                    safeOnElementMove(item.id, section.id, appendIndex(section))
+                    return
+                }
+
+                // Subcomponents moved to canvas: scaffold required container
+                if (
+                    itemType === 'mj-navbar-link'
+                    || itemType === 'mj-social-element'
+                    || itemType === 'mj-carousel-image'
+                    || itemType === 'mj-accordion-element'
+                    || itemType === 'mj-accordion-title'
+                    || itemType === 'mj-accordion-text'
+                ) {
+                    const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
+                    let section = sections[sections.length - 1]
+                    if (!section) {
+                        section = {
+                            id: generateId(),
+                            type: 'mj-section',
+                            tagName: 'mj-section',
+                            attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                            children: [],
+                        }
+                        safeOnElementAdd(section, mjmlBody.id)
+                    }
+                    const columns = toArray(section.children).filter((el: EditorElement) => el.tagName === 'mj-column')
+                    let column = columns[columns.length - 1]
+                    if (!column) {
+                        column = { id: generateId(), type: 'mj-column', tagName: 'mj-column', attributes: { width: '100%' }, children: [] }
+                        safeOnElementAdd(column, section.id)
+                    }
+
+                    if (itemType === 'mj-navbar-link') {
+                        const navbar: EditorElement = { id: generateId(), type: 'mj-navbar', tagName: 'mj-navbar', attributes: {}, children: [] }
+                        safeOnElementAdd(navbar, column.id, appendIndex(column))
+                        safeOnElementMove(item.id, navbar.id, appendIndex(navbar))
+                        return
+                    }
+                    if (itemType === 'mj-social-element') {
+                        const social: EditorElement = { id: generateId(), type: 'mj-social', tagName: 'mj-social', attributes: {}, children: [] }
+                        safeOnElementAdd(social, column.id, appendIndex(column))
+                        safeOnElementMove(item.id, social.id, appendIndex(social))
+                        return
+                    }
+                    if (itemType === 'mj-carousel-image') {
+                        const carousel: EditorElement = { id: generateId(), type: 'mj-carousel', tagName: 'mj-carousel', attributes: {}, children: [] }
+                        safeOnElementAdd(carousel, column.id, appendIndex(column))
+                        safeOnElementMove(item.id, carousel.id, appendIndex(carousel))
+                        return
+                    }
+                    if (itemType === 'mj-accordion-element') {
+                        const accordion: EditorElement = { id: generateId(), type: 'mj-accordion', tagName: 'mj-accordion', attributes: {}, children: [] }
+                        safeOnElementAdd(accordion, column.id, appendIndex(column))
+                        safeOnElementMove(item.id, accordion.id, appendIndex(accordion))
+                        return
+                    }
+                    if (itemType === 'mj-accordion-title' || itemType === 'mj-accordion-text') {
+                        const accordion: EditorElement = { id: generateId(), type: 'mj-accordion', tagName: 'mj-accordion', attributes: {}, children: [] }
+                        safeOnElementAdd(accordion, column.id, appendIndex(column))
+                        const accEl: EditorElement = { id: generateId(), type: 'mj-accordion-element', tagName: 'mj-accordion-element', attributes: {}, children: [] }
+                        safeOnElementAdd(accEl, accordion.id, 0)
+                        safeOnElementMove(item.id, accEl.id, appendIndex(accEl))
+                        return
+                    }
+                }
+
+                // Default: move content into last column (scaffold section/column if needed)
+                const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
+                let section = sections[sections.length - 1]
+                if (!section) {
+                    section = {
+                        id: generateId(),
+                        type: 'mj-section',
+                        tagName: 'mj-section',
+                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        children: [],
+                    }
+                    safeOnElementAdd(section, mjmlBody.id)
+                }
+                const columns = toArray(section.children).filter((el: EditorElement) => el.tagName === 'mj-column')
+                let column = columns[columns.length - 1]
+                if (!column) {
+                    column = { id: generateId(), type: 'mj-column', tagName: 'mj-column', attributes: { width: '100%' }, children: [] }
+                    safeOnElementAdd(column, section.id)
+                }
+                safeOnElementMove(item.id, column.id, appendIndex(column))
+                return
+            }
+
+            // From here on: adding a NEW component definition
             const newElement: EditorElement = {
                 id: generateId(),
                 type: item.type,
@@ -74,33 +225,12 @@ const Canvas: React.FC<CanvasProps> = ({
                         : undefined,
             }
 
-            // Find the appropriate parent (mj-body or mj-column)
-            console.log('Drop handler - elements:', safeElements.length)
-
-            const mjmlRoot = safeElements.find((el: EditorElement) => el.tagName === 'mjml')
-            if (!mjmlRoot) {
-                console.error('No mjml root found in elements')
-                return
-            }
-            const rootChildren = toArray(mjmlRoot?.children)
-            const mjmlBody = rootChildren.find((el: EditorElement) => el.tagName === 'mj-body')
-            if (!mjmlBody) {
-                console.error('No mj-body found in mjml root')
-                return
-            }
-
-            // If it's a layout component (section), add to mj-body
-            if (item.type === 'mj-section' || item.type === 'enhanced-section') {
-                safeOnElementAdd(newElement, mjmlBody.id)
-                return
-            }
-
             // Groups must be direct children of sections
             if (item.type === 'mj-group') {
                 const sections = toArray(mjmlBody.children).filter((el: EditorElement) => el.tagName === 'mj-section' || el.tagName === 'enhanced-section')
                 const lastSection = sections[sections.length - 1]
                 if (lastSection) {
-                    safeOnElementAdd(newElement, lastSection.id)
+                    safeOnElementAdd(newElement, lastSection.id, appendIndex(lastSection))
                 } else {
                     const newSection: EditorElement = {
                         id: generateId(),
@@ -214,7 +344,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         children: [],
                     }
                     safeOnElementAdd(newSection, mjmlBody.id)
-                    safeOnElementAdd(newElement, newSection.id)
+                    safeOnElementAdd(newElement, newSection.id, appendIndex(newSection))
                 }
                 return
             }
@@ -226,7 +356,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 const columns = toArray(lastSection.children).filter((el: EditorElement) => el.tagName === 'mj-column')
                 const lastColumn = columns[columns.length - 1]
                 if (lastColumn) {
-                    safeOnElementAdd(newElement, lastColumn.id)
+                    safeOnElementAdd(newElement, lastColumn.id, appendIndex(lastColumn))
                 } else {
                     // Create a new column in the section
                     const newColumn: EditorElement = {
@@ -237,7 +367,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         children: [],
                     }
                     safeOnElementAdd(newColumn, lastSection.id)
-                    safeOnElementAdd(newElement, newColumn.id)
+                    safeOnElementAdd(newElement, newColumn.id, appendIndex(newColumn))
                 }
             } else {
                 // Create complete structure: section -> column -> element
@@ -258,7 +388,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
                 safeOnElementAdd(newSection, mjmlBody.id)
                 safeOnElementAdd(newColumn, newSection.id)
-                safeOnElementAdd(newElement, newColumn.id)
+                safeOnElementAdd(newElement, newColumn.id, appendIndex(newColumn))
             }
         },
         collect: (monitor) => ({
@@ -316,6 +446,7 @@ const Canvas: React.FC<CanvasProps> = ({
     // Canvas should not create default structure - that's handled by parent component
     // Just log for debugging purposes
     useEffect(() => {
+        if (!__DEV__) return
         if (safeElements.length === 0) {
             console.log('Canvas: No elements provided - parent should handle default structure creation')
         } else {
@@ -327,22 +458,24 @@ const Canvas: React.FC<CanvasProps> = ({
     const mjmlRoot = safeElements.find((el: EditorElement) => el.tagName === 'mjml')
     const mjmlBody = toArray(mjmlRoot?.children).find((el: EditorElement) => el.tagName === 'mj-body')
 
-    // Detailed debug logging
-    console.log('Canvas: Detailed Debug Info:')
-    console.log('- Elements received:', safeElements.length)
-    console.log('- Elements structure:', safeElements.map(el => ({ id: el.id, tagName: el.tagName, childrenCount: Array.isArray(el.children) ? el.children.length : toArray(el.children).length })))
-    console.log('- MJML Root found:', !!mjmlRoot)
-    if (mjmlRoot) {
-        const rc = toArray(mjmlRoot.children)
-        console.log('- MJML Root children:', rc.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: Array.isArray(child.children) ? child.children.length : toArray(child.children).length })))
+    // Detailed debug logging (dev only)
+    if (__DEV__) {
+        console.log('Canvas: Detailed Debug Info:')
+        console.log('- Elements received:', safeElements.length)
+        console.log('- Elements structure:', safeElements.map(el => ({ id: el.id, tagName: el.tagName, childrenCount: Array.isArray(el.children) ? el.children.length : toArray(el.children).length })))
+        console.log('- MJML Root found:', !!mjmlRoot)
+        if (mjmlRoot) {
+            const rc = toArray(mjmlRoot.children)
+            console.log('- MJML Root children:', rc.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: Array.isArray(child.children) ? child.children.length : toArray(child.children).length })))
+        }
+        console.log('- MJML Body found:', !!mjmlBody)
+        if (mjmlBody) {
+            const bc = toArray(mjmlBody.children)
+            console.log('- MJML Body children:', bc.length)
+            console.log('- MJML Body structure:', bc.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: Array.isArray(child.children) ? child.children.length : toArray(child.children).length })))
+        }
+        console.log('- Will show empty state:', !mjmlBody)
     }
-    console.log('- MJML Body found:', !!mjmlBody)
-    if (mjmlBody) {
-        const bc = toArray(mjmlBody.children)
-        console.log('- MJML Body children:', bc.length)
-        console.log('- MJML Body structure:', bc.map(child => ({ id: child.id, tagName: child.tagName, childrenCount: Array.isArray(child.children) ? child.children.length : toArray(child.children).length })))
-    }
-    console.log('- Will show empty state:', !mjmlBody)
 
     return (
         <div className="canvas-container">
