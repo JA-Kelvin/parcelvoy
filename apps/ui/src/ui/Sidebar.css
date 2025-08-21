@@ -203,6 +203,7 @@ nav a .nav-icon {
         border-top-right-radius: var(--border-radius-outer);
         border-bottom-left-radius: var(--border-radius-outer);
         border-bottom-right-radius: var(--border-radius-outer);
+        background: var(--color-sidebar-background-gradient);
         z-index: 11;
     }
 
