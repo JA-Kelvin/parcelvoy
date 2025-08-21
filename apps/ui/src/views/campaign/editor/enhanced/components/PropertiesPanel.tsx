@@ -484,26 +484,26 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 )
 
             default:
-                {
-                    const inputEl = (
-                        <input
-                            type="text"
-                            value={value}
-                            onChange={(e) => handleAttributeChange(attr.key, e.target.value)}
-                            placeholder={attr.placeholder}
-                            className="text-input"
-                        />
+            {
+                const inputEl = (
+                    <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => handleAttributeChange(attr.key, e.target.value)}
+                        placeholder={attr.placeholder}
+                        className="text-input"
+                    />
+                )
+                if (selectedElement.tagName === 'mj-image' && attr.key === 'width') {
+                    return (
+                        <div className="input-group">
+                            {inputEl}
+                            <div className="help-text">Pixels only (e.g., 600). Leave empty for fluid width; for full-bleed use section “Full Width”.</div>
+                        </div>
                     )
-                    if (selectedElement.tagName === 'mj-image' && attr.key === 'width') {
-                        return (
-                            <div className="input-group">
-                                {inputEl}
-                                <div className="help-text">Pixels only (e.g., 600). Leave empty for fluid width; for full-bleed use section “Full Width”.</div>
-                            </div>
-                        )
-                    }
-                    return inputEl
                 }
+                return inputEl
+            }
         }
     }
 
