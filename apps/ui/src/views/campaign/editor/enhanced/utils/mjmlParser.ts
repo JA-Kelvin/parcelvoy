@@ -246,7 +246,7 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
                 tagName: 'mj-section',
                 attributes: {
                     'background-color': '#ffffff',
-                    padding: '20px',
+                    padding: '0px',
                 },
                 children: [{
                     id: generateId(),

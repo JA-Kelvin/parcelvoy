@@ -48,7 +48,7 @@ export default function UserDetailEvents() {
                     onClose={() => setEvent(undefined)}
                 >
                     <Columns>
-                        <Column style={{ padding: '20px' }}>
+                        <Column style={{ padding: '0px' }}>
                             {formatDate(preferences, event.created_at)}
                             <JsonPreview value={{ name: event.name, ...event.data, created_at: event.created_at }} />
                         </Column>
