@@ -88,77 +88,79 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
     const [preferences] = useContext(PreferencesContext)
     return (
-        <div className="ui-table">
-            <div className="table-header">
+        <div className="ui-table-wrapper">
+            <div className="ui-table">
+                <div className="table-header">
+                    {
+                        columns.map(col => (
+                            <HeaderCell<T>
+                                key={col.key}
+                                col={col}
+                                onColumnSort={onColumnSort}
+                                columnSort={columnSort} />
+                        ))
+                    }
+                </div>
                 {
-                    columns.map(col => (
-                        <HeaderCell<T>
-                            key={col.key}
-                            col={col}
-                            onColumnSort={onColumnSort}
-                            columnSort={columnSort} />
-                    ))
+                    (items && items.length > 0)
+                        ? items.map(item => {
+
+                            const args = { item }
+                            const key = itemKey ? itemKey(args) : (item as any).id
+
+                            return (
+                                <div
+                                    className={clsx(
+                                        'table-row',
+                                        onSelectRow ? ' table-row-interactive' : '',
+                                        selectedRow === key ? ' table-row-selected' : '',
+                                    )}
+                                    key={key}
+                                    onClick={() => onSelectRow?.(item)}
+                                >
+                                    {
+                                        columns.map(col => {
+                                            let value: any = col.cell
+                                                ? col.cell(args)
+                                                : item[col.key as keyof T]
+                                            if (!col.cell) {
+                                                if ((col.key.endsWith('_at') || col.key.endsWith('_until'))
+                                                    && (typeof value === 'string' || typeof value === 'number')) {
+                                                    value = formatDate(preferences, value, 'Pp')
+                                                }
+                                                if (typeof value === 'boolean') {
+                                                    value = value ? <CheckIcon /> : <CloseIcon />
+                                                }
+                                            }
+                                            return (
+                                                <div className="table-cell" key={col.key} style={col.minWidth ? { minWidth: col.minWidth } : {}}>
+                                                    {value ?? <>&#8211;</>}
+                                                </div>
+                                            )
+                                        })
+                                    }
+                                </div>
+                            )
+                        })
+                        : isLoading
+                            ? Array.from({ length: 3 }, (x, i) => (
+                                <div className="table-row loading" key={i}>
+                                    {
+                                        columns.map(col => (
+                                            <div className="table-cell" key={col.key}>
+                                                <div className="loader"></div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            ))
+                            : <div className="table-row">
+                                <div className="table-cell">
+                                    {emptyMessage}
+                                </div>
+                            </div>
                 }
             </div>
-            {
-                (items && items.length > 0)
-                    ? items.map(item => {
-
-                        const args = { item }
-                        const key = itemKey ? itemKey(args) : (item as any).id
-
-                        return (
-                            <div
-                                className={clsx(
-                                    'table-row',
-                                    onSelectRow ? ' table-row-interactive' : '',
-                                    selectedRow === key ? ' table-row-selected' : '',
-                                )}
-                                key={key}
-                                onClick={() => onSelectRow?.(item)}
-                            >
-                                {
-                                    columns.map(col => {
-                                        let value: any = col.cell
-                                            ? col.cell(args)
-                                            : item[col.key as keyof T]
-                                        if (!col.cell) {
-                                            if ((col.key.endsWith('_at') || col.key.endsWith('_until'))
-                                                && (typeof value === 'string' || typeof value === 'number')) {
-                                                value = formatDate(preferences, value, 'Pp')
-                                            }
-                                            if (typeof value === 'boolean') {
-                                                value = value ? <CheckIcon /> : <CloseIcon />
-                                            }
-                                        }
-                                        return (
-                                            <div className="table-cell" key={col.key} style={col.minWidth ? { minWidth: col.minWidth } : {}}>
-                                                {value ?? <>&#8211;</>}
-                                            </div>
-                                        )
-                                    })
-                                }
-                            </div>
-                        )
-                    })
-                    : isLoading
-                        ? Array.from({ length: 3 }, (x, i) => (
-                            <div className="table-row loading" key={i}>
-                                {
-                                    columns.map(col => (
-                                        <div className="table-cell" key={col.key}>
-                                            <div className="loader"></div>
-                                        </div>
-                                    ))
-                                }
-                            </div>
-                        ))
-                        : <div className="table-row">
-                            <div className="table-cell">
-                                {emptyMessage}
-                            </div>
-                        </div>
-            }
         </div>
     )
 }

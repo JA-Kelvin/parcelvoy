@@ -20,7 +20,7 @@ header, .sidebar .sidebar-header {
     display: flex;
     position: relative;
     border-bottom: 0px solid var(--color-grey);
-    padding: 15px 40px;
+    padding: 15px 20px;
     gap: 10px;
     align-items: center;
 }
@@ -152,39 +152,71 @@ nav a .nav-icon {
     grid-area: caret;
 }
 
+/* Overlay for mobile when sidebar is open */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease-in-out;
+    z-index: 9;
+}
+
+.sidebar-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 @media only screen and (max-width: 600px) {
     header {
-        background: var(--color-background);
         display: flex;
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         z-index: 10;
-        gap: 15px;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    header .logo svg {
+        height: 26px;
+        fill: var(--color-white);
+    }
+
+    header .menu-toggle.ui-button {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.35);
+        color: var(--color-white);
+        border-radius: 999px;
+        backdrop-filter: blur(4px);
     }
 
     .sidebar {
-        width: 90%;
-        top: 61px;
-        margin-left: -90%;
-        transition: margin-left 100ms ease-in-out;
+        width: 100%;
+        top: 56px;
+        margin-left: 0;
+        transform: translateX(-100%);
+        transition: transform 180ms ease-in-out;
+        border-top-right-radius: 16px;
+        border-bottom-right-radius: 16px;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+        z-index: 11;
     }
 
     main {
         padding-top: 61px;
         background-color: var(--color-background);
         margin-left: 0;
-        transition: margin-left 100ms ease-in-out;
     }
 
     .sidebar.is-open {
-        margin-left: 0%;
+        transform: translateX(0%);
     }
 
-    main.is-open {
-        margin-left: 90%;
-    }
+    /* main stays put; overlay handles focus/interaction */
 
     .sidebar .sidebar-header {
         display: none;

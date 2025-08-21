@@ -2,7 +2,7 @@ import './Sidebar.css'
 import NavLink from './NavLink'
 import { ReactComponent as Logo } from '../assets/logo.svg'
 import { Link, NavLinkProps, useNavigate } from 'react-router'
-import { PropsWithChildren, ReactNode, useContext, useState } from 'react'
+import { PropsWithChildren, ReactNode, useContext, useEffect, useState } from 'react'
 import Button from './Button'
 import { ChevronDownIcon, MenuIcon } from './icons'
 import clsx from 'clsx'
@@ -36,14 +36,46 @@ export default function Sidebar({ children, links, prepend, append }: PropsWithC
     const [isOpen, setIsOpen] = useState(false)
     const [isLanguageOpen, setIsLanguageOpen] = useState(false)
 
+    // Prevent body scroll and support ESC to close when the sidebar is open (mobile)
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [isOpen])
+
+    useEffect(() => {
+        if (!isOpen) return
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsOpen(false)
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [isOpen])
+
+    // Close drawer if viewport grows beyond mobile breakpoint
+    useEffect(() => {
+        const onResize = () => {
+            if (window.innerWidth > 600 && isOpen) setIsOpen(false)
+        }
+        window.addEventListener('resize', onResize)
+        return () => window.removeEventListener('resize', onResize)
+    }, [isOpen])
+
     return (
         <>
             <header className="header">
-                <Button onClick={() => setIsOpen(!isOpen)} icon={<MenuIcon />} aria-label="Menu" variant="secondary" size="small"/>
                 <Link className="logo" to="/">
                     <Logo />
                 </Link>
+                <Button className="menu-toggle" onClick={() => setIsOpen(!isOpen)} icon={<MenuIcon />} aria-label="Menu" variant="secondary" size="small"/>
             </header>
+            {/* Mobile overlay to close sidebar when clicking outside */}
+            <div className={clsx('sidebar-overlay', { 'is-open': isOpen })} onClick={() => setIsOpen(false)} />
             <section className={clsx('sidebar', { 'is-open': isOpen })}>
                 <div className="sidebar-header">
                     <Link className="logo" to="/">

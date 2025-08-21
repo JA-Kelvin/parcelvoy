@@ -1,18 +1,51 @@
+.ui-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+    display: block;
+    border-radius: 1.5rem;
+    border: 1px solid var(--color-grey);
+}
+
+.ui-table-wrapper::-webkit-scrollbar { height: 8px; }
+.ui-table-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--color-grey-hard);
+    border-radius: 8px;
+}
+.ui-table-wrapper::-webkit-scrollbar-track { background: transparent; }
+
 .ui-table {
     width: 100%;
     display: table;
-    border-radius: 1.5rem;
-    border: 1px solid var(--color-grey);
     overflow: hidden;
-    box-shadow: var(--table-shadow);
+}
+
+@media (max-width: 600px) {
+    .ui-table {
+        width: max-content;
+        min-width: 100%;
+    }
+    .ui-table .table-cell,
+    .ui-table .table-header-cell { padding-left: 10px; padding-right: 10px; }
 }
 
 .ui-table .table-row, .ui-table .table-header {
     display: table-row;
 }
 
-.ui-table .table-header {
-    background: var(--color-background-soft);
+.ui-table .table-header:first-child {
+    background-color: var(--color-grey-soft);
+}
+
+.ui-table .table-header:first-child .table-header-cell:first-child {
+    border-radius: 14px 0px 0px 0px;
+    background-color: var(--color-grey-soft);
+}
+
+.ui-table .table-header:first-child .table-header-cell:last-child {
+    border-radius: 0px 14px 0px 0px;
+    background-color: var(--color-grey-soft);
 }
 
 .ui-table .table-row:hover .table-cell {
