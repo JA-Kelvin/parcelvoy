@@ -1,5 +1,5 @@
 // Enhanced Properties Panel for Parcelvoy MJML Editor
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { EditorElement } from '../types'
 import './PropertiesPanel.css'
 import ImageGalleryModal, { ImageUpload } from '../../../ImageGalleryModal'
@@ -52,6 +52,24 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         closeImagePicker()
     }
 
+    // Normalize existing mj-image width on selection (strip px, drop %) to avoid confusing HTML output
+    useEffect(() => {
+        if (!selectedElement || selectedElement.tagName !== 'mj-image') return
+        const w = selectedElement.attributes?.width
+        if (w == null) return
+        const raw = String(w).trim()
+        if (/^\d+\s*%$/.test(raw)) {
+            const attrs = { ...selectedElement.attributes }
+            delete attrs.width
+            onElementUpdate(selectedElement.id, attrs)
+        } else if (/^\d+\s*px$/i.test(raw)) {
+            const px = raw.match(/\d+/)?.[0]
+            if (px && px !== w) {
+                onElementUpdate(selectedElement.id, { ...selectedElement.attributes, width: px })
+            }
+        }
+    }, [selectedElement?.id])
+
     if (isCollapsed) {
         return (
             <div className="properties-panel collapsed">
@@ -91,6 +109,27 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
     const handleAttributeChange = (key: string, value: string) => {
         const updatedAttributes = { ...selectedElement.attributes }
+
+        // mj-image: width must be pixels (HTML width attr is numeric). Ignore % and strip px.
+        if (selectedElement.tagName === 'mj-image' && key === 'width') {
+            const raw = (value || '').trim()
+            if (raw === '') {
+                updatedAttributes[key] = undefined
+            } else if (/^\d+\s*%$/.test(raw)) {
+                // Percent not supported by mj-image width, treat as unset for fluid behavior
+                updatedAttributes[key] = undefined
+            } else {
+                const m = raw.match(/^\s*(\d+)\s*(px)?\s*$/i)
+                if (m) {
+                    updatedAttributes[key] = m[1] // store numeric pixels
+                } else {
+                    updatedAttributes[key] = undefined
+                }
+            }
+            onElementUpdate(selectedElement.id, updatedAttributes)
+            return
+        }
+
         if (value === '') {
             updatedAttributes[key] = undefined
         } else {
@@ -139,8 +178,9 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     attributes: [
                         { key: 'src', label: 'Image URL', type: 'url', placeholder: 'https://example.com/image.jpg' },
                         { key: 'alt', label: 'Alt Text', type: 'text', placeholder: 'Image description' },
-                        { key: 'width', label: 'Width', type: 'text', placeholder: '100%' },
+                        { key: 'width', label: 'Width (px)', type: 'text', placeholder: '600' },
                         { key: 'height', label: 'Height', type: 'text', placeholder: 'auto' },
+                        { key: 'fluid-on-mobile', label: 'Fluid on Mobile', type: 'select', options: ['true', 'false'] },
                         { key: 'align', label: 'Alignment', type: 'select', options: ['left', 'center', 'right'] },
                         { key: 'href', label: 'Link URL', type: 'url', placeholder: 'https://example.com' },
                         { key: 'target', label: 'Link Target', type: 'select', options: ['_self', '_blank'] },
@@ -444,15 +484,26 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 )
 
             default:
-                return (
-                    <input
-                        type="text"
-                        value={value}
-                        onChange={(e) => handleAttributeChange(attr.key, e.target.value)}
-                        placeholder={attr.placeholder}
-                        className="text-input"
-                    />
-                )
+                {
+                    const inputEl = (
+                        <input
+                            type="text"
+                            value={value}
+                            onChange={(e) => handleAttributeChange(attr.key, e.target.value)}
+                            placeholder={attr.placeholder}
+                            className="text-input"
+                        />
+                    )
+                    if (selectedElement.tagName === 'mj-image' && attr.key === 'width') {
+                        return (
+                            <div className="input-group">
+                                {inputEl}
+                                <div className="help-text">Pixels only (e.g., 600). Leave empty for fluid width; for full-bleed use section “Full Width”.</div>
+                            </div>
+                        )
+                    }
+                    return inputEl
+                }
         }
     }
 
