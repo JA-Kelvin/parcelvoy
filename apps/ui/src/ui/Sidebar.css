@@ -171,7 +171,7 @@ nav a .nav-icon {
 @media only screen and (max-width: 600px) {
     header {
         display: flex;
-        position: fixed;
+        position: relative;
         top: 0;
         left: 0;
         width: 100%;
@@ -179,6 +179,7 @@ nav a .nav-icon {
         gap: 10px;
         align-items: center;
         justify-content: space-between;
+        background: var(--color-background-gradient-header);
     }
 
     header .logo svg {
@@ -208,7 +209,7 @@ nav a .nav-icon {
     }
 
     main {
-        padding-top: 61px;
+        padding-top: 0;
         background-color: var(--color-background);
         margin-left: 0;
     }

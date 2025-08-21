@@ -16,6 +16,7 @@
     --color-background-soft: #F9FAFB;
     --color-on-background: var(--color-black);
     --color-background-gradient-soft: rgba(253, 138, 77, 0.8);
+    --color-background-gradient-header: #fdade6;
     --color-background-gradient: linear-gradient(0deg,#fd762d 0%,#fdade6 100%);
     --color-sidebar-background-gradient: linear-gradient(0deg,#fd762d 0%,#fdade6 100%);
 
@@ -73,6 +74,7 @@
     --color-background: var(--color-black);
     --color-background-soft: #1a1f2b;
     --color-background-gradient-soft: rgba(255, 255, 255, 0.233);
+    --color-background-gradient-header: #fdade607;
     --color-background-gradient: linear-gradient(0deg,#fd762d05 60%,#fdade607 100%);
     --color-sidebar-background-gradient: linear-gradient(0deg,#121721 60%,#121721 100%);
 
