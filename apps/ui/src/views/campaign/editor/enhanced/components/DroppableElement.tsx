@@ -228,8 +228,11 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         const { attributes } = element
 
         // Colors
-        if (attributes['background-color']) baseStyle.backgroundColor = attributes['background-color']
-        if (attributes.color) baseStyle.color = attributes.color
+        // Important: do NOT apply mj-button colors to the container, they belong to the inner button only.
+        if (element.tagName !== 'mj-button') {
+            if (attributes['background-color']) baseStyle.backgroundColor = attributes['background-color']
+            if (attributes.color) baseStyle.color = attributes.color
+        }
 
         // Typography
         if (attributes['font-family']) baseStyle.fontFamily = attributes['font-family']
@@ -385,7 +388,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         />
                     )
 
-            case 'mj-button':
+            case 'mj-button': {
+                // Respect alignment via container text-align (already handled in getElementStyle)
+                // Keep the actual button inline-block so it doesn't stretch full width.
+                // Support optional width attribute.
+                const widthAttr = attributes.width as string | undefined
+                const btnWidth = widthAttr
+                    ? (/[%px]$/i.test(widthAttr) ? widthAttr : `${parseInt(String(widthAttr), 10)}px`)
+                    : undefined
+
                 return isEditing
                     ? (
                         <ContentEditor
@@ -407,14 +418,14 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                 fontSize: attributes['font-size'] || '14px',
                                 fontFamily: attributes['font-family'],
                                 textDecoration: 'none',
-                                display: attributes.align ? 'block' : 'inline-block',
-                                marginLeft: attributes.align === 'right' ? 'auto' : undefined,
-                                marginRight: attributes.align === 'left' ? undefined : attributes.align ? 'auto' : undefined,
+                                display: 'inline-block',
+                                width: btnWidth,
                             }}
                         >
                             {content ?? 'Click me'}
                         </button>
                     )
+            }
 
             case 'mj-image':
                 return (
