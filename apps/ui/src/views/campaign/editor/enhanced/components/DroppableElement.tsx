@@ -82,6 +82,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         'mj-accordion-text',
     ])
 
+    // Safely wrap URLs for use in CSS background-image to handle spaces, quotes, etc.
+    const cssUrl = (u: any): string | undefined => {
+        if (u == null) return undefined
+        const s = String(u)
+        if (/^\s*url\(/i.test(s)) return s
+        const escaped = s.replace(/["\\]/g, '\\$&')
+        return `url("${escaped}")`
+    }
+
     // Drag functionality for moving elements
     const [{ isDragging }, drag] = useDrag({
         type: 'element',
@@ -260,7 +269,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         switch (element.tagName) {
             case 'mj-section': {
                 if (attributes['background-url']) {
-                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    const bg = cssUrl(attributes['background-url'])
+                    if (bg) baseStyle.backgroundImage = bg
                     baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
                     baseStyle.backgroundSize = attributes['background-size'] || 'cover'
                     baseStyle.backgroundPosition = attributes['background-position'] || 'center'
@@ -270,7 +280,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             }
             case 'enhanced-section': {
                 if (attributes['background-url']) {
-                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    const bg = cssUrl(attributes['background-url'])
+                    if (bg) baseStyle.backgroundImage = bg
                     baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
                     baseStyle.backgroundSize = attributes['background-size'] || 'cover'
                     baseStyle.backgroundPosition = attributes['background-position'] || 'center'
@@ -295,7 +306,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             }
             case 'mj-hero': {
                 if (attributes['background-url']) {
-                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    const bg = cssUrl(attributes['background-url'])
+                    if (bg) baseStyle.backgroundImage = bg
                 }
                 // Allow overriding background-* via attributes, fallback to sensible defaults
                 baseStyle.backgroundRepeat = attributes['background-repeat'] || (attributes['background-url'] ? 'no-repeat' : undefined)
@@ -328,7 +340,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             case 'mj-wrapper': {
                 baseStyle.width = '100%'
                 if (attributes['background-url']) {
-                    baseStyle.backgroundImage = `url(${attributes['background-url']})`
+                    const bg = cssUrl(attributes['background-url'])
+                    if (bg) baseStyle.backgroundImage = bg
                     baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
                     baseStyle.backgroundSize = attributes['background-size'] || 'cover'
                     baseStyle.backgroundPosition = attributes['background-position'] || 'center'
