@@ -53,11 +53,11 @@
 
 .element-mj-button {
     padding: 8px;
-    text-align: center;
+    text-align: inherit;
 }
 
 .element-mj-image {
-    text-align: center;
+    text-align: inherit;
     padding: 8px;
 }
 

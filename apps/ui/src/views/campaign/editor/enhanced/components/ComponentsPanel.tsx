@@ -152,7 +152,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
             mode: 'fluid-height',
             'background-color': '#f0f0f0',
             padding: '40px 0',
-            'background-url': 'https://via.placeholder.com/1200x400?text=Hero',
+            'background-url': 'https://placehold.co/1200x400?text=Hero',
             height: '300px',
             'background-width': '600px',
             'background-height': '300px',
@@ -179,7 +179,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'media',
         icon: '🖼️',
         defaultAttributes: {
-            src: 'https://via.placeholder.com/300x200',
+            src: 'https://placehold.co/300x200',
             alt: 'Carousel image',
         },
         isVoid: true,

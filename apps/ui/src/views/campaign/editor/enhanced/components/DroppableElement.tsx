@@ -231,6 +231,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
         // Alignment
         if (attributes['text-align']) baseStyle.textAlign = attributes['text-align']
+        // MJML often uses `align` attribute (e.g., mj-text align="center"). Mirror it to CSS text-align.
+        if (!baseStyle.textAlign && attributes.align) baseStyle.textAlign = attributes.align
 
         // Spacing - padding
         const hasSidePadding = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'].some((k) => attributes[k] !== undefined)
@@ -365,6 +367,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     : (
                         <div
                             className="mj-text-content"
+                            style={{ textAlign: attributes['text-align'] || attributes.align }}
                             dangerouslySetInnerHTML={{ __html: content ?? 'Your text here' }}
                         />
                     )
@@ -403,12 +406,18 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             case 'mj-image':
                 return (
                     <img
-                        src={attributes.src || 'https://via.placeholder.com/600x200?text=Image'}
+                        src={attributes.src || 'https://placehold.co/600x200?text=Image'}
                         alt={attributes.alt || 'Image'}
                         style={{
-                            width: attributes.width || '100%',
+                            width: attributes.width
+                                ? (attributes.width.toLowerCase() === 'auto'
+                                    ? 'auto'
+                                    : attributes.width.endsWith('%')
+                                        ? attributes.width
+                                        : `${parseInt(attributes.width)}px`)
+                                : '100%',
                             height: 'auto',
-                            display: 'block',
+                            display: 'inline-block',
                             borderRadius: attributes['border-radius'],
                             ...(attributes.align === 'center'
                                 ? { marginLeft: 'auto', marginRight: 'auto' }
@@ -457,7 +466,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
             case 'mj-column':
                 return (
-                    <div className="mj-column-content">
+                    <div className="mj-column-content" style={{ textAlign: attributes['text-align'] || attributes.align }}>
                         {children}
                     </div>
                 )
@@ -518,7 +527,21 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
             case 'mj-social':
                 return (
-                    <div className="mj-social-content">
+                    <div
+                        className="mj-social-content"
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: attributes['icon-padding'] || '8px',
+                            width: '100%',
+                            justifyContent:
+                                (attributes.align === 'center')
+                                    ? 'center'
+                                    : (attributes.align === 'right')
+                                        ? 'flex-end'
+                                        : 'flex-start',
+                        }}
+                    >
                         {children}
                     </div>
                 )

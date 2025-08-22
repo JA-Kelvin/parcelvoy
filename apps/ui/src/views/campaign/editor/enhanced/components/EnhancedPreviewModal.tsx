@@ -110,6 +110,37 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
         }
     }
 
+    // Ensure HTML in iframe is horizontally centered inside the preview frame (preview-only override)
+    const getSrcDocWithCentering = (rawHtml: string): string => {
+        if (!rawHtml) return ''
+
+        const centerStyle = '\n<style>\n'
+            + '  /* Preview-only: normalize and mirror canvas wrapper (.mjml-body-wrapper) */\n'
+            + '  html, body { height: 100%; }\n'
+            + '  *, *::before, *::after { box-sizing: border-box; }\n'
+            + '  body { margin: 0; background: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #111; }\n'
+            + '  /* Center common top-level wrappers output by MJML */\n'
+            + '  body > div { margin-left: auto !important; margin-right: auto !important; max-width: 660px !important; padding: 20px; background: #ffffff; border-radius: 0; }\n'
+            + '  body > table { margin-left: auto !important; margin-right: auto !important; }\n'
+            + '  body > center > table { margin-left: auto !important; margin-right: auto !important; }\n'
+            + '  /* Fallback: also center the first child regardless of tag */\n'
+            + '  body > *:first-child { margin-left: auto !important; margin-right: auto !important; }\n'
+            + '</style>\n'
+
+        // If document has a <head>, inject styles before </head>
+        if (/(<\/head>)/i.test(rawHtml)) {
+            return rawHtml.replace(/<\/head>/i, centerStyle + '</head>')
+        }
+
+        // If there's a <body>, inject styles right after <body ...>
+        if (/(<body[^>]*>)/i.test(rawHtml)) {
+            return rawHtml.replace(/<body[^>]*>/i, (m) => m + centerStyle)
+        }
+
+        // Fallback: wrap fragment as a full doc
+        return '<!doctype html><html><head>' + centerStyle + '</head><body>' + rawHtml + '</body></html>'
+    }
+
     const copyToClipboard = async () => {
         let contentToCopy = ''
 
@@ -255,7 +286,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                                         <div className={`preview-viewport ${getViewportClass()}`}>
                                             <div className="preview-frame">
                                                 <iframe
-                                                    srcDoc={htmlContent}
+                                                    srcDoc={getSrcDocWithCentering(htmlContent)}
                                                     title="Email Preview"
                                                     className="preview-iframe"
                                                     sandbox="allow-same-origin"
@@ -264,7 +295,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
 
                                             <div className="preview-info">
                                                 <div className="viewport-info">
-                                                    {viewMode === 'desktop' && '🖥️ Desktop (600px+)'}
+                                                    {viewMode === 'desktop' && '🖥️ Desktop (660px)'}
                                                     {viewMode === 'tablet' && '📱 Tablet (768px)'}
                                                     {viewMode === 'mobile' && '📱 Mobile (375px)'}
                                                 </div>

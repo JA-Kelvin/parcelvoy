@@ -276,7 +276,7 @@
 }
 
 .preview-desktop .preview-frame {
-    width: 600px;
+    width: 660px;
     height: 800px;
 }
 
@@ -574,7 +574,7 @@
     
     .preview-desktop .preview-frame {
         width: 100%;
-        max-width: 600px;
+        max-width: 660px;
     }
     
     .preview-tablet .preview-frame {

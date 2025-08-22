@@ -70,7 +70,7 @@ export const CUSTOM_TEMPLATES: TemplateBlock[] = [
                                 type: 'mj-image',
                                 tagName: 'mj-image',
                                 attributes: {
-                                    src: 'https://via.placeholder.com/400x240?text=Feature',
+                                    src: 'https://placehold.co/400x240?text=Feature',
                                     width: '400px',
                                     alt: 'Feature Image',
                                 },
@@ -280,7 +280,7 @@ export const CUSTOM_TEMPLATES: TemplateBlock[] = [
                                 type: 'mj-image',
                                 tagName: 'mj-image',
                                 attributes: {
-                                    src: 'https://via.placeholder.com/160x40?text=Logo',
+                                    src: 'https://placehold.co/160x40?text=Logo',
                                     width: '160px',
                                     align: 'left',
                                     alt: 'Logo',
