@@ -400,13 +400,9 @@ const moveElementRecursive = (
     }
 
     // Use newIndex as intended position relative to pre-removal order,
-    // then adjust when moving within the same parent and moving down.
-    let targetIndex = newIndex ?? 0
-    if (removal.originalParentId === newParentId && typeof removal.originalIndex === 'number') {
-        if (removal.originalIndex < targetIndex) {
-            targetIndex = Math.max(0, targetIndex - 1)
-        }
-    }
+    // then insert at that index directly after removal. Do not decrement when moving
+    // within the same parent; the UI already specifies the final desired index.
+    const targetIndex = newIndex ?? 0
 
     // Ensure parent exists; if not, revert to original parent
     const parentExists = !!targetParent

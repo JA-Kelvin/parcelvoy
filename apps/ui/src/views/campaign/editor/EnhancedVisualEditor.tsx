@@ -48,19 +48,23 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
     }
 
     // Convert Enhanced Template back to Parcelvoy Template
+    // IMPORTANT: Merge into existing template.data so details like from name/email/subject are preserved.
     const convertToParcelvoyTemplate = (enhancedTemplate: EnhancedTemplate): Template => {
+        const mergedData = {
+            ...template.data, // keep existing non-editor fields (from, subject, preheader, reply_to, cc, bcc, text, etc.)
+            editor: 'enhanced-visual',
+            mjml: enhancedTemplate.data.mjml,
+            html: enhancedTemplate.data.html,
+            ...(enhancedTemplate.data.elements && { elements: enhancedTemplate.data.elements }),
+            customTemplates: Array.isArray(enhancedTemplate.data.customTemplates)
+                ? enhancedTemplate.data.customTemplates
+                : (Array.isArray(template.data?.customTemplates) ? template.data.customTemplates : []),
+            metadata: enhancedTemplate.data.metadata ?? template.data?.metadata,
+        }
+
         return {
-            ...template, // Preserve original template metadata
-            data: {
-                editor: 'enhanced-visual',
-                mjml: enhancedTemplate.data.mjml,
-                html: enhancedTemplate.data.html,
-                ...(enhancedTemplate.data.elements && { elements: enhancedTemplate.data.elements }),
-                customTemplates: Array.isArray(enhancedTemplate.data.customTemplates)
-                    ? enhancedTemplate.data.customTemplates
-                    : [],
-                ...(enhancedTemplate.data.metadata && { metadata: enhancedTemplate.data.metadata }),
-            },
+            ...template, // Preserve template meta (id, type, locale, etc.)
+            data: mergedData,
         }
     }
 
@@ -86,20 +90,30 @@ const EnhancedVisualEditor: React.FC<EnhancedVisualEditorProps> = ({
                 },
             )
 
-            // Some backends may not persist or echo customTemplates/metadata yet.
-            // Merge them back from the local payload if missing in the server response
+            // Some backends may not persist or echo certain fields.
+            // Merge them back from the local payload if missing in the server response.
             const serverHasCustoms = Array.isArray(updatedTemplate?.data?.customTemplates)
+            const mergedData = {
+                ...updatedTemplate.data,
+                // Email details fallbacks
+                from: updatedTemplate.data?.from ?? parcelvoyTemplate.data?.from,
+                subject: updatedTemplate.data?.subject ?? parcelvoyTemplate.data?.subject,
+                preheader: updatedTemplate.data?.preheader ?? parcelvoyTemplate.data?.preheader,
+                reply_to: updatedTemplate.data?.reply_to ?? parcelvoyTemplate.data?.reply_to,
+                cc: updatedTemplate.data?.cc ?? parcelvoyTemplate.data?.cc,
+                bcc: updatedTemplate.data?.bcc ?? parcelvoyTemplate.data?.bcc,
+                // Editor extensions and metadata
+                customTemplates: serverHasCustoms
+                    ? updatedTemplate.data.customTemplates
+                    : (Array.isArray(parcelvoyTemplate.data.customTemplates)
+                        ? parcelvoyTemplate.data.customTemplates
+                        : []),
+                metadata: updatedTemplate.data?.metadata ?? parcelvoyTemplate.data?.metadata,
+            }
+
             const finalTemplate = {
                 ...updatedTemplate,
-                data: {
-                    ...updatedTemplate.data,
-                    customTemplates: serverHasCustoms
-                        ? updatedTemplate.data.customTemplates
-                        : (Array.isArray(parcelvoyTemplate.data.customTemplates)
-                            ? parcelvoyTemplate.data.customTemplates
-                            : []),
-                    metadata: updatedTemplate.data?.metadata ?? parcelvoyTemplate.data.metadata,
-                },
+                data: mergedData,
             }
 
             if (!serverHasCustoms) {

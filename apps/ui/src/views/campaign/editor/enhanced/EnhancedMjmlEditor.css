@@ -364,6 +364,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* allow nested scroll areas to shrink properly */
 }
 
 /* Canvas adjustments for expanded layout */

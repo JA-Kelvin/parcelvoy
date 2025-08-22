@@ -7,6 +7,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0; /* allow inner scroll area to size correctly */
 }
 
 .components-panel.collapsed {
@@ -52,7 +53,8 @@
 .panel-content {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 0;
+    padding: 16px 0 24px; /* extra bottom space so last item is fully visible */
+    min-height: 0; /* nested flex fix */
 }
 
 .component-category {

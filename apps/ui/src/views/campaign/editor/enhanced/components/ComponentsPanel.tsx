@@ -401,29 +401,6 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
             </div>
 
             <div className="panel-content">
-                {categories.map(category => {
-                    const components = getComponentsByCategory(category)
-                    if (components.length === 0) return null
-
-                    return (
-                        <div key={category} className="component-category">
-                            <h4 className="category-title">
-                                {category.charAt(0).toUpperCase() + category.slice(1)}
-                            </h4>
-
-                            <div className="component-grid">
-                                {components.map(component => (
-                                    <DraggableComponent
-                                        key={component.type}
-                                        component={component}
-                                        onComponentDrag={safeOnComponentDrag}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )
-                })}
-
                 {/* Custom Templates Section (single entry to open modal) */}
                 {CUSTOM_TEMPLATES.length > 0 && (
                     <div className="component-category">
@@ -448,6 +425,29 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                         </div>
                     </div>
                 )}
+
+                {categories.map(category => {
+                    const components = getComponentsByCategory(category)
+                    if (components.length === 0) return null
+
+                    return (
+                        <div key={category} className="component-category">
+                            <h4 className="category-title">
+                                {category.charAt(0).toUpperCase() + category.slice(1)}
+                            </h4>
+
+                            <div className="component-grid">
+                                {components.map(component => (
+                                    <DraggableComponent
+                                        key={component.type}
+                                        component={component}
+                                        onComponentDrag={safeOnComponentDrag}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
 
             <div className="panel-footer">

@@ -4,6 +4,7 @@
   flex-direction: column;
   height: 100%;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  min-height: 0; /* allow inner scroll area to size correctly */
 }
 
 .layers-header {
@@ -13,9 +14,10 @@
 }
 
 .layers-tree {
-  padding: 6px 8px;
+  padding: 6px 8px 24px; /* extra bottom space so last item is fully visible */
   overflow: auto;
-  height: 87%;
+  flex: 1; /* fill available space instead of fixed % height */
+  min-height: 0; /* nested flex fix */
 }
 
 .layer-item {

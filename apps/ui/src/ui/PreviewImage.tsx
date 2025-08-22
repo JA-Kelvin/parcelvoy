@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import './PreviewImage.css'
 
 interface PreviewImageProps {
@@ -16,29 +16,42 @@ export default function PreviewImage({
     iframeWidth = 600,
     children,
 }: PreviewImageProps) {
-    const ref = useRef<HTMLIFrameElement>(null)
     const iframeHeight = height * (iframeWidth / width)
     const [loaded, setLoaded] = useState(false)
+    const [html, setHtml] = useState<string>('')
 
-    const handleLoad = (event: React.SyntheticEvent<HTMLIFrameElement, Event> | undefined) => {
-        const state = (event?.target as any).contentWindow?.document.body.innerHTML.length > 0
-        setLoaded(state)
-    }
+    useEffect(() => {
+        let active = true
+        const fetchHtml = async () => {
+            try {
+                const res = await fetch(url, { credentials: 'include' })
+                const text = await res.text()
+                if (active) {
+                    setHtml(text)
+                    if (text && text.trim().length > 0) setLoaded(true)
+                }
+            } catch (e) {
+                if (active) setHtml('')
+            }
+        }
+        void fetchHtml()
+        return () => { active = false }
+    }, [url])
 
     return (
         <section className="preview-image" style={{ width, height }}>
             <iframe
-                ref={ref}
                 frameBorder="0"
                 scrolling="no"
-                src={url}
+                srcDoc={html}
+                sandbox="allow-same-origin"
                 width={iframeWidth}
                 height={iframeHeight}
                 style={{
                     transform: `scale(${width / iframeWidth})`,
                     display: loaded ? 'block' : 'none',
                 }}
-                onLoad={handleLoad} />
+                onLoad={() => setLoaded((html ?? '').trim().length > 0)} />
             {!loaded && children }
         </section>
     )
