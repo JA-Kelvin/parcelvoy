@@ -196,7 +196,11 @@ export const createRouter = ({
                 children: [
                     {
                         index: true,
-                        loader: async () => {
+                        loader: async ({ params: { projectId = '' } }) => {
+                            const project = await api.projects.get(projectId)
+                            if (project.role === 'support') {
+                                return redirect(`/projects/${project.id}/users`)
+                            }
                             return redirect('campaigns')
                         },
                     },
@@ -233,7 +237,7 @@ export const createRouter = ({
                         path: 'campaigns/:entityId/editor',
                         apiPath: api.campaigns,
                         context: CampaignContext,
-                        element: (<EmailEditor />),
+                        element: <EmailEditor />,
                     }),
                     createStatefulRoute({
                         path: 'journeys',
