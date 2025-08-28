@@ -222,9 +222,19 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
     // Map editor-only/custom tags to valid MJML tags
     const actualTagName = tagName === 'enhanced-section' ? 'mj-section' : tagName
 
+    // Helper: escape attribute values for valid XML
+    const escapeAttributeValue = (v: any): string => {
+        const s = String(v ?? '')
+        return s
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+    }
+
     // Build attributes string
     const attributesString = Object.entries(attributes || {})
-        .map(([key, value]) => `${key}="${value}"`)
+        .map(([key, value]) => `${key}="${escapeAttributeValue(value)}"`)
         .join(' ')
 
     const attributesPart = attributesString ? ` ${attributesString}` : ''
@@ -237,11 +247,12 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
 
     // Handle elements with content only (no children)
     if (content && (!children || children.length === 0)) {
+        const safeContent = sanitizeStrayAmpersands(String(content))
         // For text elements, preserve content formatting
         if (actualTagName === 'mj-text' || actualTagName === 'mj-button') {
-            return `${indent}<${actualTagName}${attributesPart}>\n${childIndent}${content}\n${indent}</${actualTagName}>`
+            return `${indent}<${actualTagName}${attributesPart}>\n${childIndent}${safeContent}\n${indent}</${actualTagName}>`
         } else {
-            return `${indent}<${actualTagName}${attributesPart}>${content}</${actualTagName}>`
+            return `${indent}<${actualTagName}${attributesPart}>${safeContent}</${actualTagName}>`
         }
     }
 
