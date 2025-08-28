@@ -202,7 +202,7 @@ export const failSend = async ({ campaign, user, context }: MessageTriggerHydrat
 }
 
 export const finalizeSend = async (data: MessageTriggerHydrated<TemplateType>, result: any) => {
-    const { campaign, user, context } = data
+    const { campaign, user, template, context } = data
 
     // Update send record
     await updateSendState({
@@ -214,7 +214,12 @@ export const finalizeSend = async (data: MessageTriggerHydrated<TemplateType>, r
     // Create an event on the user about the send
     await createEvent(user, {
         name: campaign.eventName('sent'),
-        data: { ...context, result },
+        data: {
+            ...context,
+            variant_id: template.id,
+            variant_name: template.name,
+            result,
+        },
     }, true, ({ result, ...data }) => data)
 
     // If this send is part of a journey, notify the journey
