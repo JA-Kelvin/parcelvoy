@@ -6,6 +6,47 @@ export const generateId = (): string => {
     return `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
+// --- Internal helpers for robust parsing ---
+// 1) Wrap content in <mjml><mj-body>...</mj-body></mjml> when a fragment is provided
+const wrapIfFragment = (input: string): string => {
+    const s = String(input || '').trim()
+    if (!s) return '<mjml>\n  <mj-body></mj-body>\n</mjml>'
+    // If already a full document, return as-is
+    if (/<\s*mjml[\s>]/i.test(s)) return s
+    // If it contains any mj-* tags, treat as fragment and wrap
+    if (/<\s*mj-[a-z-]+[\s>]/i.test(s)) {
+        return `<mjml>\n  <mj-body>\n${s}\n  </mj-body>\n</mjml>`
+    }
+    // Otherwise, leave as-is (could be HTML; upstream may handle separately)
+    return s
+}
+
+// 2) Sanitize stray ampersands so XML parser won't choke on href/src query strings
+// Converts & to &amp; unless it's already an entity like &amp; or &#123; or &name;
+const sanitizeStrayAmpersands = (input: string): string => {
+    const s = String(input || '')
+    // Replace any & not followed by an entity pattern with &amp;
+    return s.replace(/&(?!#\d+;|#x[0-9a-fA-F]+;|[a-zA-Z][a-zA-Z0-9]+;)/g, '&amp;')
+}
+
+// 3) Try to parse as XML and detect parsererror consistently
+const parseXmlDoc = (content: string): Document | null => {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(content, 'text/xml')
+    // Some environments expose <parsererror> as the documentElement, others embed it
+    const rootName = doc.documentElement?.nodeName?.toLowerCase()
+    if (rootName === 'parsererror' || doc.getElementsByTagName('parsererror').length > 0) {
+        return null
+    }
+    return doc
+}
+
+// 4) Fallback: parse as HTML (lenient) to recover from minor XML issues
+const parseHtmlDoc = (content: string): Document => {
+    const parser = new DOMParser()
+    return parser.parseFromString(content, 'text/html')
+}
+
 // Public helper to serialize a single element subtree (without wrapping mjml/mj-body)
 export const serializeElementToMjml = (element: EditorElement): string => {
     return elementToMjmlString(element, 0)
@@ -14,17 +55,36 @@ export const serializeElementToMjml = (element: EditorElement): string => {
 // Parse MJML string to editor elements
 export const parseMJMLString = (mjmlString: string): EditorElement[] => {
     try {
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(mjmlString, 'text/xml')
+        const original = String(mjmlString || '')
+        // Step 1: ensure fragments are wrapped
+        const wrapped = wrapIfFragment(original)
+        // Step 2: sanitize stray ampersands to satisfy XML parser
+        const sanitized = sanitizeStrayAmpersands(wrapped)
 
-        if (doc.documentElement.nodeName === 'parsererror') {
-            throw new Error('Invalid MJML structure')
+        // First attempt: strict XML parse
+        let doc = parseXmlDoc(sanitized)
+
+        // If XML failed, try HTML fallback (lenient)
+        if (!doc) {
+            const htmlDoc = parseHtmlDoc(sanitized)
+            const mjmlEl = htmlDoc.querySelector('mjml')
+            if (!mjmlEl) {
+                // As a last resort, wrap the entire HTML body content inside mjml/mj-body and retry XML parse
+                const bodyHtml = htmlDoc.body ? htmlDoc.body.innerHTML : sanitized
+                const rewrapped = wrapIfFragment(bodyHtml)
+                doc = parseXmlDoc(sanitizeStrayAmpersands(rewrapped))
+            } else {
+                // Serialize the mjml subtree back to a string and reparse as XML to normalize
+                const serializer = new XMLSerializer()
+                const mjmlHtml = serializer.serializeToString(mjmlEl)
+                doc = parseXmlDoc(mjmlHtml)
+            }
         }
+
+        if (!doc) throw new Error('Invalid MJML structure after recovery attempts')
 
         const mjmlElement = doc.querySelector('mjml')
-        if (!mjmlElement) {
-            throw new Error('No MJML root element found')
-        }
+        if (!mjmlElement) throw new Error('No MJML root element found')
 
         // Create the MJML root element with its children
         const mjmlRoot: EditorElement = {
@@ -32,7 +92,7 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
             type: 'mjml',
             tagName: 'mjml',
             attributes: {},
-            children: parseElementRecursive(mjmlElement), // Parse children of mjml element
+            children: parseElementRecursive(mjmlElement),
         }
 
         // Parse attributes of the mjml element
