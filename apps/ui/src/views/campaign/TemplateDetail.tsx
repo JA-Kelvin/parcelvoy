@@ -237,7 +237,7 @@ export default function TemplateDetail({ template }: TemplateDetailProps) {
             >
                 <FormWrapper<TemplateUpdateParams>
                     onSubmit={handleTemplateSave}
-                    defaultValues={{ data }}
+                    defaultValues={{ type, data }}
                     submitLabel="Save"
                 >
                     {form => <>
