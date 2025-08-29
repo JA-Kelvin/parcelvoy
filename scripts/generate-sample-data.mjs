@@ -17,6 +17,12 @@
   - Spread a total across members (e.g., 100 total):
     set PV_API_KEY=<YOUR_API_KEY> & node scripts/generate-sample-data.mjs --members 25 --count 100
 
+  bash
+    PV_API_KEY="<YOUR_API_KEY>" node /d/xampp/parcelvoy/scripts/generate-sample-data.mjs --members 10 --eventsPerMember 3 --baseUrl http://127.0.0.1:3000
+
+    export PV_BASE_URL="http://127.0.0.1:3000"
+    export PV_BATCH_SIZE=25
+
   Optional args/env:
     --apiKey | PV_API_KEY
     --baseUrl | PV_BASE_URL (default: http://127.0.0.1:3000)
