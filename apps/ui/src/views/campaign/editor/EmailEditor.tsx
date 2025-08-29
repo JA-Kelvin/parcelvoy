@@ -1,29 +1,29 @@
 import { SetStateAction, Suspense, lazy, useContext, useEffect, useState } from 'react'
-import { CampaignContext, LocaleContext, LocaleSelection, ProjectContext } from '../../../contexts'
+import { CampaignContext, ProjectContext, TemplateContext } from '../../../contexts'
 import './EmailEditor.css'
 import Button from '../../../ui/Button'
 import api from '../../../api'
-import { Campaign, Resource, Template } from '../../../types'
+import { Resource, Template } from '../../../types'
 import { useBlocker, useNavigate } from 'react-router'
-import { localeState } from '../CampaignDetail'
 import Modal from '../../../ui/Modal'
 import HtmlEditor from './HtmlEditor'
-import LocaleSelector from '../LocaleSelector'
+import LocaleSelector from '../locale/LocaleSelector'
 import { toast } from 'react-hot-toast/headless'
 import { useTranslation } from 'react-i18next'
-import ResourceModal from '../ResourceModal'
 import EnhancedVisualEditor from './EnhancedVisualEditor'
+import ResourceModal from './ResourceModal'
+import { TemplateContextProvider } from '../TemplateContextProvider'
 
 const VisualEditor = lazy(async () => await import('./VisualEditor'))
 
-export default function EmailEditor() {
+function EmailEditor() {
+
     const navigate = useNavigate()
     const { t } = useTranslation()
     const [project] = useContext(ProjectContext)
-    const [campaign, setCampaign] = useContext(CampaignContext)
+    const { campaign, setCampaign, currentTemplate } = useContext(TemplateContext)
     const { templates } = campaign
 
-    const [locale, setLocale] = useState<LocaleSelection>(localeState(templates ?? []))
     const [resources, setResources] = useState<Resource[]>([])
 
     const [template, setTemplate] = useState<Template | undefined>(templates[0])
@@ -36,6 +36,13 @@ export default function EmailEditor() {
             .then(resources => setResources(resources))
             .catch(() => setResources([]))
     }, [])
+
+    // Keep local template state in sync with the context-selected template (locale changes)
+    useEffect(() => {
+        setTemplate(currentTemplate)
+        // Clear unsaved flag when switching variants/locales to prevent stale state
+        setHasUnsavedChanges(false)
+    }, [currentTemplate])
 
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) => hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname,
@@ -70,84 +77,78 @@ export default function EmailEditor() {
         setTemplate(change)
     }
 
-    const campaignChange = (change: SetStateAction<Campaign>) => {
-        setCampaign(change)
-    }
+    return (
+        <Modal
+            size="fullscreen"
+            title={campaign.name}
+            open
+            onClose={async () => {
+                await navigate(`../campaigns/${campaign.id}/design?template=${currentTemplate?.id}`)
+            }}
+            actions={
+                <>
+                    <Button
+                        size="small"
+                        variant="secondary"
+                        onClick={() => setShowConfig(true)}
+                    >Config</Button>
+                    <LocaleSelector />
+                    {template && (
+                        <Button
+                            size="small"
+                            isLoading={isSaving}
+                            onClick={async () => await handleTemplateSave(template)}
+                        >{t('template_save')}</Button>
+                    )}
+                </>
+            }
+        >
+            {currentTemplate && (
+                <section className="email-editor">
+                    {currentTemplate.data.editor === 'enhanced-visual' && (
+                        <EnhancedVisualEditor
+                            key={currentTemplate.id}
+                            template={currentTemplate}
+                            setTemplate={handleTemplateChange}
+                            resources={resources}
+                        />
+                    )}
+                    {currentTemplate.data.editor === 'visual' && (
+                        <Suspense key={currentTemplate.id} fallback={null}>
+                            <VisualEditor
+                                template={currentTemplate}
+                                setTemplate={handleTemplateChange}
+                                resources={resources}
+                            />
+                        </Suspense>
+                    )}
+                    {currentTemplate.data.editor !== 'enhanced-visual' && currentTemplate.data.editor !== 'visual' && (
+                        <HtmlEditor
+                            template={currentTemplate}
+                            key={currentTemplate.id}
+                            setTemplate={handleTemplateChange}
+                        />
+                    )}
+                </section>
+            )}
 
+            <ResourceModal
+                open={showConfig}
+                onClose={() => setShowConfig(false)}
+                resources={resources}
+                setResources={setResources}
+            />
+        </Modal>
+    )
+}
+
+export default function EmailEditorWrapper() {
+    const [campaign, setCampaign] = useContext(CampaignContext)
     return (
         <>
-            <LocaleContext.Provider value={[locale, setLocale]}>
-                <Modal
-                    size="fullscreen"
-                    title={campaign.name}
-                    open
-                    onClose={async () => {
-                        await navigate(`../campaigns/${campaign.id}/design?locale=${locale.currentLocale?.key}`)
-                    }}
-                    actions={
-                        <>
-                            <Button
-                                size="small"
-                                variant="secondary"
-                                onClick={() => setShowConfig(true)}
-                            >Config</Button>
-                            <LocaleSelector campaignState={[campaign, campaignChange]} />
-                            {template && (
-                                <Button
-                                    size="small"
-                                    isLoading={isSaving}
-                                    onClick={async () => await handleTemplateSave(template)}
-                                >{t('template_save')}</Button>
-                            )}
-                        </>
-                    }
-                >
-                    <section className="email-editor">
-                        {templates.filter(template => template.locale === locale.currentLocale?.key)
-                            .map(template => {
-                                // Enhanced Visual Editor (new default)
-                                if (template.data.editor === 'enhanced-visual') {
-                                    return (
-                                        <EnhancedVisualEditor
-                                            key={template.id}
-                                            template={template}
-                                            setTemplate={handleTemplateChange}
-                                            resources={resources}
-                                        />
-                                    )
-                                }
-                                // Legacy Visual Editor (GrapesJS)
-                                if (template.data.editor === 'visual') {
-                                    return (
-                                        <Suspense key={template.id} fallback={null}>
-                                            <VisualEditor
-                                                template={template}
-                                                setTemplate={handleTemplateChange}
-                                                resources={resources}
-                                            />
-                                        </Suspense>
-                                    )
-                                }
-                                // HTML Editor
-                                return (
-                                    <HtmlEditor
-                                        template={template}
-                                        key={template.id}
-                                        setTemplate={handleTemplateChange}
-                                    />
-                                )
-                            })
-                        }
-                    </section>
-
-                    <ResourceModal
-                        open={showConfig}
-                        onClose={() => setShowConfig(false)}
-                        resources={resources}
-                        setResources={setResources}
-                    />
-                </Modal>
-            </LocaleContext.Provider>
+            <TemplateContextProvider campaign={campaign} setCampaign={setCampaign}>
+                <EmailEditor />
+            </TemplateContextProvider>
         </>
     )
 }

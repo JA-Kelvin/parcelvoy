@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { EditorElement } from '../types'
 import './PropertiesPanel.css'
-import ImageGalleryModal, { ImageUpload } from '../../../ImageGalleryModal'
+import ImageGalleryModal, { ImageUpload } from '../../../editor/ImageGalleryModal'
 import RichTextEditor from './RichTextEditor'
 
 interface PropertiesPanelProps {

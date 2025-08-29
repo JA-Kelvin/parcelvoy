@@ -9,9 +9,9 @@ import Project from '../projects/Project'
 import { EncodedJob } from '../queue'
 import { RenderContext } from '../render'
 import Template, { TemplateType } from '../render/Template'
-import { templateInUserLocale } from '../render/TemplateService'
+import { templatesInUserLocale } from '../render/TemplateService'
 import { User } from '../users/User'
-import { randomInt } from '../utilities'
+import { random, randomInt } from '../utilities'
 import { MessageTrigger } from './MessageTrigger'
 import JourneyProcessJob from '../journey/JourneyProcessJob'
 import { createEvent } from '../users/UserEventRepository'
@@ -63,7 +63,9 @@ export async function loadSendJob<T extends TemplateType>({ campaign_id, user_id
     )
 
     // Determine what template to send to the user based on the following
-    const template = templateInUserLocale(templates, project, user)
+    const template = random(
+        templatesInUserLocale(templates, project, user),
+    )
 
     // If campaign or template dont exist, log and abort
     if (!template || !campaign) {
@@ -82,6 +84,8 @@ export async function loadSendJob<T extends TemplateType>({ campaign_id, user_id
         campaign_name: campaign.name,
         campaign_type: campaign.type,
         template_id: template.id,
+        template_name: template.name,
+        template_locale: template.locale,
         channel: campaign.channel,
         subscription_id: campaign.subscription_id,
         reference_type,
@@ -198,7 +202,7 @@ export const failSend = async ({ campaign, user, context }: MessageTriggerHydrat
 }
 
 export const finalizeSend = async (data: MessageTriggerHydrated<TemplateType>, result: any) => {
-    const { campaign, user, context } = data
+    const { campaign, user, template, context } = data
 
     // Update send record
     await updateSendState({
@@ -210,7 +214,12 @@ export const finalizeSend = async (data: MessageTriggerHydrated<TemplateType>, r
     // Create an event on the user about the send
     await createEvent(user, {
         name: campaign.eventName('sent'),
-        data: { ...context, result },
+        data: {
+            ...context,
+            variant_id: template.id,
+            variant_name: template.name,
+            result,
+        },
     }, true, ({ result, ...data }) => data)
 
     // If this send is part of a journey, notify the journey

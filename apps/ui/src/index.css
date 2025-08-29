@@ -36,7 +36,7 @@ a:hover {
     transition: border-radius .3s;
     flex: 1;
     flex-direction: column;
-    border-radius: 1.5rem 1.5rem 0 0;
+    border-radius: 1.5rem 0 0 1.5rem;
 }
 
 .page-content .page-banner {
@@ -271,5 +271,14 @@ code {
         flex: 1;
         border-radius: 1.5rem 1.5rem 0 0;
         background: var(--color-background);
+    }
+
+    .page-content.fullscreen {
+        min-height: 100vh;
+        display: flex;
+        transition: border-radius .3s;
+        flex: 1;
+        flex-direction: column;
+        border-radius: 1.5rem 1.5rem 0 0;
     }
 }

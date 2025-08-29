@@ -92,10 +92,19 @@ export type EventRule = {
     frequency?: EventRuleFrequency
 } & WrapperRule
 
-export interface RuleSuggestions {
-    userPaths: string[]
+export interface RulePath {
+    id: number
+    path: string
+    type: 'user' | 'event'
+    name: string
+    data_type: 'string' | 'number' | 'boolean' | 'date' | 'array'
+    visibility: 'public' | 'hidden' | 'classified'
+}
+
+export interface VariableSuggestions {
+    userPaths: RulePath[]
     eventPaths: {
-        [name: string]: string[]
+        [name: string]: RulePath[]
     }
 }
 
@@ -419,7 +428,8 @@ export type CampaignSendState = 'pending' | 'sent' | 'throttled' | 'failed' | 'b
 
 export type CampaignUpdateParams = Partial<Pick<Campaign, 'name' | 'state' | 'list_ids' | 'exclusion_list_ids' | 'subscription_id' | 'tags'>>
 export type CampaignCreateParams = Pick<Campaign, 'name' | 'type' | 'list_ids' | 'exclusion_list_ids' | 'channel' | 'subscription_id' | 'provider_id' | 'tags'>
-export type CampaignLaunchParams = Pick<Campaign, 'send_at' | 'send_in_user_timezone' | 'state'>
+export type CampaignLaunchType = 'now' | 'later'
+export type CampaignLaunchParams = Pick<Campaign, 'send_at' | 'send_in_user_timezone' | 'state'> & { launch_type?: CampaignLaunchType }
 // export type ListUpdateParams = Pick<List, 'name' | 'rule'>
 export type CampaignUser = User & { state: CampaignSendState, send_at: string }
 
@@ -464,6 +474,7 @@ export interface WebhookTemplateData {
 export type Template = {
     id: number
     campaign_id: number
+    name?: string
     type: ChannelType
     locale: string
     data: any
@@ -489,8 +500,9 @@ export type Template = {
     }
 )
 
-export type TemplateCreateParams = Pick<Template, 'type' | 'data' | 'campaign_id' | 'locale'>
-export type TemplateUpdateParams = Pick<Template, 'type' | 'data'>
+export type TemplateCreateParams = Pick<Template, 'name' | 'type' | 'data' | 'campaign_id' | 'locale'>
+export type TemplateUpdateParams = Pick<Template, 'name' | 'data'> & { type?: ChannelType }
+export type VariantUpdateParams = Pick<Template, 'name'> & { id?: number }
 
 export interface TemplatePreviewParams {
     user: Record<string, any>
@@ -608,6 +620,7 @@ export interface Metric {
 export interface LocaleOption {
     key: string
     label: string
+    shortLabel?: string
 }
 
 export interface Locale extends LocaleOption {

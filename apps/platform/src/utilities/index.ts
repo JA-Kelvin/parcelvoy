@@ -8,7 +8,10 @@ import { Database } from '../config/database'
 
 export const pluralize = (noun: string, count = 2, suffix = 's') => `${noun}${count !== 1 ? suffix : ''}`
 
-export const random = <T>(array: T[]): T => array[Math.floor(Math.random() * array.length)]
+export const random = <T>(array: T[]): T => {
+    if (array.length === 1) return array[0]
+    return array[Math.floor(Math.random() * array.length)]
+}
 
 export const cleanString = (value: string | undefined): string | undefined => {
     if (value === 'NULL' || value == null || value === 'undefined' || value === '') return undefined
@@ -399,5 +402,43 @@ export function visit<T>(item: T, children: (item: T) => undefined | T[], callba
         for (const item of items) {
             visit(item, children, callback)
         }
+    }
+}
+
+export class KeyedSet<T> implements Iterable<T> {
+    #keys = new Set<string>()
+    #items: T[] = []
+    #lookup: (item: T) => string
+
+    constructor(lookup: (item: T) => string) {
+        this.#lookup = lookup
+    }
+
+    add(item: T) {
+        const key = this.#lookup(item)
+        if (!this.#keys.has(key)) {
+            this.#keys.add(key)
+            this.#items.push(item)
+        }
+    }
+
+    getAll(): T[] {
+        return this.#items
+    }
+
+    keys(): string[] {
+        return [...this.#keys]
+    }
+
+    has(id: string): boolean {
+        return this.#keys.has(id)
+    }
+
+    [Symbol.iterator](): Iterator<T> {
+        return this.#items[Symbol.iterator]()
+    }
+
+    toJSON() {
+        return this.#items
     }
 }
