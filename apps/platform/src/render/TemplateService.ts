@@ -58,7 +58,7 @@ export const deleteTemplate = async (id: number, projectId: number) => {
 }
 
 export const duplicateTemplate = async (template: Template, campaignId: number) => {
-    const params: Partial<Template> = pick(template, ['project_id', 'locale', 'type', 'data'])
+    const params: Partial<Template> = pick(template, ['project_id', 'locale', 'name', 'type', 'data'])
     params.campaign_id = campaignId
     return await Template.insert(params)
 }
