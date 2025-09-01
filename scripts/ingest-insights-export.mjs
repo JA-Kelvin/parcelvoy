@@ -26,6 +26,7 @@
  *   --segment | SEGMENT                    Segment name (default: all)
  *   --segmentGroup | SEGMENT_GROUP         Segment group key (default: all)
  *   --timeframe | TIMEFRAME                e.g. 30d, 90d, 12m, all (default: all)
+ *   --unmask | UNMASK                      true/false - unmask sensitive fields (default: false)
  *   --limit | LIMIT                        Max rows per request (default: 10000)
  *   --offset | OFFSET                      Offset (default: 0)
  *   --concurrency | CONCURRENCY            Parallel identify posts (default: 5)
@@ -63,6 +64,7 @@ const CONFIG = {
   segment: args.segment || process.env.SEGMENT || 'all',
   segmentGroup: args.segmentGroup || process.env.SEGMENT_GROUP || 'all',
   timeframe: args.timeframe || process.env.TIMEFRAME || 'all',
+  unmask: String(args.unmask || process.env.UNMASK || 'false').toLowerCase() === 'true' || String(args.unmask || process.env.UNMASK || '0') === '1',
   limit: Number(args.limit || process.env.LIMIT || 10000),
   offset: Number(args.offset || process.env.OFFSET || 0),
   concurrency: Number(args.concurrency || process.env.CONCURRENCY || 5),
@@ -79,7 +81,7 @@ function qs(params) {
   const p = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '' && v !== 'all') p.set(k, String(v))
-    if ((k === 'segment' || k === 'segmentGroup' || k === 'timeframe') && v === 'all') p.set(k, 'all')
+    if ((k === 'segment' || k === 'segmentGroup' || k === 'timeframe' || k === 'unmask') && v === 'all') p.set(k, 'all')
   })
   return p.toString()
 }
@@ -156,6 +158,7 @@ async function fetchInsightsExport(config) {
     segment: config.segment,
     segmentGroup: config.segmentGroup,
     timeframe: config.timeframe,
+    unmask: config.unmask,
     limit: config.limit,
     offset: config.offset,
   }
@@ -201,7 +204,7 @@ async function main() {
   console.log('\n=== Insights -> Parcelvoy Ingestion ===')
   console.log('Insights:', CONFIG.insightsBaseUrl)
   console.log('Parcelvoy:', CONFIG.pvBaseUrl)
-  console.log('Filters:', { segment: CONFIG.segment, segmentGroup: CONFIG.segmentGroup, timeframe: CONFIG.timeframe })
+  console.log('Filters:', { segment: CONFIG.segment, segmentGroup: CONFIG.segmentGroup, timeframe: CONFIG.timeframe, unmask: CONFIG.unmask })
   console.log('Limit/Offset:', { limit: CONFIG.limit, offset: CONFIG.offset })
   console.log('Concurrency:', CONFIG.concurrency, 'DryRun:', CONFIG.dryRun)
 
