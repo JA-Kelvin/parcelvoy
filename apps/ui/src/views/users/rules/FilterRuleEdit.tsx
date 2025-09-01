@@ -25,18 +25,17 @@ export default function FilterRuleEdit({
     const { suggestions } = useContext(VariablesContext)
     const { path } = rule
     const hasValue = rule?.operator && !['is set', 'is not set', 'empty'].includes(rule?.operator)
-    const pathSuggestions = useMemo<RulePath[]>(() => {
-        let paths = group === 'event'
-            ? eventName
-                ? suggestions.eventPaths[eventName] ?? []
-                : []
+    const pathSuggestions = useMemo<Array<RulePath | string>>(() => {
+        const raw: unknown = group === 'event'
+            ? (eventName ? suggestions.eventPaths[eventName] ?? [] : [])
             : suggestions.userPaths
+        let paths: Array<RulePath | string> = Array.isArray(raw) ? (raw as Array<RulePath | string>) : []
 
         if (path) {
             let search = path.toLowerCase()
             if (search.startsWith('.')) search = '$' + search
             if (!search.startsWith('$.')) search = '$.' + search
-            paths = paths.filter(p => p.path.toLowerCase().startsWith(search))
+            paths = paths.filter(p => (typeof p === 'string' ? p : p.path).toLowerCase().startsWith(search))
         }
 
         return paths
@@ -54,14 +53,21 @@ export default function FilterRuleEdit({
                     size="small"
                     toValue={x => x.key as typeof rule.type}
                 />
-                <Combobox onChange={({ data_type: type, path }: RulePath) => setRule({ ...rule, type, path })}>
+                <Combobox onChange={(selected: RulePath | string) => {
+                    if (typeof selected === 'string') {
+                        setRule({ ...rule, path: selected })
+                    } else {
+                        const { data_type: type, path } = selected
+                        setRule({ ...rule, type, path })
+                    }
+                }}>
                     <span className="ui-text-input">
                         <Combobox.Input
-                            value={rule.path}
+                            value={rule.path ?? ''}
                             onChange={e => setRule({ ...rule, path: e.target.value })}
                             required
-                            ref={setReferenceElement}
                             className="small"
+                            ref={setReferenceElement}
                         />
                     </span>
                     <Combobox.Button className="ui-button small secondary">
@@ -74,19 +80,22 @@ export default function FilterRuleEdit({
                         {...attributes.popper}
                     >
                         {
-                            pathSuggestions.map(s => (
-                                <Combobox.Option
-                                    key={s.path}
-                                    value={s}
-                                    className={({ active, selected }) => clsx('select-option', active && 'active', selected && 'selected')}
-                                >
-                                    <span
-                                        dangerouslySetInnerHTML={{
-                                            __html: highlightSearch(s.path, rule.path),
-                                        }}
-                                    />
-                                </Combobox.Option>
-                            ))
+                            pathSuggestions.map(s => {
+                                const displayPath = typeof s === 'string' ? s : s.path
+                                return (
+                                    <Combobox.Option
+                                        key={displayPath}
+                                        value={s}
+                                        className={({ active, selected }) => clsx('select-option', active && 'active', selected && 'selected')}
+                                    >
+                                        <span
+                                            dangerouslySetInnerHTML={{
+                                                __html: highlightSearch(displayPath, rule.path ?? ''),
+                                            }}
+                                        />
+                                    </Combobox.Option>
+                                )
+                            })
                         }
                     </Combobox.Options>
                 </Combobox>
