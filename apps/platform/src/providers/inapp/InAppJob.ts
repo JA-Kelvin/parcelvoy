@@ -1,31 +1,32 @@
-import { loadPushChannel } from '.'
+import { loadInAppChannel } from '.'
 import { updateSendState } from '../../campaigns/CampaignService'
 import { releaseLock } from '../../core/Lock'
 import { EventPostJob } from '../../jobs'
-import { EncodedJob, Job } from '../../queue'
-import { PushTemplate } from '../../render/Template'
+import Job, { EncodedJob } from '../../queue/Job'
+import { InAppTemplate } from '../../render/Template'
 import { getPushDevicesForUser } from '../../users/DeviceRepository'
 import { disableNotifications } from '../../users/UserRepository'
 import { MessageTrigger } from '../MessageTrigger'
 import { failSend, finalizeSend, loadSendJob, messageLock, prepareSend } from '../MessageTriggerService'
-import PushError from './PushError'
+import PushError from '../push/PushError'
 
-export default class PushJob extends Job {
-    static $name = 'push'
+export default class InAppJob extends Job {
+    static $name = 'in_app_job'
 
-    static from(data: MessageTrigger): PushJob {
+    static from(data: MessageTrigger): InAppJob {
         return new this(data)
     }
 
     static async handler(trigger: MessageTrigger, raw: EncodedJob) {
-        const data = await loadSendJob<PushTemplate>(trigger)
+
+        const data = await loadSendJob<InAppTemplate>(trigger)
         if (!data) return
 
         const { campaign, template, user, project, context } = data
         const devices = await getPushDevicesForUser(project.id, user.id)
 
-        // Load email channel so its ready to send
-        const channel = await loadPushChannel(campaign.provider_id, project.id)
+        // Load in-app channel so it's ready to send
+        const channel = await loadInAppChannel(campaign.provider_id, project.id)
         if (!channel) {
             await updateSendState({
                 campaign,
@@ -36,12 +37,11 @@ export default class PushJob extends Job {
             return
         }
 
-        // Check current send rate and if the send is locked
         const isReady = await prepareSend(channel, data, raw)
         if (!isReady) return
 
         try {
-            // Send the push and update the send record
+            // Send the in-app message and update the send record
             const result = await channel.send(template, devices, data)
             await finalizeSend(data, result)
 

@@ -1,14 +1,15 @@
 import Router from '@koa/router'
+import { isHandlerbarsError, Variables } from '.'
 import { ProjectState } from '../auth/AuthMiddleware'
-import { JSONSchemaType, validate } from '../core/validate'
+import { ChannelType } from '../config/channels'
+import { RequestError } from '../core/errors'
 import { searchParamsSchema } from '../core/searchParams'
+import { JSONSchemaType, validate } from '../core/validate'
+import { User } from '../users/User'
+import { UserEvent } from '../users/UserEvent'
 import { extractQueryParams } from '../utilities'
 import Template, { TemplateParams, TemplateUpdateParams } from './Template'
 import { createTemplate, deleteTemplate, getTemplate, pagedTemplates, sendProof, updateTemplate } from './TemplateService'
-import { isHandlerbarsError, Variables } from '.'
-import { User } from '../users/User'
-import { UserEvent } from '../users/UserEvent'
-import { RequestError } from '../core/errors'
 
 const router = new Router<
     ProjectState & { template?: Template }
@@ -120,68 +121,62 @@ const templateDataWebhookParams = {
     nullable: true,
 }
 
+const templateDataInAppParams = {
+    type: 'object',
+    properties: {
+        html: { type: 'string' },
+        custom: {
+            type: 'object',
+            nullable: true,
+            additionalProperties: true,
+        },
+    },
+    nullable: true,
+}
+
+const baseCreateType = (type: ChannelType, data: any) => ({
+    type: 'object',
+    required: ['type', 'campaign_id', 'locale'],
+    properties: {
+        type: {
+            type: 'string',
+            enum: [type],
+        },
+        campaign_id: {
+            type: 'integer',
+        },
+        locale: {
+            type: 'string',
+        },
+        name: { type: 'string', nullable: true },
+        data,
+    },
+    additionalProperties: false,
+}) as any
+
+const baseUpdateType = (type: ChannelType, data: any) => ({
+    type: 'object',
+    required: ['type', 'data'],
+    properties: {
+        type: {
+            type: 'string',
+            enum: [type],
+        },
+        name: { type: 'string', nullable: true },
+        data,
+    },
+    additionalProperties: false,
+}) as any
+
 const templateCreateParams: JSONSchemaType<TemplateParams> = {
     $id: 'templateCreateParams',
-    oneOf: [{
-        type: 'object',
-        required: ['type', 'campaign_id', 'locale'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['email'],
-            },
-            name: { type: 'string', nullable: true },
-            campaign_id: { type: 'integer' },
-            locale: { type: 'string' },
-            data: templateDataEmailParams as any,
-        },
-        additionalProperties: false,
-    },
-    {
-        type: 'object',
-        required: ['type', 'campaign_id', 'locale'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['text'],
-            },
-            name: { type: 'string', nullable: true },
-            campaign_id: { type: 'integer' },
-            locale: { type: 'string' },
-            data: templateDataTextParams as any,
-        },
-        additionalProperties: false,
-    },
-    {
-        type: 'object',
-        required: ['type', 'campaign_id', 'locale'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['push'],
-            },
-            name: { type: 'string', nullable: true },
-            campaign_id: { type: 'integer' },
-            locale: { type: 'string' },
-            data: templateDataPushParams as any,
-        },
-        additionalProperties: false,
-    },
-    {
-        type: 'object',
-        required: ['type', 'campaign_id', 'locale'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['webhook'],
-            },
-            name: { type: 'string', nullable: true },
-            campaign_id: { type: 'integer' },
-            locale: { type: 'string' },
-            data: templateDataWebhookParams as any,
-        },
-        additionalProperties: false,
-    }],
+    oneOf: [
+        baseCreateType('email', templateDataEmailParams),
+        baseCreateType('text', templateDataTextParams),
+        baseCreateType('push', templateDataPushParams),
+        baseCreateType('webhook', templateDataWebhookParams),
+        baseCreateType('in_app', templateDataInAppParams),
+    ],
 }
 router.post('/', async ctx => {
     const payload = validate(templateCreateParams, ctx.request.body)
@@ -203,58 +198,13 @@ router.get('/:templateId', async ctx => {
 
 const templateUpdateParams: JSONSchemaType<TemplateUpdateParams> = {
     $id: 'templateUpdateParams',
-    oneOf: [{
-        type: 'object',
-        required: ['type', 'data'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['email'],
-            },
-            name: { type: 'string', nullable: true },
-            data: templateDataEmailParams as any,
-        },
-        additionalProperties: false,
-    },
-    {
-        type: 'object',
-        required: ['type', 'data'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['text'],
-            },
-            name: { type: 'string', nullable: true },
-            data: templateDataTextParams as any,
-        },
-        additionalProperties: false,
-    },
-    {
-        type: 'object',
-        required: ['type', 'data'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['push'],
-            },
-            name: { type: 'string', nullable: true },
-            data: templateDataPushParams as any,
-        },
-        additionalProperties: false,
-    },
-    {
-        type: 'object',
-        required: ['type', 'data'],
-        properties: {
-            type: {
-                type: 'string',
-                enum: ['webhook'],
-            },
-            name: { type: 'string', nullable: true },
-            data: templateDataWebhookParams as any,
-        },
-        additionalProperties: false,
-    }],
+    oneOf: [
+        baseUpdateType('email', templateDataEmailParams),
+        baseUpdateType('text', templateDataTextParams),
+        baseUpdateType('push', templateDataPushParams),
+        baseUpdateType('webhook', templateDataWebhookParams),
+        baseUpdateType('in_app', templateDataInAppParams),
+    ],
 }
 router.patch('/:templateId', async ctx => {
     const body = { ...ctx.request.body, type: ctx.state.template!.type }

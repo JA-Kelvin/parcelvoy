@@ -71,6 +71,14 @@ export default function Preview({ template, response, size = 'large' }: PreviewP
                 </div>}
             </div>
         )
+    } else if (type === 'in_app') {
+        preview = (
+            <div className="in-app-frame">
+                <div className="in-app-frame-phone">
+                    <Iframe content={data.html ?? ''} />
+                </div>
+            </div>
+        )
     }
 
     return (

@@ -59,6 +59,7 @@ interface WrapParams {
     preheader?: string
     variables: Variables
 }
+
 export const Wrap = ({ html, preheader, variables: { user, context, project } }: WrapParams) => {
     const trackingParams = {
         userId: user.id,

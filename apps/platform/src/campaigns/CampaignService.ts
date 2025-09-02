@@ -2,6 +2,7 @@ import PushJob from '../providers/push/PushJob'
 import WebhookJob from '../providers/webhook/WebhookJob'
 import TextJob from '../providers/text/TextJob'
 import EmailJob from '../providers/email/EmailJob'
+import InAppJob from '../providers/inapp/InAppJob'
 import { logger } from '../config/logger'
 import { User } from '../users/User'
 import Campaign, { CampaignCreateParams, CampaignDelivery, CampaignParams, CampaignPopulationProgress, CampaignProgress, CampaignSend, CampaignSendParams, CampaignSendReferenceType, CampaignSendState, CampaignState, SentCampaign } from './Campaign'
@@ -296,10 +297,10 @@ export const sendCampaignJob = ({ campaign, user, reference_type, reference_id }
         text: TextJob.from(body),
         push: PushJob.from(body),
         webhook: WebhookJob.from(body),
+        in_app: InAppJob.from(body),
     }
     const job = channels[campaign.channel]
-    job.jobId(`sid_${campaign.id}_${body.user_id}_${body.reference_id}`)
-
+    job.deduplicationKey(`sid_${campaign.id}_${body.user_id}_${body.reference_id}`)
     return job
 }
 
@@ -497,17 +498,17 @@ const recipientClickhouseQuery = async (campaign: Campaign) => {
 
     const channelClause = () => {
         if (campaign.channel === 'email') {
-            return "(users.email != '' AND users.email IS NOT NULL)"
+            return ["(users.email != '' AND users.email IS NOT NULL)"]
         } else if (campaign.channel === 'text') {
-            return "(users.phone != '' AND users.phone IS NOT NULL)"
+            return ["(users.phone != '' AND users.phone IS NOT NULL)"]
         } else if (campaign.channel === 'push') {
-            return '(users.has_push_device = 1)'
+            return ['(users.has_push_device = 1)']
         }
-        return ''
+        return []
     }
 
     const parts = [
-        channelClause(),
+        ...channelClause(),
         `NOT has(unsubscribe_ids, ${campaign.subscription_id})`,
     ]
     if (campaign.exclusion_list_ids?.length) {
