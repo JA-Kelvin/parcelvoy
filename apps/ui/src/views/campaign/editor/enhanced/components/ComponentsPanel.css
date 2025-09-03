@@ -1,6 +1,6 @@
 /* Enhanced Components Panel Styles for Parcelvoy MJML Editor */
 .components-panel {
-    width: 480px;
+    width: 420px;
     height: 100%;
     background: var(--color-background);
     border-right: 1px solid var(--color-grey-hard);
@@ -53,8 +53,39 @@
 .panel-content {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 16px 0 24px; /* extra bottom space so last item is fully visible */
     min-height: 0; /* nested flex fix */
+}
+
+/* Subtabs for components/presets/saved */
+.subtabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 12px 20px;
+    border-bottom: 1px solid var(--color-grey-hard);
+    margin-bottom: 12px;
+}
+
+.subtab-button {
+    background: var(--color-background);
+    border: 1px solid var(--color-grey-hard);
+    color: var(--color-on-background);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subtab-button:hover {
+    border-color: var(--color-blue);
+}
+
+.subtab-button.active {
+    background: var(--color-background-soft);
+    border-color: var(--color-blue);
+    font-weight: 600;
 }
 
 .component-category {
@@ -119,6 +150,14 @@
     transform: translateY(0);
 }
 
+.template-preview {
+    width: 100px;
+    height: 80px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--color-background);
+}
+
 .component-icon {
     font-size: 24px;
     margin-bottom: 6px;
@@ -140,6 +179,12 @@
 }
 
 .panel-footer small {
+    color: var(--color-primary-soft);
+    font-size: 12px;
+}
+
+.empty-state {
+    margin: 0 20px 12px 20px;
     color: var(--color-primary-soft);
     font-size: 12px;
 }
@@ -225,4 +270,79 @@
 [data-theme="dark"] .components-panel .toggle-button:hover {
     background: var(--color-grey-soft);
     color: var(--color-on-background);
+}
+
+/* --------------------------------------------- */
+/* Template Cards (Presets / Saved)               */
+/* --------------------------------------------- */
+
+/* Single-column layout for template previews */
+.templates-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+/* Make template cards feel like preview tiles */
+.component-item.template {
+    align-items: stretch;
+    padding: 12px 12px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--color-grey-hard);
+    box-shadow: 0 2px 6px var(--color-shadow, rgba(0,0,0,0.06));
+    background: var(--color-background);
+}
+
+.component-item.template:hover {
+    border-color: var(--color-blue);
+    box-shadow: 0 4px 12px var(--color-shadow, rgba(0,0,0,0.08));
+}
+
+/* Dotted drag handle centered at the top */
+.template-drag-handle {
+    width: 44px;
+    height: 6px;
+    border-radius: 4px;
+    margin: 4px auto 10px;
+    background-image: radial-gradient(var(--color-grey, #bbb) 1px, transparent 1px);
+    background-size: 6px 6px;
+    background-position: 0 0, 3px 3px;
+}
+
+/* Larger inline preview area (actual size set inline) */
+.component-item.template .template-preview {
+    width: 320px; /* fallback; real size comes from inline style */
+    height: 220px; /* fallback; real size comes from inline style */
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto;
+    border: 1px solid var(--color-grey-hard);
+    background: var(--color-background);
+}
+
+/* Prevent iframe from hijacking wheel/touch events so the list can scroll */
+.component-item.template .template-preview,
+.component-item.template .template-preview iframe {
+    pointer-events: none;
+}
+
+/* Footer area for name and future actions */
+.template-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+}
+
+.template-footer .component-name {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+}
+
+/* Responsive: make sure preview fits narrow panels */
+@media (max-width: 480px) {
+    .component-item.template .template-preview {
+        width: 280px;
+        height: 192px;
+    }
 }

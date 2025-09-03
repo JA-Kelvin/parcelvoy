@@ -8,9 +8,10 @@ interface CustomTemplatesModalProps {
     isOpen: boolean
     onClose: () => void
     templates: TemplateBlock[]
-    onConfirm: (template: TemplateBlock) => void
+    onConfirm: (payload: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below' }) => void
     onDelete?: (id: string) => void
     deletableIds?: string[]
+    canInsertRelative?: boolean
 }
 
 const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
@@ -20,11 +21,13 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
     onConfirm,
     onDelete,
     deletableIds = [],
+    canInsertRelative = false,
 }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [htmlPreview, setHtmlPreview] = useState<string>('')
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
+    const [insertionMode, setInsertionMode] = useState<'append' | 'above' | 'below'>('append')
 
     const selectedTemplate = useMemo(() => templates.find(t => t.id === selectedId) ?? null, [templates, selectedId])
     const deletableSet = useMemo(() => new Set(deletableIds), [deletableIds])
@@ -36,6 +39,7 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
             setIsLoading(false)
             setHtmlPreview('')
             if (templates.length > 0) setSelectedId(templates[0].id)
+            setInsertionMode('append')
         } else {
             setSelectedId(null)
         }
@@ -69,7 +73,7 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
         if (e.key === 'Escape') onClose()
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && selectedTemplate) {
             e.preventDefault()
-            onConfirm(selectedTemplate)
+            onConfirm({ block: selectedTemplate, insertionMode })
         }
     }
 
@@ -159,9 +163,46 @@ const CustomTemplatesModal: React.FC<CustomTemplatesModalProps> = ({
                 </div>
 
                 <div className="ctm-footer">
+                    <div className="ctm-insert-options">
+                        <div className="ctm-field-label">Insertion mode</div>
+                        <div className="ctm-radio-group">
+                            <label className="ctm-radio">
+                                <input
+                                    type="radio"
+                                    name="insertionMode"
+                                    value="append"
+                                    checked={insertionMode === 'append'}
+                                    onChange={() => setInsertionMode('append')}
+                                />
+                                <span>Append</span>
+                            </label>
+                            <label className={`ctm-radio ${!canInsertRelative ? 'disabled' : ''}`} title={!canInsertRelative ? 'Select an element on canvas to enable' : ''}>
+                                <input
+                                    type="radio"
+                                    name="insertionMode"
+                                    value="above"
+                                    checked={insertionMode === 'above'}
+                                    onChange={() => canInsertRelative && setInsertionMode('above')}
+                                    disabled={!canInsertRelative}
+                                />
+                                <span>Above selection</span>
+                            </label>
+                            <label className={`ctm-radio ${!canInsertRelative ? 'disabled' : ''}`} title={!canInsertRelative ? 'Select an element on canvas to enable' : ''}>
+                                <input
+                                    type="radio"
+                                    name="insertionMode"
+                                    value="below"
+                                    checked={insertionMode === 'below'}
+                                    onChange={() => canInsertRelative && setInsertionMode('below')}
+                                    disabled={!canInsertRelative}
+                                />
+                                <span>Below selection</span>
+                            </label>
+                        </div>
+                    </div>
                     <div className="ctm-actions">
                         <button
-                            onClick={() => selectedTemplate && onConfirm(selectedTemplate)}
+                            onClick={() => selectedTemplate && onConfirm({ block: selectedTemplate, insertionMode })}
                             className="primary-button"
                             disabled={!selectedTemplate}
                         >

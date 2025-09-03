@@ -1,7 +1,7 @@
 // Enhanced Canvas Component for Parcelvoy MJML Editor
 import React, { useRef, useCallback, useEffect, useState } from 'react'
 import { useDrop } from 'react-dnd'
-import { EditorElement } from '../types'
+import { EditorElement, TemplateBlock } from '../types'
 import { generateId } from '../utils/mjmlParser'
 // Import directly to avoid circular dependencies
 import DroppableElement from './DroppableElement'
@@ -20,6 +20,7 @@ interface CanvasProps {
     onCopyElement?: (elementId: string) => void
     onDuplicateElement?: (elementId: string) => void
     isPreviewMode?: boolean
+    onTemplateDrop?: (payload: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below' }) => void
 }
 
 const Canvas: React.FC<CanvasProps> = ({
@@ -34,6 +35,7 @@ const Canvas: React.FC<CanvasProps> = ({
     onCopyElement,
     onDuplicateElement,
     isPreviewMode = false,
+    onTemplateDrop,
 }) => {
     const __DEV__ = process.env.NODE_ENV !== 'production'
     // Comprehensive safety checks
@@ -50,16 +52,30 @@ const Canvas: React.FC<CanvasProps> = ({
     const safeOnElementMove = onElementMove || (() => {})
     const safeOnCopyElement = onCopyElement ?? (() => {})
     const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
+    const safeOnTemplateDrop = onTemplateDrop ?? (() => {})
     const canvasRef = useRef<HTMLDivElement | null>(null)
 
     // toArray imported from shared utils to normalize children arrays consistently
 
     // Handle component drop from components panel
     const [{ isOver, canDrop }, drop] = useDrop({
-        accept: ['component', 'element'],
+        accept: ['component', 'element', 'template'],
         drop: (item: any, monitor) => {
             if (monitor.didDrop()) return // Prevent duplicate drops
             if (isPreviewMode || isEditingAny) return // Disable drop while preview or editing inline
+
+            // Handle template drops first using the DnD item type
+            const draggedType = (typeof monitor.getItemType === 'function' ? (monitor.getItemType() as any) : undefined)
+            if (draggedType === 'template') {
+                const block: TemplateBlock | null = item?.block ?? (item && Array.isArray(item.elements) ? item as TemplateBlock : null)
+                if (block) {
+                    if (__DEV__) console.log('Dropping template block onto canvas:', block.name)
+                    // Respect insertionMode from drag item if provided; default to 'below'
+                    const dropMode = item?.insertionMode ?? 'below'
+                    safeOnTemplateDrop({ block, insertionMode: dropMode })
+                }
+                return
+            }
 
             const isExisting = !!item.id
             const itemType: string = item.type || item.tagName

@@ -8,7 +8,7 @@ interface MinimalTemplateInfo { id: string, name: string, description?: string }
 interface SaveCustomTemplateModalProps {
     isOpen: boolean
     onClose: () => void
-    onConfirm: (payload: { name: string, description?: string, scope: 'full' | 'selected' | 'wrapper' | 'body', overrideId?: string }) => void
+    onConfirm: (payload: { name: string, description?: string, scope: 'full' | 'selected' | 'wrapper', overrideId?: string }) => void | Promise<void>
     canSaveSelected: boolean
     canSaveWrapper?: boolean
     existingTemplates?: MinimalTemplateInfo[]
@@ -24,7 +24,7 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
 }) => {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
-    const [scope, setScope] = useState<'full' | 'selected' | 'wrapper' | 'body'>('selected')
+    const [scope, setScope] = useState<'full' | 'selected' | 'wrapper'>('selected')
     const [mode, setMode] = useState<'create' | 'override'>('create')
     const [overrideId, setOverrideId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
@@ -70,10 +70,10 @@ const SaveCustomTemplateModal: React.FC<SaveCustomTemplateModalProps> = ({
                 setError('Please select a template to override')
                 return
             }
-            onConfirm({ name: name.trim(), description: description.trim() || undefined, scope, overrideId: id })
+            void onConfirm({ name: name.trim(), description: description.trim() || undefined, scope, overrideId: id })
             return
         }
-        onConfirm({ name: name.trim(), description: description.trim() || undefined, scope })
+        void onConfirm({ name: name.trim(), description: description.trim() || undefined, scope })
     }
 
     return (

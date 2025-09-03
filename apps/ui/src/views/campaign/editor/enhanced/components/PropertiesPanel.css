@@ -1,6 +1,6 @@
 /* Enhanced Properties Panel Styles for Parcelvoy MJML Editor */
 .properties-panel {
-    width: 480px;
+    width: 420px;
     height: 100%;
     background: var(--color-background);
     border-left: 1px solid var(--color-grey-hard);

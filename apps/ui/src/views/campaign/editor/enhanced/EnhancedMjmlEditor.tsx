@@ -482,6 +482,27 @@ const insertManyUnderParent = (elements: EditorElement[], parentId: string, item
     })
 }
 
+// Insert multiple items at a specific index under a parent
+const insertManyAtParentIndex = (
+    elements: EditorElement[],
+    parentId: string,
+    index: number,
+    items: EditorElement[],
+): EditorElement[] => {
+    return elements.map(el => {
+        if (el.id === parentId) {
+            const children = [...toArray<EditorElement>(el.children)]
+            const insertAt = Math.max(0, Math.min(index ?? children.length, children.length))
+            children.splice(insertAt, 0, ...items)
+            return { ...el, children }
+        }
+        if (el.children?.length) {
+            return { ...el, children: insertManyAtParentIndex(el.children, parentId, index, items) }
+        }
+        return el
+    })
+}
+
 const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     template,
     onTemplateChange,
@@ -496,29 +517,9 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [showImportModal, setShowImportModal] = useState(false)
     const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
     const [activeRightTab, setActiveRightTab] = useState<'components' | 'properties' | 'layers'>('components')
-    const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
     const [showCustomTemplatesModal, setShowCustomTemplatesModal] = useState(false)
     const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
-
-    // Prefer project-wide list when available; otherwise fallback to local (current template)
-    const availableCustomTemplates = useMemo(() => {
-        const local = Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []
-        const projectWide = Array.isArray(projectWideCustomTemplates) ? projectWideCustomTemplates : []
-        if (customTemplatesLoading ?? customTemplatesError ?? projectWide.length === 0) {
-            return [...local, ...CUSTOM_TEMPLATES]
-        }
-        return [...projectWide, ...CUSTOM_TEMPLATES]
-    }, [template.data.customTemplates, projectWideCustomTemplates, customTemplatesLoading, customTemplatesError])
-
-    // Function to focus on properties panel when edit button is clicked
-    const handleEditButtonClick = useCallback((elementId: string) => {
-        // Select the element
-        dispatch({ type: 'SELECT_ELEMENT', payload: { elementId } })
-        // Switch to properties tab
-        setActiveRightTab('properties')
-        // Ensure panel is expanded
-        setRightPanelCollapsed(false)
-    }, [])
+    const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
 
     // Initialize editor state with a function to ensure proper initialization
     const getInitialState = (): HistoryState => {
@@ -568,6 +569,13 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     }
 
     const [editorState, dispatch] = useReducer(editorReducer, undefined as any, () => getInitialState())
+
+    // Compute saved templates combining project-wide and local ones (do NOT fallback to presets)
+    const availableSavedTemplates = useMemo(() => {
+        const local = Array.isArray(template.data.customTemplates) ? template.data.customTemplates : []
+        const project = Array.isArray(projectWideCustomTemplates) ? projectWideCustomTemplates : []
+        return [...project, ...local]
+    }, [template.data.customTemplates, projectWideCustomTemplates, customTemplatesLoading, customTemplatesError])
 
     // Load template data when template prop changes (for saved template restoration)
     useEffect(() => {
@@ -650,6 +658,14 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         dispatch({ type: 'MOVE_ELEMENT', payload: { elementId, newParentId, newIndex } })
     }, [])
 
+    // Focus properties panel and select element when edit is requested (double-click or edit button)
+    const handleEditButtonClick = useCallback((elementId: string) => {
+        if (isPreviewMode) return
+        handleElementSelect(elementId)
+        setRightPanelCollapsed(false)
+        setActiveRightTab('properties')
+    }, [handleElementSelect, isPreviewMode])
+
     const handleUndo = useCallback(() => {
         dispatch({ type: 'UNDO' })
     }, [])
@@ -664,9 +680,13 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
 
     // Custom template insertion is now handled via CustomTemplatesModal
 
-    // Reusable insertion logic for a template block
-    const insertTemplateBlock = useCallback((block: TemplateBlock) => {
+    // Reusable insertion logic for a template block with insertion modes
+    const insertTemplateBlock = useCallback((input: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below' }) => {
         try {
+            const payload = (input as any)
+            const block: TemplateBlock = 'id' in payload ? (payload as TemplateBlock) : payload.block
+            const insertionMode: 'append' | 'above' | 'below' = 'insertionMode' in payload && payload.insertionMode ? payload.insertionMode : 'append'
+
             const clones = toArray<EditorElement>(block.elements).map(cloneWithNewIds)
             if (clones.length === 0) {
                 toast('Nothing to insert from template')
@@ -686,10 +706,70 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 }
                 const insertedFallback = insertManyUnderParent(fallback, fbBody.id, clones)
                 dispatch({ type: 'REPLACE_PRESENT', payload: { elements: insertedFallback, selectId: clones[0].id } })
-            } else {
-                const inserted = insertManyUnderParent(base, mjBody.id, clones)
-                dispatch({ type: 'REPLACE_PRESENT', payload: { elements: inserted, selectId: clones[0].id } })
+                setRightPanelCollapsed(false)
+                setActiveRightTab('components')
+                toast.success(`Inserted '${block.name}'`)
+                return
             }
+
+            // Determine root kind of the template block
+            const rootTags = clones.map(c => c.tagName)
+            const isAllSections = rootTags.every(t => t === 'mj-section' || t === 'enhanced-section')
+            const isAllWrappers = rootTags.every(t => t === 'mj-wrapper')
+            const rootKind: 'section' | 'wrapper' | 'mixed' = isAllWrappers ? 'wrapper' : (isAllSections ? 'section' : 'mixed')
+
+            const selectedId = editorState.selectedElementId
+
+            // Helper to find the top-level anchor directly under mj-body for current selection
+            const getTopLevelAnchorUnderBody = (): EditorElement | null => {
+                if (!selectedId) return null
+                const path = getPathToElement(base, selectedId)
+                if (!path.length) return null
+                const bodyIndex = path.findIndex(n => n.tagName === 'mj-body')
+                if (bodyIndex === -1) return null
+                // Node immediately under mj-body in the path
+                return path[bodyIndex + 1] ?? null
+            }
+
+            let nextTree: EditorElement[] = base
+
+            if (insertionMode === 'append' || !selectedId) {
+                // Default: append under mj-body
+                nextTree = insertManyUnderParent(base, mjBody.id, clones)
+            } else if (insertionMode === 'above' || insertionMode === 'below') {
+                const offset = insertionMode === 'below' ? 1 : 0
+
+                if (rootKind === 'section') {
+                    // Insert relative to nearest section
+                    const anchorSection = findNearestAncestorByTags(base, selectedId, ['mj-section', 'enhanced-section'])
+                    if (!anchorSection) {
+                        // Fallback to append under body
+                        nextTree = insertManyUnderParent(base, mjBody.id, clones)
+                    } else {
+                        const { parentId, index } = findParentInfo(base, anchorSection.id)
+                        const targetParentId = parentId ?? mjBody.id
+                        const insertIndex = Math.max(0, (index ?? 0) + offset)
+                        nextTree = insertManyAtParentIndex(base, targetParentId, insertIndex, clones)
+                    }
+                } else if (rootKind === 'wrapper') {
+                    // Insert relative to the top-level anchor under mj-body
+                    const topLevelAnchor = getTopLevelAnchorUnderBody()
+                    if (!topLevelAnchor) {
+                        nextTree = insertManyUnderParent(base, mjBody.id, clones)
+                    } else {
+                        // Ensure parent is mj-body
+                        const { index } = findParentInfo(base, topLevelAnchor.id)
+                        const targetParentId = mjBody.id // wrappers only valid under mj-body
+                        const insertIndex = Math.max(0, (index ?? 0) + offset)
+                        nextTree = insertManyAtParentIndex(base, targetParentId, insertIndex, clones)
+                    }
+                } else {
+                    // Mixed root kinds: conservative fallback
+                    nextTree = insertManyUnderParent(base, mjBody.id, clones)
+                }
+            }
+
+            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: nextTree, selectId: clones[0].id } })
 
             setRightPanelCollapsed(false)
             setActiveRightTab('components')
@@ -698,7 +778,23 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             console.error('Error inserting template:', e)
             toast.error('Failed to insert template')
         }
-    }, [editorState.present])
+    }, [editorState.present, editorState.selectedElementId])
+
+    // Handle template insertion from ComponentsPanel by id and insertion mode
+    const handlePanelTemplateInsert = useCallback((templateId: string, insertionMode?: 'append' | 'above' | 'below') => {
+        try {
+            const block = availableSavedTemplates.find(t => t.id === templateId)
+                ?? CUSTOM_TEMPLATES.find(t => t.id === templateId)
+            if (!block) {
+                toast.error('Template not found')
+                return
+            }
+            insertTemplateBlock({ block, insertionMode })
+        } catch (e) {
+            console.error('onTemplateInsert failed:', e)
+            toast.error('Failed to insert template')
+        }
+    }, [availableSavedTemplates, insertTemplateBlock])
 
     // Insertion confirmation is handled by CustomTemplatesModal.onConfirm
 
@@ -894,8 +990,20 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         return !!wrapper
     }, [editorState.present, editorState.selectedElementId])
 
+    // Whether inserting above/below relative to selection is generally possible
+    const canInsertRelative = useMemo(() => {
+        const selectedId = editorState.selectedElementId
+        if (!selectedId) return false
+        const path = getPathToElement(editorState.present, selectedId)
+        if (!Array.isArray(path) || path.length === 0) return false
+        const bodyIndex = path.findIndex((n) => n.tagName === 'mj-body')
+        if (bodyIndex === -1) return false
+        const anchorUnderBody = path[bodyIndex + 1]
+        return !!anchorUnderBody
+    }, [editorState.present, editorState.selectedElementId])
+
     // Save selected section or full email as a reusable template block (supports override)
-    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected' | 'wrapper' | 'body', overrideId?: string }) => {
+    const handleSaveCustomBlock = useCallback(async (payload: { name: string, description?: string, scope: 'full' | 'selected' | 'wrapper', overrideId?: string }) => {
         try {
             const { name, description, scope } = payload
 
@@ -926,7 +1034,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 }
                 elementsToClone = [wrapper]
             } else {
-                // 'full' or 'body': use all children under mj-body
+                // 'full': use all children under mj-body
                 const base = editorState.present
                 const mjBody = findFirstByTagName(base, 'mj-body')
                 if (!mjBody) {
@@ -1237,45 +1345,37 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             onCopyElement={handleCopyElement}
                             onDuplicateElement={handleDuplicateElement}
                             isPreviewMode={isPreviewMode}
+                            onTemplateDrop={insertTemplateBlock}
                         />
                     </ErrorBoundary>
 
                     {/* Right Side Panel with Tabs */}
                     {!isPreviewMode && (
                         <div className={`right-panel ${rightPanelCollapsed ? 'collapsed' : 'expanded'}`}>
-                            <div className="right-panel-header">
-                                <div className="panel-tabs">
-                                    <button
-                                        className={`tab-button ${activeRightTab === 'components' ? 'active' : ''}`}
-                                        onClick={() => setActiveRightTab('components')}
-                                        title="MJML Components"
-                                    >
-                                        <span className="tab-icon">📦</span>
-                                        <span className="tab-label">Components</span>
-                                    </button>
-                                    <button
-                                        className={`tab-button ${activeRightTab === 'properties' ? 'active' : ''}`}
-                                        onClick={() => setActiveRightTab('properties')}
-                                        title="Element Properties"
-                                    >
-                                        <span className="tab-icon">⚙️</span>
-                                        <span className="tab-label">Properties</span>
-                                    </button>
-                                    <button
-                                        className={`tab-button ${activeRightTab === 'layers' ? 'active' : ''}`}
-                                        onClick={() => setActiveRightTab('layers')}
-                                        title="Element Structure"
-                                    >
-                                        <span className="tab-icon">🗂️</span>
-                                        <span className="tab-label">Layers</span>
-                                    </button>
-                                </div>
+                            <div className="panel-tabs">
                                 <button
-                                    className="panel-toggle-button"
-                                    onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-                                    title={rightPanelCollapsed ? 'Expand Panel' : 'Collapse Panel'}
+                                    className={`tab-button ${activeRightTab === 'components' ? 'active' : ''}`}
+                                    onClick={() => setActiveRightTab('components')}
+                                    title="MJML Components"
                                 >
-                                    {rightPanelCollapsed ? '◀' : '▶'}
+                                    <span className="tab-icon">📦</span>
+                                    <span className="tab-label">Components</span>
+                                </button>
+                                <button
+                                    className={`tab-button ${activeRightTab === 'properties' ? 'active' : ''}`}
+                                    onClick={() => setActiveRightTab('properties')}
+                                    title="Element Properties"
+                                >
+                                    <span className="tab-icon">⚙️</span>
+                                    <span className="tab-label">Properties</span>
+                                </button>
+                                <button
+                                    className={`tab-button ${activeRightTab === 'layers' ? 'active' : ''}`}
+                                    onClick={() => setActiveRightTab('layers')}
+                                    title="Element Structure"
+                                >
+                                    <span className="tab-icon">🗂️</span>
+                                    <span className="tab-label">Layers</span>
                                 </button>
                             </div>
 
@@ -1287,9 +1387,12 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                     >
                                         <ComponentsPanel
                                             onComponentDrag={() => { /* Handle component drag */ }}
+                                            onTemplateInsert={handlePanelTemplateInsert}
                                             onOpenCustomTemplates={() => setShowCustomTemplatesModal(true)}
                                             isCollapsed={false}
                                             onToggleCollapse={() => {}}
+                                            presetTemplates={CUSTOM_TEMPLATES}
+                                            savedTemplates={availableSavedTemplates}
                                         />
                                     </ErrorBoundary>
                                 )}
@@ -1338,9 +1441,10 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 <CustomTemplatesModal
                     isOpen={showCustomTemplatesModal}
                     onClose={() => setShowCustomTemplatesModal(false)}
-                    templates={availableCustomTemplates}
-                    onConfirm={(block) => {
-                        insertTemplateBlock(block)
+                    templates={availableSavedTemplates}
+                    canInsertRelative={canInsertRelative}
+                    onConfirm={(payload) => {
+                        insertTemplateBlock(payload)
                     }}
                     onDelete={(id) => { void handleDeleteCustomBlock(id) }}
                     deletableIds={Array.isArray(template.data.customTemplates) ? template.data.customTemplates.map(t => t.id) : []}
