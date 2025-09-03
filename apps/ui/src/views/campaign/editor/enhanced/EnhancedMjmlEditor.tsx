@@ -681,11 +681,12 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     // Custom template insertion is now handled via CustomTemplatesModal
 
     // Reusable insertion logic for a template block with insertion modes
-    const insertTemplateBlock = useCallback((input: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below' }) => {
+    const insertTemplateBlock = useCallback((input: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below', anchorId?: string }) => {
         try {
             const payload = (input as any)
             const block: TemplateBlock = 'id' in payload ? (payload as TemplateBlock) : payload.block
             const insertionMode: 'append' | 'above' | 'below' = 'insertionMode' in payload && payload.insertionMode ? payload.insertionMode : 'below'
+            const explicitAnchorId: string | null = ('anchorId' in payload && payload.anchorId) ? payload.anchorId : null
 
             const clones = toArray<EditorElement>(block.elements).map(cloneWithNewIds)
             if (clones.length === 0) {
@@ -718,7 +719,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
             const isAllWrappers = rootTags.every(t => t === 'mj-wrapper')
             const rootKind: 'section' | 'wrapper' | 'mixed' = isAllWrappers ? 'wrapper' : (isAllSections ? 'section' : 'mixed')
 
-            const selectedId = editorState.selectedElementId
+            const selectedId = explicitAnchorId ?? editorState.selectedElementId
 
             // Helper to find the top-level anchor directly under mj-body for current selection
             const getTopLevelAnchorUnderBody = (): EditorElement | null => {

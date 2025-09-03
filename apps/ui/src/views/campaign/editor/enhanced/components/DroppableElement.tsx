@@ -181,8 +181,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             } else if (itemType === 'template') {
                 const block: TemplateBlock | null = item?.block ?? (item && Array.isArray(item.elements) ? (item as TemplateBlock) : null)
                 if (block) {
-                    // Enforce fixed insertion mode 'below' and avoid requiring anchorId
-                    safeOnTemplateDrop({ block, insertionMode: 'below' })
+                    // Select this section as anchor and insert above
+                    safeOnSelect(element.id)
+                    safeOnTemplateDrop({ block, insertionMode: 'above', anchorId: element.id })
                 }
             } else if (item.type && !item.id) {
                 if (itemType === 'mj-section' || itemType === 'enhanced-section') {
@@ -225,8 +226,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             } else if (itemType === 'template') {
                 const block: TemplateBlock | null = item?.block ?? (item && Array.isArray(item.elements) ? (item as TemplateBlock) : null)
                 if (block) {
-                    // Enforce fixed insertion mode 'below' and avoid requiring anchorId
-                    safeOnTemplateDrop({ block, insertionMode: 'below' })
+                    // Select this section as anchor and insert below
+                    safeOnSelect(element.id)
+                    safeOnTemplateDrop({ block, insertionMode: 'below', anchorId: element.id })
                 }
             } else if (item.type && !item.id) {
                 if (itemType === 'mj-section' || itemType === 'enhanced-section') {

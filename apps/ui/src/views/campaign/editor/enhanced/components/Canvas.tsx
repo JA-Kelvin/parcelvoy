@@ -20,7 +20,7 @@ interface CanvasProps {
     onCopyElement?: (elementId: string) => void
     onDuplicateElement?: (elementId: string) => void
     isPreviewMode?: boolean
-    onTemplateDrop?: (payload: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below' }) => void
+    onTemplateDrop?: (payload: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below', anchorId?: string }) => void
 }
 
 const Canvas: React.FC<CanvasProps> = ({
@@ -446,6 +446,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 onEditButtonClick={onEditButtonClick}
                 onCopyElement={safeOnCopyElement}
                 onDuplicateElement={safeOnDuplicateElement}
+                onTemplateDrop={safeOnTemplateDrop}
                 parentId={parentId}
                 index={index}
                 siblingsCount={siblingsCount}
