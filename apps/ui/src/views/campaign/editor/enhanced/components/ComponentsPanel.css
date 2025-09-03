@@ -1,6 +1,6 @@
 /* Enhanced Components Panel Styles for Parcelvoy MJML Editor */
 .components-panel {
-    width: 320px;
+    width: 480px;
     height: 100%;
     background: var(--color-background);
     border-right: 1px solid var(--color-grey-hard);
@@ -72,7 +72,7 @@
 
 .component-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     padding: 0 20px;
 }

@@ -150,6 +150,9 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
             'mj-accordion-title',
             'mj-accordion-text',
             'mj-navbar-link',
+            // mj-head children that carry raw text content
+            'mj-preview',
+            'mj-style',
         ])
 
         if (contentHtmlTags.has(editorElement.tagName)) {
@@ -249,7 +252,12 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
     if (content && (!children || children.length === 0)) {
         const safeContent = sanitizeStrayAmpersands(String(content))
         // For text elements, preserve content formatting
-        if (actualTagName === 'mj-text' || actualTagName === 'mj-button') {
+        if (
+            actualTagName === 'mj-text'
+            || actualTagName === 'mj-button'
+            || actualTagName === 'mj-preview'
+            || actualTagName === 'mj-style'
+        ) {
             return `${indent}<${actualTagName}${attributesPart}>\n${childIndent}${safeContent}\n${indent}</${actualTagName}>`
         } else {
             return `${indent}<${actualTagName}${attributesPart}>${safeContent}</${actualTagName}>`

@@ -1,10 +1,15 @@
 // Droppable Element Component for Enhanced MJML Editor
 import React, { useState, useRef } from 'react'
-import { useDrag, useDrop } from 'react-dnd'
+import { useDrag, useDrop, useDragLayer } from 'react-dnd'
 import { EditorElement } from '../types'
 import './DroppableElement.css'
 import RichTextEditor from './RichTextEditor'
 import { generateId } from '../utils/mjmlParser'
+
+// Narrow unknown drag items to those carrying type/tagName without assertions
+const isTypeOrTag = (value: unknown): value is { type?: string, tagName?: string } => {
+    return typeof value === 'object' && value !== null && ('type' in value || 'tagName' in value)
+}
 
 interface DroppableElementProps {
     element: EditorElement
@@ -55,11 +60,11 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     }
 
     // Safety checks for callback functions
-    const safeOnSelect = onSelect || (() => {})
-    const safeOnUpdate = onUpdate || (() => {})
-    const safeOnDelete = onDelete || (() => {})
-    const safeOnMove = onMove || (() => {})
-    const safeOnElementAdd = onElementAdd || (() => {})
+    const safeOnSelect = onSelect ?? (() => {})
+    const safeOnUpdate = onUpdate ?? (() => {})
+    const safeOnDelete = onDelete ?? (() => {})
+    const safeOnMove = onMove ?? (() => {})
+    const safeOnElementAdd = onElementAdd ?? (() => {})
     const safeOnEditButtonClick = onEditButtonClick ?? (() => {})
     const safeOnCopyElement = onCopyElement ?? (() => {})
     const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
@@ -69,7 +74,6 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
     const [isHovered, setIsHovered] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
-    const elementRef = useRef<HTMLDivElement>(null)
 
     // Tags that support inline content editing (must be declared before usage)
     const inlineEditableTags = new Set([
@@ -101,6 +105,15 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         canDrag: !isPreviewMode && !isGlobalLock && !(isEditing && inlineEditableTags.has(element.tagName)),
     })
 
+    // Show enlarged section drop zones only when a section is being dragged
+    const { isDraggingSectionLike } = useDragLayer((monitor) => {
+        const dragging = monitor.isDragging()
+        const item = monitor.getItem()
+        const itemType = isTypeOrTag(item) ? (item.type ?? item.tagName) : undefined
+        const isSection = itemType === 'mj-section' || itemType === 'enhanced-section'
+        return { isDraggingSectionLike: !!(dragging && isSection) }
+    })
+
     // Drop functionality for accepting other elements
     const [{ isOver, canDrop }, drop] = useDrop({
         accept: ['element', 'component'],
@@ -120,7 +133,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 const newElement: EditorElement = {
                     id: generateId(),
                     type: item.type,
-                    tagName: item.tagName || item.type,
+                    tagName: item.tagName ?? item.type,
                     attributes: { ...item.defaultAttributes },
                     children: [],
                     content: item.type === 'mj-text'
@@ -142,14 +155,94 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             if (isEditing && inlineEditableTags.has(element.tagName)) return false
             // Define drop rules based on MJML structure
             const allowedChildren = getElementAllowedChildren(element.tagName)
-            return allowedChildren.includes(item.type || item.tagName)
+            return allowedChildren.includes(item.type ?? item.tagName)
+        },
+    })
+
+    // Reordering drop zones for sections: top/bottom insertion indicators
+    const isSectionElement = element.tagName === 'mj-section' || element.tagName === 'enhanced-section'
+
+    const [{ isOver: isOverTop, canDrop: canDropTop }, dropTop] = useDrop({
+        accept: ['element', 'component'],
+        drop: (item: any) => {
+            if (isPreviewMode || isGlobalLock) return
+            if (!isSectionElement) return
+            if (typeof index !== 'number' || !parentId) return
+            if (item.id) {
+                // Move existing section before this one
+                const itemType = item.type ?? item.tagName
+                if (itemType === 'mj-section' || itemType === 'enhanced-section') {
+                    safeOnMove(item.id, parentId, index)
+                }
+            } else if (item.type && !item.id) {
+                const itemType = item.type ?? item.tagName
+                if (itemType === 'mj-section' || itemType === 'enhanced-section') {
+                    const newSection: EditorElement = {
+                        id: generateId(),
+                        type: item.type,
+                        tagName: item.tagName ?? item.type,
+                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
+                        children: [],
+                    }
+                    safeOnElementAdd(newSection, parentId, index)
+                }
+            }
+        },
+        collect: (monitor) => ({
+            isOver: monitor.isOver({ shallow: true }),
+            canDrop: monitor.canDrop(),
+        }),
+        canDrop: (item) => {
+            if (isPreviewMode || isGlobalLock) return false
+            if (!isSectionElement) return false
+            if (typeof index !== 'number' || !parentId) return false
+            const itemType = item.type ?? item.tagName
+            return itemType === 'mj-section' || itemType === 'enhanced-section'
+        },
+    })
+
+    const [{ isOver: isOverBottom, canDrop: canDropBottom }, dropBottom] = useDrop({
+        accept: ['element', 'component'],
+        drop: (item: any) => {
+            if (isPreviewMode || isGlobalLock) return
+            if (!isSectionElement) return
+            if (typeof index !== 'number' || !parentId) return
+            const insertIndex = (typeof index === 'number') ? index + 1 : 0
+            if (item.id) {
+                const itemType = item.type ?? item.tagName
+                if (itemType === 'mj-section' || itemType === 'enhanced-section') {
+                    safeOnMove(item.id, parentId, insertIndex)
+                }
+            } else if (item.type && !item.id) {
+                const itemType = item.type ?? item.tagName
+                if (itemType === 'mj-section' || itemType === 'enhanced-section') {
+                    const newSection: EditorElement = {
+                        id: generateId(),
+                        type: item.type,
+                        tagName: item.tagName ?? item.type,
+                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
+                        children: [],
+                    }
+                    safeOnElementAdd(newSection, parentId, insertIndex)
+                }
+            }
+        },
+        collect: (monitor) => ({
+            isOver: monitor.isOver({ shallow: true }),
+            canDrop: monitor.canDrop(),
+        }),
+        canDrop: (item) => {
+            if (isPreviewMode || isGlobalLock) return false
+            if (!isSectionElement) return false
+            if (typeof index !== 'number' || !parentId) return false
+            const itemType = item.type ?? item.tagName
+            return itemType === 'mj-section' || itemType === 'enhanced-section'
         },
     })
 
     // Combine drag and drop refs
     const combinedRef = (node: HTMLDivElement | null) => {
         if (node) {
-            (elementRef as React.MutableRefObject<HTMLDivElement | null>).current = node
             // Do not attach drag/drop handlers while editing mj-text
             if (!isPreviewMode && !isGlobalLock && !(isEditing && inlineEditableTags.has(element.tagName))) {
                 drag(node)
@@ -176,7 +269,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             'mj-accordion-element': ['mj-accordion-title', 'mj-accordion-text'],
             'mj-carousel': ['mj-carousel-image'],
         }
-        return rules[tagName] || []
+        return rules[tagName] ?? []
     }
 
     // inlineEditableTags declared above
@@ -274,9 +367,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 if (attributes['background-url']) {
                     const bg = cssUrl(attributes['background-url'])
                     if (bg) baseStyle.backgroundImage = bg
-                    baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
-                    baseStyle.backgroundSize = attributes['background-size'] || 'cover'
-                    baseStyle.backgroundPosition = attributes['background-position'] || 'center'
+                    baseStyle.backgroundRepeat = attributes['background-repeat'] ?? 'no-repeat'
+                    baseStyle.backgroundSize = attributes['background-size'] ?? 'cover'
+                    baseStyle.backgroundPosition = attributes['background-position'] ?? 'center'
                 }
                 baseStyle.width = '100%'
                 break
@@ -285,9 +378,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 if (attributes['background-url']) {
                     const bg = cssUrl(attributes['background-url'])
                     if (bg) baseStyle.backgroundImage = bg
-                    baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
-                    baseStyle.backgroundSize = attributes['background-size'] || 'cover'
-                    baseStyle.backgroundPosition = attributes['background-position'] || 'center'
+                    baseStyle.backgroundRepeat = attributes['background-repeat'] ?? 'no-repeat'
+                    baseStyle.backgroundSize = attributes['background-size'] ?? 'cover'
+                    baseStyle.backgroundPosition = attributes['background-position'] ?? 'center'
                 }
                 baseStyle.width = '100%'
                 break
@@ -313,22 +406,22 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     if (bg) baseStyle.backgroundImage = bg
                 }
                 // Allow overriding background-* via attributes, fallback to sensible defaults
-                baseStyle.backgroundRepeat = attributes['background-repeat'] || (attributes['background-url'] ? 'no-repeat' : undefined)
-                baseStyle.backgroundSize = attributes['background-size'] || (attributes['background-url'] ? 'cover' : undefined)
-                baseStyle.backgroundPosition = attributes['background-position'] || (attributes['background-url'] ? 'center' : undefined)
+                baseStyle.backgroundRepeat = attributes['background-repeat'] ?? (attributes['background-url'] ? 'no-repeat' : undefined)
+                baseStyle.backgroundSize = attributes['background-size'] ?? (attributes['background-url'] ? 'cover' : undefined)
+                baseStyle.backgroundPosition = attributes['background-position'] ?? (attributes['background-url'] ? 'center' : undefined)
                 if (attributes['background-color']) baseStyle.backgroundColor = attributes['background-color']
-                baseStyle.height = attributes.height || '300px'
+                baseStyle.height = attributes.height ?? '300px'
                 baseStyle.display = 'flex'
                 baseStyle.alignItems = 'center'
                 baseStyle.justifyContent = 'center'
-                baseStyle.textAlign = attributes['text-align'] || 'center'
+                baseStyle.textAlign = attributes['text-align'] ?? 'center'
                 break
             }
             case 'mj-social': {
                 baseStyle.display = 'flex'
                 baseStyle.flexWrap = 'wrap'
-                baseStyle.gap = attributes['icon-padding'] || '8px'
-                const align = attributes.align || 'left'
+                baseStyle.gap = attributes['icon-padding'] ?? '8px'
+                const align = attributes.align ?? 'left'
                 baseStyle.justifyContent = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'
                 break
             }
@@ -336,7 +429,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 baseStyle.display = 'flex'
                 baseStyle.flexWrap = 'wrap'
                 baseStyle.gap = '8px'
-                const align = attributes.align || 'left'
+                const align = attributes.align ?? 'left'
                 baseStyle.justifyContent = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'
                 break
             }
@@ -345,9 +438,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 if (attributes['background-url']) {
                     const bg = cssUrl(attributes['background-url'])
                     if (bg) baseStyle.backgroundImage = bg
-                    baseStyle.backgroundRepeat = attributes['background-repeat'] || 'no-repeat'
-                    baseStyle.backgroundSize = attributes['background-size'] || 'cover'
-                    baseStyle.backgroundPosition = attributes['background-position'] || 'center'
+                    baseStyle.backgroundRepeat = attributes['background-repeat'] ?? 'no-repeat'
+                    baseStyle.backgroundSize = attributes['background-size'] ?? 'cover'
+                    baseStyle.backgroundPosition = attributes['background-position'] ?? 'center'
                 }
                 break
             }
@@ -359,7 +452,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 break
             }
             case 'mj-accordion': {
-                baseStyle.border = attributes.border || undefined
+                baseStyle.border = attributes.border ?? undefined
                 break
             }
         }
@@ -383,7 +476,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     : (
                         <div
                             className="mj-text-content"
-                            style={{ textAlign: attributes['text-align'] || attributes.align }}
+                            style={{ textAlign: attributes['text-align'] ?? attributes.align }}
                             dangerouslySetInnerHTML={{ __html: content ?? 'Your text here' }}
                         />
                     )
@@ -409,13 +502,13 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         <button
                             className="mj-button-content"
                             style={{
-                                backgroundColor: attributes['background-color'] || 'var(--color-blue)',
-                                color: attributes.color || 'var(--color-on-primary)',
-                                borderRadius: attributes['border-radius'] || '4px',
-                                padding: attributes['inner-padding'] || attributes.padding || '10px 25px',
-                                border: attributes.border || 'none',
+                                backgroundColor: attributes['background-color'] ?? 'var(--color-blue)',
+                                color: attributes.color ?? 'var(--color-on-primary)',
+                                borderRadius: attributes['border-radius'] ?? '4px',
+                                padding: attributes['inner-padding'] ?? attributes.padding ?? '10px 25px',
+                                border: attributes.border ?? 'none',
                                 cursor: 'pointer',
-                                fontSize: attributes['font-size'] || '14px',
+                                fontSize: attributes['font-size'] ?? '14px',
                                 fontFamily: attributes['font-family'],
                                 textDecoration: 'none',
                                 display: 'inline-block',
@@ -430,8 +523,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             case 'mj-image':
                 return (
                     <img
-                        src={attributes.src || 'https://placehold.co/600x200?text=Image'}
-                        alt={attributes.alt || 'Image'}
+                        src={attributes.src ?? 'https://placehold.co/600x200?text=Image'}
+                        alt={attributes.alt ?? 'Image'}
                         style={{
                             width: attributes.width
                                 ? (attributes.width.toLowerCase() === 'auto'
@@ -456,8 +549,8 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 return (
                     <hr
                         style={{
-                            borderColor: attributes['border-color'] || 'var(--color-grey-hard)',
-                            borderWidth: attributes['border-width'] || '1px',
+                            borderColor: attributes['border-color'] ?? 'var(--color-grey-hard)',
+                            borderWidth: attributes['border-width'] ?? '1px',
                             borderStyle: 'solid',
                             margin: '10px 0',
                         }}
@@ -468,7 +561,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 return (
                     <div
                         style={{
-                            height: attributes.height || '20px',
+                            height: attributes.height ?? '20px',
                             backgroundColor: 'transparent',
                         }}
                     />
@@ -490,7 +583,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
             case 'mj-column':
                 return (
-                    <div className="mj-column-content" style={{ textAlign: attributes['text-align'] || attributes.align }}>
+                    <div className="mj-column-content" style={{ textAlign: attributes['text-align'] ?? attributes.align }}>
                         {children}
                     </div>
                 )
@@ -517,10 +610,10 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 )
 
             case 'mj-navbar-link': {
-                const href = attributes.href || '#'
-                const target = attributes.target || '_blank'
-                const linkColor = attributes.color || 'var(--color-on-background)'
-                const linkPadding = attributes.padding || '10px 15px'
+                const href = attributes.href ?? '#'
+                const target = attributes.target ?? '_blank'
+                const linkColor = attributes.color ?? 'var(--color-on-background)'
+                const linkPadding = attributes.padding ?? '10px 15px'
                 const fontSize = attributes['font-size']
                 const fontFamily = attributes['font-family']
                 return isEditing
@@ -556,7 +649,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         style={{
                             display: 'flex',
                             flexWrap: 'wrap',
-                            gap: attributes['icon-padding'] || '8px',
+                            gap: attributes['icon-padding'] ?? '8px',
                             width: '100%',
                             justifyContent:
                                 (attributes.align === 'center')
@@ -571,9 +664,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 )
 
             case 'mj-social-element': {
-                const name = attributes.name || 'web'
-                const href = attributes.href || '#'
-                const target = attributes.target || '_blank'
+                const name = attributes.name ?? 'web'
+                const href = attributes.href ?? '#'
+                const target = attributes.target ?? '_blank'
                 const src = attributes.src as string | undefined
                 const iconSize = (attributes['icon-size'] as string | undefined) ?? '24px'
                 const bg = attributes['background-color'] as string | undefined
@@ -617,10 +710,10 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             }
 
             case 'mj-table': {
-                const align = attributes.align || 'left'
-                const width = attributes.width || '100%'
-                const cellpadding = attributes.cellpadding || '0'
-                const cellspacing = attributes.cellspacing || '0'
+                const align = attributes.align ?? 'left'
+                const width = attributes.width ?? '100%'
+                const cellpadding = attributes.cellpadding ?? '0'
+                const cellspacing = attributes.cellspacing ?? '0'
                 return (
                     <table
                         style={{ width, textAlign: align, borderCollapse: 'collapse' }}
@@ -678,6 +771,25 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             data-element-type={element.tagName}
         >
             {renderElementContent()}
+
+            {!isPreviewMode && isDraggingSectionLike && isSectionElement && typeof index === 'number' && parentId && (
+                <>
+                    <div
+                        ref={dropTop}
+                        className={`section-drop-zone section-drop-zone--top ${isOverTop && canDropTop ? 'over' : ''}`}
+                        data-label="Drop above"
+                    >
+                        <div className="drop-line"></div>
+                    </div>
+                    <div
+                        ref={dropBottom}
+                        className={`section-drop-zone section-drop-zone--bottom ${isOverBottom && canDropBottom ? 'over' : ''}`}
+                        data-label="Drop below"
+                    >
+                        <div className="drop-line"></div>
+                    </div>
+                </>
+            )}
 
             {!isPreviewMode && !isEditing && (isSelected || isHovered) && inlineEditableTags.has(element.tagName) && (
                 <div className="inline-edit-hint">Double-click to edit</div>

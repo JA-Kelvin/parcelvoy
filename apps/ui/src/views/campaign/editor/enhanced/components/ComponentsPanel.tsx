@@ -23,7 +23,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '📐',
         defaultAttributes: {
-            padding: '20px 0',
+            padding: '0px 0',
         },
         allowedChildren: ['mj-column', 'mj-group'],
     },
@@ -34,7 +34,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '✨',
         defaultAttributes: {
-            padding: '20px 0',
+            padding: '0px 0',
         },
         allowedChildren: ['mj-column', 'mj-group'],
     },

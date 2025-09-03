@@ -99,7 +99,7 @@ const Canvas: React.FC<CanvasProps> = ({
                             id: generateId(),
                             type: 'mj-section',
                             tagName: 'mj-section',
-                            attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                            attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                             children: [],
                         }
                         safeOnElementAdd(section, mjmlBody.id)
@@ -117,7 +117,7 @@ const Canvas: React.FC<CanvasProps> = ({
                             id: generateId(),
                             type: 'mj-section',
                             tagName: 'mj-section',
-                            attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                            attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                             children: [],
                         }
                         safeOnElementAdd(section, mjmlBody.id)
@@ -142,7 +142,7 @@ const Canvas: React.FC<CanvasProps> = ({
                             id: generateId(),
                             type: 'mj-section',
                             tagName: 'mj-section',
-                            attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                            attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                             children: [],
                         }
                         safeOnElementAdd(section, mjmlBody.id)
@@ -196,7 +196,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         id: generateId(),
                         type: 'mj-section',
                         tagName: 'mj-section',
-                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                         children: [],
                     }
                     safeOnElementAdd(section, mjmlBody.id)
@@ -236,7 +236,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         id: generateId(),
                         type: 'mj-section',
                         tagName: 'mj-section',
-                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                         children: [],
                     }
                     safeOnElementAdd(newSection, mjmlBody.id)
@@ -276,7 +276,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         id: generateId(),
                         type: 'mj-section',
                         tagName: 'mj-section',
-                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                         children: [],
                     }
                     safeOnElementAdd(section, mjmlBody.id)
@@ -340,7 +340,7 @@ const Canvas: React.FC<CanvasProps> = ({
                         id: generateId(),
                         type: 'mj-section',
                         tagName: 'mj-section',
-                        attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                         children: [],
                     }
                     safeOnElementAdd(newSection, mjmlBody.id)
@@ -375,7 +375,7 @@ const Canvas: React.FC<CanvasProps> = ({
                     id: generateId(),
                     type: 'mj-section',
                     tagName: 'mj-section',
-                    attributes: { 'background-color': '#ffffff', padding: '20px 0' },
+                    attributes: { 'background-color': '#ffffff', padding: '0px 0' },
                     children: [],
                 }
                 const newColumn: EditorElement = {
