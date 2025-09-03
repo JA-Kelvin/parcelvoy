@@ -130,6 +130,28 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             return
         }
 
+        // mj-button: width supports px or %. Coerce numeric to px; clear invalid.
+        if (selectedElement.tagName === 'mj-button' && key === 'width') {
+            const raw = (value || '').trim()
+            if (raw === '') {
+                updatedAttributes[key] = undefined
+            } else if (/^\s*\d+\s*%\s*$/i.test(raw)) {
+                const m = raw.match(/^(\s*(\d+)\s*)%\s*$/i)
+                const percent = m?.[2]
+                updatedAttributes[key] = percent ? `${percent}%` : undefined
+            } else {
+                const m = raw.match(/^\s*(\d+)\s*(px)?\s*$/i)
+                const px = m?.[1]
+                if (px) {
+                    updatedAttributes[key] = `${px}px`
+                } else {
+                    updatedAttributes[key] = undefined
+                }
+            }
+            onElementUpdate(selectedElement.id, updatedAttributes)
+            return
+        }
+
         if (value === '') {
             updatedAttributes[key] = undefined
         } else {
@@ -168,6 +190,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         { key: 'font-weight', label: 'Font Weight', type: 'select', options: ['normal', 'bold'] },
                         { key: 'border-radius', label: 'Border Radius', type: 'text', placeholder: '4px' },
                         { key: 'padding', label: 'Padding', type: 'text', placeholder: '12px 24px' },
+                        { key: 'width', label: 'Width', type: 'text', placeholder: '200px or 60%' },
                         { key: 'href', label: 'Link URL', type: 'url', placeholder: 'https://example.com' },
                         { key: 'target', label: 'Link Target', type: 'select', options: ['_self', '_blank'] },
                     ],
@@ -499,6 +522,14 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         <div className="input-group">
                             {inputEl}
                             <div className="help-text">Pixels only (e.g., 600). Leave empty for fluid width; for full-bleed use section “Full Width”.</div>
+                        </div>
+                    )
+                }
+                if (selectedElement.tagName === 'mj-button' && attr.key === 'width') {
+                    return (
+                        <div className="input-group">
+                            {inputEl}
+                            <div className="help-text">Supports px (e.g., 200px) or % (e.g., 60%). Leave empty for auto.</div>
                         </div>
                     )
                 }

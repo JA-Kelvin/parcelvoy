@@ -118,9 +118,9 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
             + '  /* Preview-only: normalize and mirror canvas wrapper (.mjml-body-wrapper) */\n'
             + '  html, body { height: 100%; }\n'
             + '  *, *::before, *::after { box-sizing: border-box; }\n'
-            + '  body { margin: 0; background: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #111; }\n'
+            + '  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #111; }\n'
             + '  /* Center common top-level wrappers output by MJML */\n'
-            + '  body > div { margin-left: auto !important; margin-right: auto !important; max-width: 660px !important; padding: 20px; background: #ffffff; border-radius: 0; }\n'
+            + '  body > div { margin-left: auto !important; margin-right: auto !important; max-width: 660px !important; padding: 0 10px 0 10px; border-radius: 0; }\n'
             + '  body > table { margin-left: auto !important; margin-right: auto !important; }\n'
             + '  body > center > table { margin-left: auto !important; margin-right: auto !important; }\n'
             + '  /* Fallback: also center the first child regardless of tag */\n'
@@ -295,7 +295,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
 
                                             <div className="preview-info">
                                                 <div className="viewport-info">
-                                                    {viewMode === 'desktop' && '🖥️ Desktop (660px)'}
+                                                    {viewMode === 'desktop' && '🖥️ Desktop (1024px)'}
                                                     {viewMode === 'tablet' && '📱 Tablet (768px)'}
                                                     {viewMode === 'mobile' && '📱 Mobile (375px)'}
                                                 </div>

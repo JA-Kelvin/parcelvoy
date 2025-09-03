@@ -23,7 +23,6 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '📐',
         defaultAttributes: {
-            'background-color': '#ffffff',
             padding: '20px 0',
         },
         allowedChildren: ['mj-column', 'mj-group'],
@@ -35,7 +34,6 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '✨',
         defaultAttributes: {
-            'background-color': '#ffffff',
             padding: '20px 0',
         },
         allowedChildren: ['mj-column', 'mj-group'],
@@ -68,7 +66,6 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         icon: '🧳',
         defaultAttributes: {
             padding: '0',
-            'background-color': '#ffffff',
         },
         allowedChildren: ['mj-section', 'enhanced-section'],
     },

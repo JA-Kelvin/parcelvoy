@@ -17,7 +17,7 @@
 
 .droppable-element.dragging {
     opacity: 0.5;
-    transform: rotate(2deg);
+    transform: scale(0.95);
 }
 
 .droppable-element.drop-target {
@@ -26,8 +26,9 @@
 
 /* Element-specific styles */
 .element-mj-section {
-    margin-bottom: 10px;
+    max-width: 600px;
     border-radius: 4px;
+    margin: auto;
 }
 
 /* Enhanced section mirrors mj-section styling */
@@ -52,17 +53,17 @@
 }
 
 .element-mj-button {
-    padding: 8px;
+    padding: 0px;
     text-align: inherit;
 }
 
 .element-mj-image {
     text-align: inherit;
-    padding: 8px;
+    padding: 0px;
 }
 
 .element-mj-divider {
-    padding: 8px 0;
+    padding: 0px 0;
 }
 
 .element-mj-spacer {
@@ -103,6 +104,7 @@
 
 .mj-section-content {
     display: flex;
+    justify-content: center;
     flex-wrap: wrap;
     width: 100%;
 }

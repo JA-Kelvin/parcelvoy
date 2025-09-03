@@ -32,8 +32,8 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
 }
 
 .mjml-body-wrapper {
-    max-width: 660px;
-    padding: 20px;
+    max-width: 1024px;
+    padding: 1px 1px 1px 1px;
     margin: 0 auto;
     background: var(--color-background);
     box-shadow: 0 4px 6px -1px var(--color-shadow), 0 2px 4px -1px var(--color-shadow-soft);
