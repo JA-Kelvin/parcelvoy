@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast/headless'
 import { useTranslation } from 'react-i18next'
 import EnhancedVisualEditor from './EnhancedVisualEditor'
 import ResourceModal from './ResourceModal'
-import { TemplateContextProvider } from '../TemplateContextProvider'
+import { TemplateContextProvider } from '../template/TemplateContextProvider'
 
 const VisualEditor = lazy(async () => await import('./VisualEditor'))
 

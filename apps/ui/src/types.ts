@@ -208,7 +208,7 @@ export interface Project {
     has_provider?: boolean
 }
 
-export type ChannelType = 'email' | 'push' | 'text' | 'webhook'
+export type ChannelType = 'email' | 'push' | 'text' | 'webhook' | 'in_app'
 
 export type ProjectCreate = Omit<Project, 'id' | AuditFields>
 
@@ -402,10 +402,10 @@ export interface Campaign {
     channel: ChannelType
     state: CampaignState
     delivery: CampaignDelivery
-    provider_id: number
-    provider: Provider
+    provider_id?: number
+    provider?: Provider
     subscription_id?: number
-    subscription: Subscription
+    subscription?: Subscription
     templates: Template[]
     list_ids?: number[]
     lists?: List[]
@@ -471,6 +471,24 @@ export interface WebhookTemplateData {
     cache_key?: string
 }
 
+type NotificationType = 'banner' | 'alert' | 'html'
+export type InAppTemplateData = {
+    title: string
+    body: string
+    custom: Record<string, string | number>
+    type: NotificationType
+    read_on_view?: boolean
+} & (
+    | {
+        type: 'alert'
+        image?: string
+    }
+    | {
+        type: 'html'
+        html: string
+    }
+)
+
 export type Template = {
     id: number
     campaign_id: number
@@ -497,6 +515,10 @@ export type Template = {
     | {
         type: 'webhook'
         data: WebhookTemplateData
+    }
+    | {
+        type: 'in_app'
+        data: InAppTemplateData
     }
 )
 
