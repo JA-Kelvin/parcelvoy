@@ -685,7 +685,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
         try {
             const payload = (input as any)
             const block: TemplateBlock = 'id' in payload ? (payload as TemplateBlock) : payload.block
-            const insertionMode: 'append' | 'above' | 'below' = 'insertionMode' in payload && payload.insertionMode ? payload.insertionMode : 'append'
+            const insertionMode: 'append' | 'above' | 'below' = 'insertionMode' in payload && payload.insertionMode ? payload.insertionMode : 'below'
 
             const clones = toArray<EditorElement>(block.elements).map(cloneWithNewIds)
             if (clones.length === 0) {
@@ -789,7 +789,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                 toast.error('Template not found')
                 return
             }
-            insertTemplateBlock({ block, insertionMode })
+            insertTemplateBlock({ block, insertionMode: insertionMode ?? 'below' })
         } catch (e) {
             console.error('onTemplateInsert failed:', e)
             toast.error('Failed to insert template')

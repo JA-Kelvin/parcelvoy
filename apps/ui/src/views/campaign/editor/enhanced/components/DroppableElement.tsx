@@ -1,7 +1,7 @@
 // Droppable Element Component for Enhanced MJML Editor
 import React, { useState, useRef } from 'react'
 import { useDrag, useDrop, useDragLayer } from 'react-dnd'
-import { EditorElement } from '../types'
+import { EditorElement, TemplateBlock } from '../types'
 import './DroppableElement.css'
 import RichTextEditor from './RichTextEditor'
 import { generateId } from '../utils/mjmlParser'
@@ -23,6 +23,7 @@ interface DroppableElementProps {
     onEditButtonClick?: (elementId: string) => void
     onCopyElement?: (elementId: string) => void
     onDuplicateElement?: (elementId: string) => void
+    onTemplateDrop?: (payload: TemplateBlock | { block: TemplateBlock, insertionMode?: 'append' | 'above' | 'below', anchorId?: string }) => void
     parentId?: string
     index?: number
     siblingsCount?: number
@@ -45,6 +46,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     onEditButtonClick,
     onCopyElement,
     onDuplicateElement,
+    onTemplateDrop,
     parentId,
     index,
     siblingsCount,
@@ -68,6 +70,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const safeOnEditButtonClick = onEditButtonClick ?? (() => {})
     const safeOnCopyElement = onCopyElement ?? (() => {})
     const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
+    const safeOnTemplateDrop = onTemplateDrop ?? (() => {})
     const isGlobalLock = !!globalEditingLock
     const safeOnInlineEditStart = onInlineEditStart ?? (() => {})
     const safeOnInlineEditEnd = onInlineEditEnd ?? (() => {})
@@ -106,12 +109,13 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     })
 
     // Show enlarged section drop zones only when a section is being dragged
-    const { isDraggingSectionLike } = useDragLayer((monitor) => {
+    const { isDraggingSectionLike, isDraggingTemplate } = useDragLayer((monitor) => {
         const dragging = monitor.isDragging()
         const item = monitor.getItem()
         const itemType = isTypeOrTag(item) ? (item.type ?? item.tagName) : undefined
         const isSection = itemType === 'mj-section' || itemType === 'enhanced-section'
-        return { isDraggingSectionLike: !!(dragging && isSection) }
+        const isTemplate = itemType === 'template'
+        return { isDraggingSectionLike: !!(dragging && isSection), isDraggingTemplate: !!(dragging && isTemplate) }
     })
 
     // Drop functionality for accepting other elements
@@ -163,19 +167,24 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const isSectionElement = element.tagName === 'mj-section' || element.tagName === 'enhanced-section'
 
     const [{ isOver: isOverTop, canDrop: canDropTop }, dropTop] = useDrop({
-        accept: ['element', 'component'],
+        accept: ['element', 'component', 'template'],
         drop: (item: any) => {
             if (isPreviewMode || isGlobalLock) return
             if (!isSectionElement) return
             if (typeof index !== 'number' || !parentId) return
+            const itemType = item.type ?? item.tagName
             if (item.id) {
                 // Move existing section before this one
-                const itemType = item.type ?? item.tagName
                 if (itemType === 'mj-section' || itemType === 'enhanced-section') {
                     safeOnMove(item.id, parentId, index)
                 }
+            } else if (itemType === 'template') {
+                const block: TemplateBlock | null = item?.block ?? (item && Array.isArray(item.elements) ? (item as TemplateBlock) : null)
+                if (block) {
+                    // Enforce fixed insertion mode 'below' and avoid requiring anchorId
+                    safeOnTemplateDrop({ block, insertionMode: 'below' })
+                }
             } else if (item.type && !item.id) {
-                const itemType = item.type ?? item.tagName
                 if (itemType === 'mj-section' || itemType === 'enhanced-section') {
                     const newSection: EditorElement = {
                         id: generateId(),
@@ -197,24 +206,29 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             if (!isSectionElement) return false
             if (typeof index !== 'number' || !parentId) return false
             const itemType = item.type ?? item.tagName
-            return itemType === 'mj-section' || itemType === 'enhanced-section'
+            return itemType === 'template' || itemType === 'mj-section' || itemType === 'enhanced-section'
         },
     })
 
     const [{ isOver: isOverBottom, canDrop: canDropBottom }, dropBottom] = useDrop({
-        accept: ['element', 'component'],
+        accept: ['element', 'component', 'template'],
         drop: (item: any) => {
             if (isPreviewMode || isGlobalLock) return
             if (!isSectionElement) return
             if (typeof index !== 'number' || !parentId) return
             const insertIndex = (typeof index === 'number') ? index + 1 : 0
+            const itemType = item.type ?? item.tagName
             if (item.id) {
-                const itemType = item.type ?? item.tagName
                 if (itemType === 'mj-section' || itemType === 'enhanced-section') {
                     safeOnMove(item.id, parentId, insertIndex)
                 }
+            } else if (itemType === 'template') {
+                const block: TemplateBlock | null = item?.block ?? (item && Array.isArray(item.elements) ? (item as TemplateBlock) : null)
+                if (block) {
+                    // Enforce fixed insertion mode 'below' and avoid requiring anchorId
+                    safeOnTemplateDrop({ block, insertionMode: 'below' })
+                }
             } else if (item.type && !item.id) {
-                const itemType = item.type ?? item.tagName
                 if (itemType === 'mj-section' || itemType === 'enhanced-section') {
                     const newSection: EditorElement = {
                         id: generateId(),
@@ -236,7 +250,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             if (!isSectionElement) return false
             if (typeof index !== 'number' || !parentId) return false
             const itemType = item.type ?? item.tagName
-            return itemType === 'mj-section' || itemType === 'enhanced-section'
+            return itemType === 'template' || itemType === 'mj-section' || itemType === 'enhanced-section'
         },
     })
 
@@ -772,7 +786,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         >
             {renderElementContent()}
 
-            {!isPreviewMode && isDraggingSectionLike && isSectionElement && typeof index === 'number' && parentId && (
+            {!isPreviewMode && (isDraggingSectionLike || isDraggingTemplate) && isSectionElement && typeof index === 'number' && parentId && (
                 <>
                     <div
                         ref={dropTop}

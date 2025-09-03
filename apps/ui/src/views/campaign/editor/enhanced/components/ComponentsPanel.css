@@ -61,21 +61,22 @@
 /* Subtabs for components/presets/saved */
 .subtabs {
     display: flex;
-    gap: 8px;
-    padding: 0 20px 12px 20px;
     border-bottom: 1px solid var(--color-grey-hard);
-    margin-bottom: 12px;
+    background: var(--color-background-soft);
+    height: 60px;
 }
 
 .subtab-button {
-    background: var(--color-background);
-    border: 1px solid var(--color-grey-hard);
-    color: var(--color-on-background);
-    font-size: 12px;
-    padding: 6px 10px;
-    border-radius: 6px;
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
+    border: none;
     cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-primary-soft);
     transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
 }
 
 .subtab-button:hover {
@@ -310,8 +311,8 @@
 
 /* Larger inline preview area (actual size set inline) */
 .component-item.template .template-preview {
-    width: 320px; /* fallback; real size comes from inline style */
-    height: 220px; /* fallback; real size comes from inline style */
+    width: 360px; /* fallback; real size comes from inline style */
+    height: 240px; /* fallback; real size comes from inline style */
     border-radius: 10px;
     overflow: hidden;
     margin: 0 auto;

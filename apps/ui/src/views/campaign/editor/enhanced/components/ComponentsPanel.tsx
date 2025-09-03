@@ -379,8 +379,8 @@ const DraggableTemplate: React.FC<DraggableTemplateProps> = ({ block, insertionM
     const [html, setHtml] = React.useState<string>('')
     const [loaded, setLoaded] = React.useState<boolean>(false)
     // Wider preview to better convey template details
-    const width = 320 // tile preview width (px)
-    const height = 220 // tile preview height (px)
+    const width = 360 // tile preview width (px)
+    const height = 240 // tile preview height (px)
     const iframeWidth = 600
     const iframeHeight = height * (iframeWidth / width)
 
@@ -491,17 +491,7 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 
     return (
         <div className="components-panel">
-            <div className="panel-header">
-                <h3>Components</h3>
-                <button
-                    className="toggle-button"
-                    onClick={onToggleCollapse}
-                    title="Collapse Components Panel"
-                >
-                </button>
-            </div>
-
-            <div className="panel-content">
+            <div>
                 {/* Sub-tabs: Components | Presets | Saved */}
                 <div className="subtabs">
                     <button
@@ -526,6 +516,9 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                         Saved
                     </button>
                 </div>
+            </div>
+
+            <div className="panel-content">
 
                 {/* Components Tab */}
                 {activeTab === 'components' && (
@@ -575,9 +568,6 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                         {savedBlocks.length > 0
                             ? (
                                 <div className="component-grid templates-grid">
-                                    {savedBlocks.map(block => (
-                                        <DraggableTemplate key={block.id} block={block} insertionMode={insertionMode} onInsert={(b) => safeOnTemplateInsert(b.id, insertionMode)} />
-                                    ))}
                                     <div
                                         className="component-item custom"
                                         role="button"
@@ -594,6 +584,9 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                                         <div className="component-icon">🧩</div>
                                         <div className="component-name">Open Custom Templates</div>
                                     </div>
+                                    {savedBlocks.map(block => (
+                                        <DraggableTemplate key={block.id} block={block} insertionMode={insertionMode} onInsert={(b) => safeOnTemplateInsert(b.id, insertionMode)} />
+                                    ))}
                                 </div>
                             )
                             : (
