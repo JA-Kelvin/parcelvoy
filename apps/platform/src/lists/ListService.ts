@@ -153,6 +153,7 @@ export const staticListRule = (list: List) => {
     return make({
         type: 'wrapper',
         operator: 'and',
+        group: 'parent',
         children: [make({
             path: '$.name',
             value: 'user_imported_to_list',
