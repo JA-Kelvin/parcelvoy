@@ -44,7 +44,7 @@ export default function PreviewImage({
                 frameBorder="0"
                 scrolling="no"
                 srcDoc={html}
-                sandbox="allow-same-origin"
+                sandbox="allow-scripts allow-same-origin"
                 width={iframeWidth}
                 height={iframeHeight}
                 style={{

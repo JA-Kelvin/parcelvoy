@@ -11,6 +11,11 @@
 }
 
 .droppable-element.selected {
+    outline: 2px dashed var(--color-blue) !important;
+    outline-offset: 2px;
+}
+
+.droppable-element:hover {
     outline: 2px solid var(--color-blue) !important;
     outline-offset: 2px;
 }

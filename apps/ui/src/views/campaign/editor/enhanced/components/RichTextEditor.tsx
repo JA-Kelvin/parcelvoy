@@ -1,8 +1,8 @@
-// RichTextEditor: Quill v2-based inline editor for mj-text
+// RichTextEditor: Quill v2-based inline editor for mj-text (no react-quill)
 import React from 'react'
-import ReactQuill from 'react-quill'
+import Quill from 'quill'
 import DOMPurify from 'dompurify'
-import 'react-quill/dist/quill.snow.css'
+import 'quill/dist/quill.snow.css'
 
 interface RichTextEditorProps {
     content: string
@@ -44,7 +44,10 @@ const sanitizeHtml = (html: string): string => {
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onSave, onCancel }) => {
-    const quillRef = React.useRef<ReactQuill | null>(null)
+    const wrapperRef = React.useRef<HTMLDivElement | null>(null)
+    const editorRef = React.useRef<HTMLDivElement | null>(null)
+    const toolbarRef = React.useRef<HTMLElement | null>(null)
+    const quillRef = React.useRef<Quill | null>(null)
     const [value, setValue] = React.useState<string>(content || '')
 
     const modules = React.useMemo(() => ({
@@ -60,15 +63,83 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onSave, onCanc
         history: { delay: 600, maxStack: 50, userOnly: true },
         clipboard: { matchVisual: true },
     }), [])
+    // Mount: initialize Quill ONCE to avoid duplicate toolbars
+    React.useEffect(() => {
+        if (editorRef.current == null || quillRef.current) return
 
-    const formats = React.useMemo(
-        () => ['bold', 'italic', 'underline', 'list', 'bullet', 'link', 'size', 'color', 'background'],
-        [],
-    )
+        const q = new Quill(editorRef.current, {
+            theme: 'snow',
+            placeholder: 'Type your text...',
+            modules,
+        })
+        quillRef.current = q
+
+        // Initialize with sanitized HTML
+        const initial = sanitizeHtml(content || '')
+        q.clipboard.dangerouslyPasteHTML(initial)
+        setValue(q.root.innerHTML)
+
+        // Track content changes
+        q.on('text-change', () => {
+            setValue(q.root.innerHTML)
+        })
+
+        // Capture toolbar container to prevent blur-commit when interacting with toolbar
+        const toolbarModule = q.getModule('toolbar') as any
+        if (toolbarModule?.container) {
+            toolbarRef.current = toolbarModule.container as HTMLElement
+        }
+
+        // Focus editor and move caret to end after mount
+        // Use a microtask to ensure DOM is ready
+        void Promise.resolve().then(() => {
+            try {
+                q.focus()
+                const len = q.getLength()
+                q.setSelection(len, 0)
+            } catch {}
+        })
+
+        return () => {
+            if (quillRef.current) {
+                quillRef.current = null
+            }
+            toolbarRef.current = null
+        }
+    // Empty dependency array ensures this runs only once on mount
+    }, [])
+
+    // Update content in existing Quill instance when prop changes (no re-init)
+    React.useEffect(() => {
+        const q = quillRef.current
+        if (!q) return
+
+        const sanitized = sanitizeHtml(content || '')
+        const current = q.root.innerHTML
+
+        if (sanitized !== current) {
+            const sel = q.getSelection()
+            // Temporarily remove text-change handler to avoid setValue loop
+            const textChangeHandlers = q.emitter.listeners('text-change')
+            q.emitter.removeAllListeners('text-change')
+
+            // Update content
+            q.clipboard.dangerouslyPasteHTML(sanitized)
+            setValue(q.root.innerHTML)
+
+            // Restore handlers
+            textChangeHandlers.forEach(handler =>
+                q.emitter.on('text-change', handler),
+            )
+
+            // Try to restore selection near end
+            const len = q.getLength()
+            q.setSelection(sel ? Math.min(sel.index, len - 1) : len, 0)
+        }
+    }, [content])
 
     const commitSave = React.useCallback(() => {
-        const editor = quillRef.current?.getEditor()
-        const html = editor?.root.innerHTML ?? value
+        const html = quillRef.current?.root.innerHTML ?? value
         const sanitized = sanitizeHtml(html)
         onSave(sanitized)
     }, [value, onSave])
@@ -87,30 +158,25 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onSave, onCanc
     }
 
     const handleWrapperBlur: React.FocusEventHandler<HTMLDivElement> = (e) => {
-        // Only commit if focus leaves the entire editor wrapper
+        // Only commit if focus leaves the editor and its toolbar
         const next = e.relatedTarget as Node | null
-        if (!next || !e.currentTarget.contains(next)) {
+        const stillInWrapper = next && wrapperRef.current?.contains(next)
+        const inToolbar = next && toolbarRef.current?.contains(next)
+        if (!stillInWrapper && !inToolbar) {
             commitSave()
         }
     }
 
     return (
         <div
+            ref={wrapperRef}
             className="rich-text-editor"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDown}
             onBlur={handleWrapperBlur}
         >
-            <ReactQuill
-                ref={quillRef}
-                theme="snow"
-                value={value}
-                onChange={setValue}
-                modules={modules}
-                formats={formats}
-                placeholder="Type your text..."
-            />
+            <div ref={editorRef} />
             <div style={{ fontSize: 12, color: 'var(--color-primary-soft)', marginTop: 6 }}>
                 Ctrl+Enter to save • Esc to cancel
             </div>

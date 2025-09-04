@@ -54,6 +54,7 @@ const Canvas: React.FC<CanvasProps> = ({
     const safeOnDuplicateElement = onDuplicateElement ?? (() => {})
     const safeOnTemplateDrop = onTemplateDrop ?? (() => {})
     const canvasRef = useRef<HTMLDivElement | null>(null)
+    const [hoveredElementId, setHoveredElementId] = useState<string | null>(null)
 
     // toArray imported from shared utils to normalize children arrays consistently
 
@@ -429,6 +430,27 @@ const Canvas: React.FC<CanvasProps> = ({
         }
     }
 
+    // Track the innermost droppable element under the pointer so only it gets the 'hovered' class
+    const handleCanvasMouseMove = (e: React.MouseEvent) => {
+        if (isPreviewMode || isEditingAny) return
+        const target = e.target as HTMLElement | null
+        if (!target) {
+            setHoveredElementId(null)
+            return
+        }
+        const node = target.closest('.droppable-element') as HTMLElement
+        if (node && canvasRef.current && canvasRef.current.contains(node)) {
+            const id = node.getAttribute('data-element-id')
+            setHoveredElementId(id)
+        } else {
+            setHoveredElementId(null)
+        }
+    }
+
+    const handleCanvasMouseLeave = () => {
+        setHoveredElementId(null)
+    }
+
     const renderElements = (elements: EditorElement[] | any, parentId?: string): React.ReactNode => {
         const list = Array.isArray(elements) ? elements : []
         const siblingsCount = list.length
@@ -453,6 +475,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 globalEditingLock={isEditingAny}
                 onInlineEditStart={() => setIsEditingAny(true)}
                 onInlineEditEnd={() => setIsEditingAny(false)}
+                hoveredElementId={hoveredElementId}
             >
                 {toArray(element.children).length > 0
                     && renderElements(toArray(element.children), element.id)}
@@ -500,6 +523,8 @@ const Canvas: React.FC<CanvasProps> = ({
                 ref={combinedRef}
                 className={`canvas ${isOver && canDrop ? 'drag-over' : ''} ${isPreviewMode ? 'preview-mode' : ''}`}
                 onClick={handleCanvasClick}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseLeave={handleCanvasMouseLeave}
             >
                 {mjmlBody
                     ? (

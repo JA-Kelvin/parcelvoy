@@ -5,6 +5,7 @@ import { EditorElement, TemplateBlock } from '../types'
 import './DroppableElement.css'
 import RichTextEditor from './RichTextEditor'
 import { generateId } from '../utils/mjmlParser'
+import { getAllowedChildren } from '../utils/mjmlRules'
 
 // Narrow unknown drag items to those carrying type/tagName without assertions
 const isTypeOrTag = (value: unknown): value is { type?: string, tagName?: string } => {
@@ -32,6 +33,8 @@ interface DroppableElementProps {
     globalEditingLock?: boolean
     onInlineEditStart?: () => void
     onInlineEditEnd?: () => void
+    // Centralized hover tracking from Canvas: when provided, overrides local hover state
+    hoveredElementId?: string | null
 }
 
 const DroppableElement: React.FC<DroppableElementProps> = ({
@@ -54,6 +57,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     globalEditingLock,
     onInlineEditStart,
     onInlineEditEnd,
+    hoveredElementId,
 }) => {
     // Safety checks for props
     if (!element) {
@@ -77,6 +81,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
     const [isHovered, setIsHovered] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
+
+    // If the parent Canvas is controlling hover, derive from it; otherwise fall back to local state
+    const hoveredActive = hoveredElementId != null ? hoveredElementId === element.id : isHovered
 
     // Tags that support inline content editing (must be declared before usage)
     const inlineEditableTags = new Set([
@@ -158,7 +165,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             // Disable dropping while this element is editing mj-text
             if (isEditing && inlineEditableTags.has(element.tagName)) return false
             // Define drop rules based on MJML structure
-            const allowedChildren = getElementAllowedChildren(element.tagName)
+            const allowedChildren = getAllowedChildren(element.tagName)
             return allowedChildren.includes(item.type ?? item.tagName)
         },
     })
@@ -267,26 +274,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         }
     }
 
-    const getElementAllowedChildren = (tagName: string): string[] => {
-        const rules: Record<string, string[]> = {
-            'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper', 'mj-hero'],
-            'mj-section': ['mj-column', 'mj-group'],
-            'enhanced-section': ['mj-column', 'mj-group'],
-            'mj-column': [
-                'mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar',
-                'mj-table', 'mj-accordion', 'mj-carousel',
-            ],
-            'mj-group': ['mj-column'],
-            'mj-wrapper': ['mj-section', 'enhanced-section'],
-            'mj-hero': ['mj-text', 'mj-button', 'mj-image', 'mj-spacer'],
-            'mj-navbar': ['mj-navbar-link'],
-            'mj-social': ['mj-social-element'],
-            'mj-accordion': ['mj-accordion-element'],
-            'mj-accordion-element': ['mj-accordion-title', 'mj-accordion-text'],
-            'mj-carousel': ['mj-carousel-image'],
-        }
-        return rules[tagName] ?? []
-    }
+    // Allowed-children rules are centralized in utils/mjmlRules.ts
 
     // inlineEditableTags declared above
 
@@ -300,14 +288,18 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation()
         if (isPreviewMode || isGlobalLock) return
-        // Focus properties panel on double-click
-        safeOnSelect(element.id)
-        safeOnEditButtonClick(element.id)
-        // Enable inline editing for supported tags
-        if (inlineEditableTags.has(element.tagName)) {
+        // Enable inline editing for supported tags first
+        const supportsInline = inlineEditableTags.has(element.tagName)
+        if (supportsInline) {
             setIsEditing(true)
             safeOnInlineEditStart()
         }
+        // Defer selection/panel focus to avoid interrupting editor mount/focus
+        // Still run for non-inline tags to open Properties as before
+        setTimeout(() => {
+            safeOnSelect(element.id)
+            safeOnEditButtonClick(element.id)
+        }, 0)
     }
 
     const handleContentEdit = (newContent: string) => {
@@ -508,7 +500,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
 
                 return isEditing
                     ? (
-                        <ContentEditor
+                        <RichTextEditor
                             content={content ?? ''}
                             onSave={handleContentEdit}
                             onCancel={handleCancelEdit}
@@ -766,7 +758,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         ]
 
         if (isSelected) classes.push('selected')
-        if (isHovered) classes.push('hovered')
+        if (hoveredActive) classes.push('hovered')
         if (isDragging) classes.push('dragging')
         if (isOver && canDrop) classes.push('drop-target')
         if (isPreviewMode) classes.push('preview-mode')
@@ -807,11 +799,11 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 </>
             )}
 
-            {!isPreviewMode && !isEditing && (isSelected || isHovered) && inlineEditableTags.has(element.tagName) && (
+            {!isPreviewMode && !isEditing && (isSelected || hoveredActive) && inlineEditableTags.has(element.tagName) && (
                 <div className="inline-edit-hint">Double-click to edit</div>
             )}
 
-            {!isPreviewMode && (isSelected || isHovered) && (
+            {!isPreviewMode && (isSelected || hoveredActive) && (
                 <div className="element-controls">
                     {(element.tagName === 'mj-section' || element.tagName === 'enhanced-section') && (
                         <>

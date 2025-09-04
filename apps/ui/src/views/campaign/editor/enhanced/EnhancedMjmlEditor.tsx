@@ -20,10 +20,12 @@ import ErrorBoundary from './components/ErrorBoundary'
 import LayersPanel from './components/LayersPanel'
 import CustomTemplatesModal from './components/CustomTemplatesModal'
 import SaveCustomTemplateModal from './components/SaveCustomTemplateModal'
+import HeadEditorModal from './components/HeadEditorModal'
 import { CUSTOM_TEMPLATES } from './templates/customTemplates'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
 import { toArray, normalizeArrayShapes } from './utils/arrayUtils'
+import { getAllowedChildren } from './utils/mjmlRules'
 
 interface EnhancedMjmlEditorProps {
     template: EnhancedTemplate
@@ -38,23 +40,6 @@ interface EnhancedMjmlEditorProps {
 }
 
 // Array helpers are centralized in './utils/arrayUtils'
-
-// --- Clipboard & structure helpers ---
-const ALLOWED_CHILDREN: Record<string, string[]> = {
-    'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper'],
-    'mj-section': ['mj-column', 'mj-group'],
-    'enhanced-section': ['mj-column', 'mj-group'],
-    'mj-column': ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-hero'],
-    'mj-group': ['mj-column'],
-    'mj-wrapper': ['mj-section', 'enhanced-section'],
-    'mj-hero': ['mj-text', 'mj-button'],
-    'mj-navbar': ['mj-navbar-link'],
-    'mj-social': ['mj-social-element'],
-}
-
-const getAllowedChildren = (tagName: string): string[] => {
-    return ALLOWED_CHILDREN[tagName] || []
-}
 
 const findParentInfo = (
     elements: EditorElement[],
@@ -520,6 +505,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [showCustomTemplatesModal, setShowCustomTemplatesModal] = useState(false)
     const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
     const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
+    const [showHeadEditorModal, setShowHeadEditorModal] = useState(false)
 
     // Initialize editor state with a function to ensure proper initialization
     const getInitialState = (): HistoryState => {
@@ -1312,6 +1298,13 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             </button>
                             <button
                                 className="toolbar-button"
+                                onClick={() => setShowHeadEditorModal(true)}
+                                title="Edit global CSS in <mj-head> (mj-style)"
+                            >
+                                🎨 Head Styles
+                            </button>
+                            <button
+                                className="toolbar-button"
                                 onClick={() => setShowEnhancedPreview(true)}
                                 title="Preview Email with Code View"
                             >
@@ -1465,6 +1458,24 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     isOpen={showImportModal}
                     onClose={() => setShowImportModal(false)}
                     onImport={handleImportMjml}
+                />
+
+                {/* Head Style Editor Modal */}
+                <HeadEditorModal
+                    isOpen={showHeadEditorModal}
+                    onClose={() => setShowHeadEditorModal(false)}
+                    elements={editorState.present}
+                    onApply={(updated) => {
+                        try {
+                            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: updated, selectId: editorState.selectedElementId ?? null } })
+                            toast.success('Updated head styles')
+                        } catch (e) {
+                            console.error('Failed to apply head styles:', e)
+                            toast.error('Failed to update head styles')
+                        } finally {
+                            setShowHeadEditorModal(false)
+                        }
+                    }}
                 />
             </div>
         </DndProvider>

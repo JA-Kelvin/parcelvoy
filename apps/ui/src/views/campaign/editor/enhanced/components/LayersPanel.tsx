@@ -3,6 +3,7 @@ import React, { useMemo, useState, useRef } from 'react'
 import { useDrag, useDrop } from 'react-dnd'
 import { EditorElement } from '../types'
 import './LayersPanel.css'
+import { getAllowedChildren } from '../utils/mjmlRules'
 
 interface LayersPanelProps {
     elements: EditorElement[]
@@ -35,24 +36,7 @@ const iconForTag = (tag: string): string => {
     return map[tag] || '🔹'
 }
 
-// Allowed-children rules (keep in sync with editor's allowed children)
-const getElementAllowedChildren = (tagName: string): string[] => {
-    const rules: Record<string, string[]> = {
-        mjml: ['mj-body'],
-        'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper'],
-        'mj-section': ['mj-column', 'mj-group'],
-        'enhanced-section': ['mj-column', 'mj-group'],
-        'mj-column': [
-            'mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-hero',
-        ],
-        'mj-group': ['mj-column'],
-        'mj-wrapper': ['mj-section', 'enhanced-section'],
-        'mj-hero': ['mj-text', 'mj-button'],
-        'mj-navbar': ['mj-navbar-link'],
-        'mj-social': ['mj-social-element'],
-    }
-    return rules[tagName] || []
-}
+// Allowed-children rules are centralized in '../utils/mjmlRules'
 
 // Recursive Layer item
 interface LayerItemProps {
@@ -91,12 +75,12 @@ const LayerItem: React.FC<LayerItemProps> = ({
     // Compute drop permission based on pointer position (before/inside/after)
     const canDropFrom = (draggedTag: string, dropMode: 'before' | 'inside' | 'after'): boolean => {
         if (dropMode === 'inside') {
-            const allowed = getElementAllowedChildren(element.tagName)
+            const allowed = getAllowedChildren(element.tagName)
             return allowed.includes(draggedTag)
         }
         // For before/after, validate against the parent
         if (!parentTagName || !parentId) return false
-        const allowed = getElementAllowedChildren(parentTagName)
+        const allowed = getAllowedChildren(parentTagName)
         return allowed.includes(draggedTag)
     }
 

@@ -289,7 +289,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
                                                     srcDoc={getSrcDocWithCentering(htmlContent)}
                                                     title="Email Preview"
                                                     className="preview-iframe"
-                                                    sandbox="allow-same-origin"
+                                                    sandbox="allow-scripts allow-same-origin"
                                                 />
                                             </div>
 
