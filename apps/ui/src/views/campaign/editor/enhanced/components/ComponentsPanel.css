@@ -208,7 +208,7 @@
     }
     
     .component-item {
-        flex-direction: row;
+        flex-direction: column;
         justify-content: flex-start;
         text-align: left;
     }

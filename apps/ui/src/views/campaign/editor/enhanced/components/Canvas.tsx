@@ -433,14 +433,43 @@ const Canvas: React.FC<CanvasProps> = ({
     // Track the innermost droppable element under the pointer so only it gets the 'hovered' class
     const handleCanvasMouseMove = (e: React.MouseEvent) => {
         if (isPreviewMode || isEditingAny) return
-        const target = e.target as HTMLElement | null
-        if (!target) {
-            setHoveredElementId(null)
-            return
+        const canvas = canvasRef.current
+        if (!canvas) return
+
+        // Gather all elements under the pointer and map them to their closest droppable ancestors
+        const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY)
+        const seen = new Set<HTMLElement>()
+        const candidates: HTMLElement[] = []
+        for (const el of elementsAtPoint) {
+            const node = (el as HTMLElement).closest('.droppable-element') as HTMLElement
+            if (node && canvas.contains(node) && !seen.has(node)) {
+                seen.add(node)
+                candidates.push(node)
+            }
         }
-        const node = target.closest('.droppable-element') as HTMLElement
-        if (node && canvasRef.current && canvasRef.current.contains(node)) {
-            const id = node.getAttribute('data-element-id')
+
+        // Exclude container types; prefer the first innermost non-container
+        const containersToExclude = new Set(['mj-section', 'enhanced-section', 'mj-wrapper'])
+        let targetNode: HTMLElement | null = null
+        for (const node of candidates) {
+            const type = node.getAttribute('data-element-type') ?? ''
+            if (!containersToExclude.has(type)) {
+                targetNode = node
+                break
+            }
+        }
+
+        // Fallback: use the closest droppable if no eligible candidate found
+        if (!targetNode) {
+            const target = e.target as HTMLElement | null
+            const fallback = target ? (target.closest('.droppable-element') as HTMLElement) : null
+            if (fallback && canvas.contains(fallback)) {
+                targetNode = fallback
+            }
+        }
+
+        if (targetNode) {
+            const id = targetNode.getAttribute('data-element-id')
             setHoveredElementId(id)
         } else {
             setHoveredElementId(null)
