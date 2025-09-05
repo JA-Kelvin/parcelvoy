@@ -33,7 +33,7 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
 
 .mjml-body-wrapper {
     max-width: 1024px;
-    padding: 1px 1px 1px 1px;
+    padding: 1px 1px 30px 1px;
     margin: 0 auto;
     margin-bottom: 20px;
     background: var(--color-background);
@@ -122,16 +122,6 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
 .canvas .droppable-element {
     position: relative;
     transition: all 0.2s ease;
-}
-
-.canvas .droppable-element:hover {
-    /* outline: 2px solid color-mix(in srgb, var(--color-blue) 30%, transparent); */
-    outline-offset: -1px;
-}
-
-.canvas .droppable-element.selected {
-    outline: 2px solid var(--color-blue);
-    outline-offset: -1px;
 }
 
 .canvas .droppable-element .element-controls {

@@ -853,7 +853,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         title="Copy element (Ctrl+C)"
                         disabled={isGlobalLock}
                     >
-                        ⧉
+                        📋
                     </button>
                     {element.tagName !== 'mjml' && element.tagName !== 'mj-body' && (
                         <button
@@ -865,7 +865,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                             title="Duplicate element"
                             disabled={isGlobalLock}
                         >
-                            ⧉
+                            📝
                         </button>
                     )}
                     <button

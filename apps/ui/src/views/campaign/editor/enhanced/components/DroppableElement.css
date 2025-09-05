@@ -4,23 +4,25 @@
     transition: all 0.2s ease;
     min-height: 20px;
     overflow: visible;
+    border-radius: 4px;
 }
 
-.droppable-element:not(.preview-mode):hover:not(.element-mj-image):not(.element-mj-text):not(.element-mj-column)  {
-    outline: 2px solid var(--color-blue) !important;
-    outline-offset: 2px;
+.droppable-element:not(.preview-mode):hover:not(.element-mj-column):not(.element-mj-section) {
+    outline: 1px solid var(--color-blue) !important;
+    border-radius: 4px;
+}
+
+.droppable-element.element-mj-section:hover:not(:has(.element-mj-image:hover)):not(:has(.element-mj-text:hover)):not(:has(.element-mj-button:hover)) {
+    outline: 1px solid var(--color-blue) !important;
+    border-radius: 8px;
 }
 
 .droppable-element.selected {
-    outline: 2px dashed var(--color-blue) !important;
+    outline: 2px solid var(--color-grey) !important;
     outline-offset: 2px;
     z-index: 10;
     position: relative;
-}
-
-.droppable-element:hover {
-    /* outline: 2px solid var(--color-blue) !important; */
-    outline-offset: 2px;
+    border-radius: 8px;
 }
 
 .droppable-element.dragging {
