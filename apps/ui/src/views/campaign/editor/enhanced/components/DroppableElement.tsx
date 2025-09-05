@@ -318,6 +318,111 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         safeOnDelete(element.id)
     }
 
+    const handleQuickAdd = (componentType: string) => {
+        if (isPreviewMode || isGlobalLock) return
+
+        const newElement: EditorElement = {
+            id: generateId(),
+            type: componentType,
+            tagName: componentType,
+            attributes: {},
+            children: [],
+            content: componentType === 'mj-text'
+                ? 'Your text here'
+                : componentType === 'mj-button'
+                    ? 'Click me'
+                    : undefined,
+        }
+
+        // Add default attributes based on component type
+        switch (componentType) {
+            case 'mj-text':
+                newElement.attributes = {
+                    'font-size': '14px',
+                    'line-height': '1.5',
+                    color: '#000000',
+                }
+                break
+            case 'mj-image':
+                newElement.attributes = {
+                    src: 'https://placehold.co/600x200?text=Image',
+                    alt: 'Image',
+                    width: '100%',
+                }
+                break
+            case 'mj-spacer':
+                newElement.attributes = {
+                    height: '20px',
+                }
+                break
+        }
+
+        // Add the element to this column
+        safeOnElementAdd(newElement, element.id, 0)
+
+        // Select the newly added element
+        setTimeout(() => {
+            safeOnSelect(newElement.id)
+        }, 0)
+    }
+
+    const handleColumnInsert = (position: 'left' | 'right') => {
+        if (isPreviewMode || isGlobalLock || !parentId || typeof index !== 'number') return
+
+        // Create a new empty column
+        const newColumn: EditorElement = {
+            id: generateId(),
+            type: 'mj-column',
+            tagName: 'mj-column',
+            attributes: {},
+            children: [],
+        }
+
+        // Calculate insertion index based on position
+        const insertIndex = position === 'left' ? index : index + 1
+
+        // Add the new column to the parent section
+        safeOnElementAdd(newColumn, parentId, insertIndex)
+
+        // Select the new column
+        setTimeout(() => {
+            safeOnSelect(newColumn.id)
+        }, 0)
+    }
+
+    const handleSectionLayout = (columnCount: number) => {
+        if (isPreviewMode || isGlobalLock) return
+
+        // Create columns based on the selected layout
+        const columns: EditorElement[] = []
+        const columnWidth = columnCount === 1 ? '100%' : columnCount === 2 ? '50%' : '33.33%'
+
+        for (let i = 0; i < columnCount; i++) {
+            const column: EditorElement = {
+                id: generateId(),
+                type: 'mj-column',
+                tagName: 'mj-column',
+                attributes: {
+                    width: columnWidth,
+                },
+                children: [],
+            }
+            columns.push(column)
+        }
+
+        // Add all columns to this section
+        columns.forEach((column, index) => {
+            safeOnElementAdd(column, element.id, index)
+        })
+
+        // Select the first column
+        setTimeout(() => {
+            if (columns.length > 0) {
+                safeOnSelect(columns[0].id)
+            }
+        }, 0)
+    }
+
     const getElementStyle = (): React.CSSProperties => {
         const baseStyle: React.CSSProperties = {
             opacity: isDragging ? 0.5 : 1,
@@ -582,19 +687,148 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     </div>
                 )
 
-            case 'mj-section':
+            case 'mj-section': {
+                const isEmpty = !element.children || element.children.length === 0
                 return (
                     <div className="mj-section-content">
+                        {isEmpty && !isPreviewMode && (
+                            <>
+                                <div className="empty-section-placeholder">
+                                    Choose a layout to get started
+                                </div>
+                                <div className="empty-section-actions">
+                                    <div className="section-actions-title">Select Layout</div>
+                                    <div className="section-actions-row">
+                                        <button
+                                            className="section-layout-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleSectionLayout(1)
+                                            }}
+                                            title="Single column layout"
+                                        >
+                                            <div className="section-layout-preview">
+                                                <div className="layout-col"></div>
+                                            </div>
+                                            <span>1 Column</span>
+                                        </button>
+                                        <button
+                                            className="section-layout-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleSectionLayout(2)
+                                            }}
+                                            title="Two column layout"
+                                        >
+                                            <div className="section-layout-preview">
+                                                <div className="layout-col"></div>
+                                                <div className="layout-col"></div>
+                                            </div>
+                                            <span>2 Columns</span>
+                                        </button>
+                                        <button
+                                            className="section-layout-button"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleSectionLayout(3)
+                                            }}
+                                            title="Three column layout"
+                                        >
+                                            <div className="section-layout-preview">
+                                                <div className="layout-col"></div>
+                                                <div className="layout-col"></div>
+                                                <div className="layout-col"></div>
+                                            </div>
+                                            <span>3 Columns</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                         {children}
                     </div>
                 )
+            }
 
-            case 'mj-column':
+            case 'mj-column': {
+                const isEmpty = !element.children || element.children.length === 0
                 return (
                     <div className="mj-column-content" style={{ textAlign: attributes['text-align'] ?? attributes.align }}>
+                        {isEmpty && !isPreviewMode && (
+                            <>
+                                <div className="empty-column-placeholder">
+                                    Drop your content here
+                                </div>
+                                <div className="empty-column-actions">
+                                    <button
+                                        className="quick-action-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleQuickAdd('mj-text')
+                                        }}
+                                        title="Add text"
+                                    >
+                                        <span className="icon">📝</span>
+                                        Text
+                                    </button>
+                                    <button
+                                        className="quick-action-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleQuickAdd('mj-image')
+                                        }}
+                                        title="Add image"
+                                    >
+                                        <span className="icon">🖼️</span>
+                                        Image
+                                    </button>
+                                    <button
+                                        className="quick-action-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleQuickAdd('mj-spacer')
+                                        }}
+                                        title="Add spacer"
+                                    >
+                                        <span className="icon">📏</span>
+                                        Spacer
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        {/* Column insertion icons for selected columns with content */}
+                        {!isEmpty && !isPreviewMode && isSelected && parentId && typeof index === 'number' && (
+                            <>
+                                <div className="column-insert-icons column-insert-left">
+                                    <button
+                                        className="column-insert-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleColumnInsert('left')
+                                        }}
+                                        title="Insert column to the left"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <div className="column-insert-icons column-insert-right">
+                                    <button
+                                        className="column-insert-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleColumnInsert('right')
+                                        }}
+                                        title="Insert column to the right"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </>
+                        )}
                         {children}
                     </div>
                 )
+            }
 
             case 'mj-wrapper':
                 return (
@@ -762,6 +996,16 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         if (isDragging) classes.push('dragging')
         if (isOver && canDrop) classes.push('drop-target')
         if (isPreviewMode) classes.push('preview-mode')
+
+        // Add empty-column class for empty mj-column elements
+        if (element.tagName === 'mj-column' && (!element.children || element.children.length === 0)) {
+            classes.push('empty-column')
+        }
+
+        // Add empty-section class for empty mj-section elements
+        if (element.tagName === 'mj-section' && (!element.children || element.children.length === 0)) {
+            classes.push('empty-section')
+        }
 
         return classes.join(' ')
     }
