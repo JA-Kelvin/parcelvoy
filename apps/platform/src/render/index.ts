@@ -7,7 +7,7 @@ import * as UrlHelpers from './Helpers/Url'
 import * as ArrayHelpers from './Helpers/Array'
 import { User } from '../users/User'
 import { preferencesLink, unsubscribeEmailLink } from '../subscriptions/SubscriptionService'
-import { clickWrapHtml, openWrapHtml, preheaderWrapHtml } from './LinkService'
+import { clickWrapHtml, openWrapHtml, preheaderWrapHtml, paramsToEncodedLink } from './LinkService'
 import Project from '../projects/Project'
 
 export type RenderContext = {
@@ -90,6 +90,12 @@ export const Render = (template: string, { user, event, journey, context }: Vari
             referenceId: context.reference_id,
         })),
         preferencesUrl: new Handlebars.SafeString(preferencesLink(user.id)),
+        viewEmailUrl: new Handlebars.SafeString(paramsToEncodedLink({
+            path: 'v',
+            userId: user.id,
+            campaignId: context.campaign_id,
+            referenceId: context.reference_id,
+        })),
     })
 }
 

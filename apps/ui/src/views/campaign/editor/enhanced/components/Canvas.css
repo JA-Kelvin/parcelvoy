@@ -125,7 +125,7 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
 }
 
 .canvas .droppable-element:hover {
-    outline: 2px solid color-mix(in srgb, var(--color-blue) 30%, transparent);
+    /* outline: 2px solid color-mix(in srgb, var(--color-blue) 30%, transparent); */
     outline-offset: -1px;
 }
 

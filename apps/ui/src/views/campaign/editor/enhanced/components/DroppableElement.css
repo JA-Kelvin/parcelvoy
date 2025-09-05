@@ -5,8 +5,8 @@
     min-height: 20px;
 }
 
-.droppable-element:not(.preview-mode):hover {
-    outline: 2px solid color-mix(in srgb, var(--color-blue) 30%, transparent);
+.droppable-element:not(.preview-mode):hover:not(.element-mj-image):not(.element-mj-text):not(.element-mj-column)  {
+    outline: 2px solid var(--color-blue) !important;
     outline-offset: 2px;
 }
 
@@ -16,7 +16,7 @@
 }
 
 .droppable-element:hover {
-    outline: 2px solid var(--color-blue) !important;
+    /* outline: 2px solid var(--color-blue) !important; */
     outline-offset: 2px;
 }
 
@@ -363,6 +363,11 @@
 .droppable-element.preview-mode.element-mj-column {
     padding: 0;
     border: none;
+}
+
+/* In preview mode, remove the dashed divider shown in edit mode for sections */
+.droppable-element.preview-mode.mj-section {
+    border-bottom: none;
 }
 
 .droppable-element.preview-mode.element-mj-text {

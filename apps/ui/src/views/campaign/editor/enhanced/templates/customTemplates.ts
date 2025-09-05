@@ -69,7 +69,7 @@ const THREE_CARD_ROW = `
 const HERO_IMAGE_TITLE_CTA = `
 <mj-section>
   <mj-column width="100%">
-    <mj-image alt="Green leaves" src="https://placehold.co/600x200/png" width="600" />
+    <mj-image alt="Green leaves" src="https://placehold.co/600x200/png" width="600" border-radius="8px" />
     <mj-text align="center" color="#333" font-size="24px" font-weight="bold">
       <p>Some title here</p>
     </mj-text>
