@@ -8,12 +8,12 @@
 }
 
 .droppable-element:not(.preview-mode):hover:not(.element-mj-column):not(.element-mj-section) {
-    outline: 1px solid var(--color-blue) !important;
+    outline: 2px solid var(--color-blue) !important;
     border-radius: 4px;
 }
 
 .droppable-element.element-mj-section:hover:not(:has(.element-mj-image:hover)):not(:has(.element-mj-text:hover)):not(:has(.element-mj-button:hover)) {
-    outline: 1px solid var(--color-blue) !important;
+    outline: 2px solid var(--color-blue) !important;
     border-radius: 8px;
 }
 
