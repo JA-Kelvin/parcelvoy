@@ -121,7 +121,7 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
 /* Element hover and selection styles */
 .canvas .droppable-element {
     position: relative;
-    transition: all 0.2s ease;
+    transition: all 0.0s ease;
 }
 
 .canvas .droppable-element .element-controls {
