@@ -10,6 +10,8 @@ interface PropertiesPanelProps {
     onElementUpdate: (elementId: string, attributes: Record<string, any>, content?: string) => void
     isCollapsed?: boolean
     onToggleCollapse?: () => void
+    onSwitchToComponents?: () => void
+    safeOnSwitchToLayers?: () => void
 }
 
 const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
@@ -17,6 +19,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     onElementUpdate,
     isCollapsed = false,
     onToggleCollapse,
+    onSwitchToComponents,
+    safeOnSwitchToLayers,
 }) => {
     const [activeTab, setActiveTab] = useState<'attributes' | 'content' | 'style'>('attributes')
     const [showImageModal, setShowImageModal] = useState(false)
@@ -89,13 +93,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             <div className="properties-panel">
                 <div className="panel-header">
                     <h3>Properties</h3>
-                    <button
-                        className="toggle-button"
-                        onClick={onToggleCollapse}
-                        title="Collapse Properties Panel"
-                    >
-                        ⏴
-                    </button>
+                    <div>
+                        <button
+                            className="toggle-button"
+                            onClick={onSwitchToComponents}
+                            title="Show Components Panel"
+                        >
+                            ✖
+                        </button>
+                    </div>
                 </div>
                 <div className="panel-content">
                     <div className="no-selection">
@@ -174,6 +180,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         { key: 'font-size', label: 'Font Size', type: 'text', placeholder: '16px' },
                         { key: 'font-family', label: 'Font Family', type: 'select', options: ['Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Verdana'] },
                         { key: 'font-weight', label: 'Font Weight', type: 'select', options: ['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'] },
+                        { key: 'align', label: 'Alignment', type: 'select', options: ['left', 'center', 'right'] },
                         { key: 'text-align', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] },
                         { key: 'line-height', label: 'Line Height', type: 'text', placeholder: '1.5' },
                         { key: 'padding', label: 'Padding', type: 'text', placeholder: '10px' },
@@ -247,7 +254,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     attributes: [
                         { key: 'width', label: 'Width', type: 'text', placeholder: '100%' },
                         { key: 'background-color', label: 'Background Color', type: 'color' },
-                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '10px' },
+                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '0' },
                         { key: 'border', label: 'Border', type: 'text', placeholder: '1px solid #ccc' },
                         { key: 'border-radius', label: 'Border Radius', type: 'text', placeholder: '4px' },
                     ],
@@ -543,18 +550,28 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         <div className="properties-panel">
             <div className="panel-header">
                 <h3>Properties</h3>
-                <button
-                    className="toggle-button"
-                    onClick={onToggleCollapse}
-                    title="Collapse Properties Panel"
-                >
-                    ⏴
-                </button>
+                <div>
+                    <button
+                        className="toggle-button"
+                        onClick={onSwitchToComponents}
+                        title="Show Components Panel"
+                    >
+                        ✖
+                    </button>
+                </div>
             </div>
-
             <div className="element-info">
-                <div className="element-type">{selectedElement.tagName}</div>
-                <div className="element-id">ID: {selectedElement.id.slice(-8)}</div>
+                <div className="element-details">
+                    <div className="element-type">{selectedElement.tagName}</div>
+                    <div className="element-id">ID: {selectedElement.id.slice(-8)}</div>
+                </div>
+                <button
+                    className="toggle-button layers-button"
+                    onClick={safeOnSwitchToLayers}
+                    title="Show Layers Panel"
+                >
+                    📂
+                </button>
             </div>
 
             <div className="tabs">

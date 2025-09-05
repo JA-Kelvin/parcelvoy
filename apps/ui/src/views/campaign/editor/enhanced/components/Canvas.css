@@ -59,7 +59,7 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
     align-items: center;
     justify-content: center;
     min-height: 400px;
-    max-width: 600px;
+    max-width: 650px;
     margin: 0 auto;
 }
 
@@ -136,14 +136,7 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
 
 .canvas .droppable-element .element-controls {
     position: absolute;
-    top: 0px;
-    right: 0;
     display: none;
-    background: var(--color-background);
-    border: 0px solid var(--color-grey);
-    border-radius: 0px;
-    box-shadow: 0 4px 6px -1px var(--color-shadow);
-    z-index: 100;
 }
 
 .canvas .droppable-element:hover .element-controls,

@@ -325,7 +325,7 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
                 tagName: 'mj-section',
                 attributes: {
                     'background-color': '#ffffff',
-                    padding: '0px',
+                    padding: '10px 25px',
                 },
                 children: [{
                     id: generateId(),
@@ -339,6 +339,7 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
                         attributes: {
                             'font-size': '16px',
                             color: '#333333',
+                            padding: '0',
                         },
                         children: [],
                         content: 'Welcome to your new email template!',

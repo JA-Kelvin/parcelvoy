@@ -1346,33 +1346,6 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     {/* Right Side Panel with Tabs */}
                     {!isPreviewMode && (
                         <div className={`right-panel ${rightPanelCollapsed ? 'collapsed' : 'expanded'}`}>
-                            <div className="panel-tabs">
-                                <button
-                                    className={`tab-button ${activeRightTab === 'components' ? 'active' : ''}`}
-                                    onClick={() => setActiveRightTab('components')}
-                                    title="MJML Components"
-                                >
-                                    <span className="tab-icon">📦</span>
-                                    <span className="tab-label">Components</span>
-                                </button>
-                                <button
-                                    className={`tab-button ${activeRightTab === 'properties' ? 'active' : ''}`}
-                                    onClick={() => setActiveRightTab('properties')}
-                                    title="Element Properties"
-                                >
-                                    <span className="tab-icon">⚙️</span>
-                                    <span className="tab-label">Properties</span>
-                                </button>
-                                <button
-                                    className={`tab-button ${activeRightTab === 'layers' ? 'active' : ''}`}
-                                    onClick={() => setActiveRightTab('layers')}
-                                    title="Element Structure"
-                                >
-                                    <span className="tab-icon">🗂️</span>
-                                    <span className="tab-label">Layers</span>
-                                </button>
-                            </div>
-
                             <div className="right-panel-content">
                                 {activeRightTab === 'components' && (
                                     <ErrorBoundary
@@ -1387,6 +1360,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                             onToggleCollapse={() => {}}
                                             presetTemplates={CUSTOM_TEMPLATES}
                                             savedTemplates={availableSavedTemplates}
+                                            onSwitchToLayers={() => { setRightPanelCollapsed(false); setActiveRightTab('layers') }}
                                         />
                                     </ErrorBoundary>
                                 )}
@@ -1401,6 +1375,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                             onElementUpdate={handleElementUpdate}
                                             isCollapsed={false}
                                             onToggleCollapse={() => {}}
+                                            onSwitchToComponents={() => setActiveRightTab('components')}
+                                            safeOnSwitchToLayers={() => { setRightPanelCollapsed(false); setActiveRightTab('layers') }}
                                         />
                                     </ErrorBoundary>
                                 )}
@@ -1416,6 +1392,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                             onSelect={handleElementSelect}
                                             onDelete={handleElementDelete}
                                             onMove={handleElementMove}
+                                            onSwitchToComponents={() => setActiveRightTab('components')}
                                         />
                                     </ErrorBoundary>
                                 )}

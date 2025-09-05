@@ -198,7 +198,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         id: generateId(),
                         type: item.type,
                         tagName: item.tagName ?? item.type,
-                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '10px 25px' },
                         children: [],
                     }
                     safeOnElementAdd(newSection, parentId, index)
@@ -243,7 +243,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         id: generateId(),
                         type: item.type,
                         tagName: item.tagName ?? item.type,
-                        attributes: { 'background-color': '#ffffff', padding: '0px 0' },
+                        attributes: { 'background-color': '#ffffff', padding: '10px 25px' },
                         children: [],
                     }
                     safeOnElementAdd(newSection, parentId, insertIndex)
@@ -803,7 +803,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 <div className="inline-edit-hint">Double-click to edit</div>
             )}
 
-            {!isPreviewMode && (isSelected || hoveredActive) && (
+            {!isPreviewMode && isSelected && (
                 <div className="element-controls">
                     {(element.tagName === 'mj-section' || element.tagName === 'enhanced-section') && (
                         <>
@@ -818,7 +818,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                 disabled={!(typeof index === 'number' && index > 0) || isGlobalLock}
                                 title="Move section up"
                             >
-                                ⬆️
+                                ↑
                             </button>
                             <button
                                 className="control-button move-down"
@@ -840,37 +840,33 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                 ) || isGlobalLock}
                                 title="Move section down"
                             >
-                                ⬇️
+                                ↓
                             </button>
                         </>
                     )}
-                    {isSelected && (
-                        <>
-                            <button
-                                className="control-button copy"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    safeOnCopyElement(element.id)
-                                }}
-                                title="Copy element (Ctrl+C)"
-                                disabled={isGlobalLock}
-                            >
-                                📄
-                            </button>
-                            {element.tagName !== 'mjml' && element.tagName !== 'mj-body' && (
-                                <button
-                                    className="control-button duplicate"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        safeOnDuplicateElement(element.id)
-                                    }}
-                                    title="Duplicate element"
-                                    disabled={isGlobalLock}
-                                >
-                                    ➕
-                                </button>
-                            )}
-                        </>
+                    <button
+                        className="control-button copy"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            safeOnCopyElement(element.id)
+                        }}
+                        title="Copy element (Ctrl+C)"
+                        disabled={isGlobalLock}
+                    >
+                        ⧉
+                    </button>
+                    {element.tagName !== 'mjml' && element.tagName !== 'mj-body' && (
+                        <button
+                            className="control-button duplicate"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                safeOnDuplicateElement(element.id)
+                            }}
+                            title="Duplicate element"
+                            disabled={isGlobalLock}
+                        >
+                            ⧉
+                        </button>
                     )}
                     <button
                         className="control-button delete"
@@ -878,7 +874,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         title="Delete element"
                         disabled={isGlobalLock}
                     >
-                        ❌
+                        ✕
                     </button>
                 </div>
             )}

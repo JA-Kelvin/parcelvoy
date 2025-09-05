@@ -15,6 +15,7 @@ interface ComponentsPanelProps {
     customTemplates?: TemplateBlock[]
     savedTemplates?: TemplateBlock[]
     presetTemplates?: TemplateBlock[]
+    onSwitchToLayers?: () => void
 }
 
 // MJML Component definitions
@@ -27,7 +28,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '📐',
         defaultAttributes: {
-            padding: '0px 0',
+            padding: '10px 25px',
         },
         allowedChildren: ['mj-column', 'mj-group'],
     },
@@ -38,7 +39,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '✨',
         defaultAttributes: {
-            padding: '0px 0',
+            padding: '10px 25px',
         },
         allowedChildren: ['mj-column', 'mj-group'],
     },
@@ -196,7 +197,8 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         defaultAttributes: {
             mode: 'horizontal',
             'icon-size': '24px',
-            'icon-padding': '8px',
+            'icon-padding': '50px',
+            align: 'center',
         },
         allowedChildren: ['mj-social-element'],
     },
@@ -209,6 +211,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         defaultAttributes: {
             name: 'facebook',
             href: 'https://facebook.com/',
+            src: 'https://placehold.co/24x24',
             target: '_blank',
             'background-color': 'transparent',
             color: '#111827',
@@ -319,6 +322,18 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         defaultAttributes: {},
     },
 ]
+
+// Remove Not often used components
+const notOftenUsedComponents = [
+    'enhanced-section',
+    'mj-group', 'mj-wrapper',
+    'mj-carousel', 'mj-carousel-image',
+    'mj-accordion', 'mj-accordion-element', 'mj-accordion-title', 'mj-accordion-text',
+]
+
+const FILTERED_MJML_COMPONENTS = MJML_COMPONENTS.filter(component =>
+    !notOftenUsedComponents.includes(component.type),
+)
 
 // Draggable Component Item using react-dnd
 interface DraggableComponentProps {
@@ -455,11 +470,13 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
     customTemplates,
     savedTemplates,
     presetTemplates,
+    onSwitchToLayers,
 }) => {
     // Safety check for callback function
     const safeOnComponentDrag = onComponentDrag || (() => {})
     const safeOnOpenCustomTemplates = onOpenCustomTemplates ?? (() => {})
     const safeOnTemplateInsert = _onTemplateInsert ?? ((_id, _insertionMode) => {})
+    const safeOnSwitchToLayers = onSwitchToLayers ?? (() => {})
     // Separate preset vs saved templates (fallbacks for backward compatibility)
     const presetBlocks = (presetTemplates && presetTemplates.length > 0) ? presetTemplates : CUSTOM_TEMPLATES
     const savedBlocks = (savedTemplates && savedTemplates.length > 0)
@@ -472,7 +489,7 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 
     const categories = ['layout', 'content', 'media', 'social'] as const
     const getComponentsByCategory = (category: string) => {
-        return MJML_COMPONENTS.filter(comp => comp.category === category)
+        return FILTERED_MJML_COMPONENTS.filter(comp => comp.category === category)
     }
 
     if (isCollapsed) {
@@ -519,10 +536,19 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
             </div>
 
             <div className="panel-content">
-
                 {/* Components Tab */}
                 {activeTab === 'components' && (
                     <>
+                        <div className="panel-header">
+                            <h3></h3>
+                            <button
+                                className="toggle-button"
+                                onClick={safeOnSwitchToLayers}
+                                title="Show Layers Panel"
+                            >
+                                📂
+                            </button>
+                        </div>
                         {categories.map(category => {
                             const components = getComponentsByCategory(category)
                             if (components.length === 0) return null

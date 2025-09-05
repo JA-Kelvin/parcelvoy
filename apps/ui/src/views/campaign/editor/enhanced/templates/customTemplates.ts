@@ -25,7 +25,7 @@ const fragmentToElements = (fragment: string) => {
 
 // Preset: Three Card Row (3 columns: image + title + text + CTA)
 const THREE_CARD_ROW = `
-<mj-section>
+<mj-section padding="10px 25px">
   <mj-column>
     <mj-image width="185px" src="https://placehold.co/185x120/png" alt="Leaf 1" border-radius="8px" />
     <mj-text font-size="20px" color="#5f6368" font-weight="bold">
@@ -81,7 +81,7 @@ const HERO_IMAGE_TITLE_CTA = `
 `
 
 const FEATURE_IMAGE_LEFT_TEXT_RIGHT = `
-<mj-section>
+<mj-section padding="10px 25px">
   <mj-column width="300px">
     <mj-image alt="Orange flower" src="https://placehold.co/270x288/png" width="270" border-radius="8px" />
   </mj-column>
@@ -106,7 +106,7 @@ const FEATURE_IMAGE_LEFT_TEXT_RIGHT = `
 `
 
 const PRODUCT_SPOTLIGHT = `
-<mj-section>
+<mj-section padding="10px 25px">
   <mj-column width="25%">
     <mj-image alt="Flower" src="https://placehold.co/120x168/png" width="120px" border-radius="8px" />
   </mj-column>
@@ -128,7 +128,7 @@ const PRODUCT_SPOTLIGHT = `
 `
 
 const FEATURES_TRIO = `
-<mj-section>
+<mj-section padding="10px 25px">
   <mj-column>
     <mj-image alt="Leaf 1" src="https://placehold.co/185x120/png" width="185px" border-radius="8px" />
     <mj-text color="#5f6368" font-size="20px" font-weight="bold">
@@ -169,7 +169,7 @@ const FEATURES_TRIO = `
 `
 
 const HERO_WITH_BACKGROUND = `
-<mj-section background-url="https://placehold.co/1250x835/png" background-size="cover" background-repeat="no-repeat">
+<mj-section padding="10px 25px" background-url="https://placehold.co/1250x835/png" background-size="cover" background-repeat="no-repeat">
   <mj-column padding="100px 15px">
     <mj-text align="center" color="#ffffff" font-size="24px" font-weight="bold">
       Some title here
@@ -185,7 +185,7 @@ const HERO_WITH_BACKGROUND = `
 `
 
 const SIDE_IMAGE_HERO = `
-<mj-section background-url="https://placehold.co/600x420/png" background-size="cover" background-color="#333333" background-repeat="no-repeat">
+<mj-section padding="10px 25px" background-url="https://placehold.co/600x420/png" background-size="cover" background-color="#333333" background-repeat="no-repeat">
   <mj-column padding="150px 300px 150px 0">
     <mj-text align="center" color="#ffffff" font-size="24px" font-weight="bold">
       Some title here
@@ -201,7 +201,7 @@ const SIDE_IMAGE_HERO = `
 `
 
 const AUTHOR_BYLINE = `
-<mj-section>
+<mj-section padding="10px 25px">
   <mj-column width="30%">
     <mj-image alt="Profile" src="https://placehold.co/115x115/png" width="115px" border-radius="400px" />
   </mj-column>
@@ -221,13 +221,13 @@ const AUTHOR_BYLINE = `
 `
 
 const AUTHOR_BYLINE_2 = `
-<mj-section>
+<mj-section padding="10px 25px">
   <mj-column width="70%">
-    <mj-text font-size="24px" color="#000000" align="left">”</mj-text>
-    <mj-text font-size="14px" color="#000000" align="left">
+    <mj-text font-size="24px" color="#000000" align="center">”</mj-text>
+    <mj-text font-size="14px" color="#000000" align="center">
       Lorem ipsum dolor sit amet, consectetur adipiscing elit,
     </mj-text>
-    <mj-text font-size="12px" color="#000000" align="left">
+    <mj-text font-size="12px" color="#000000" align="center">
       -Anna Smith, London
     </mj-text>
   </mj-column>

@@ -11,6 +11,7 @@ interface LayersPanelProps {
     onSelect: (elementId: string | null) => void
     onDelete: (elementId: string) => void
     onMove: (elementId: string, newParentId: string, newIndex: number) => void
+    onSwitchToComponents?: () => void
 }
 
 const iconForTag = (tag: string): string => {
@@ -153,6 +154,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
                 isOver && dropMode ? `dropping-${dropMode}` : '',
             ].filter(Boolean).join(' ')}
             onClick={(e) => { e.stopPropagation(); onSelect(element.id) }}
+            onDoubleClick={(e) => { e.stopPropagation(); onSelect(element.id) }}
         >
             <div className="layer-row">
                 {hasChildren
@@ -196,7 +198,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
     )
 }
 
-const LayersPanel: React.FC<LayersPanelProps> = ({ elements, selectedElementId, onSelect, onDelete, onMove }) => {
+const LayersPanel: React.FC<LayersPanelProps> = ({ elements, selectedElementId, onSelect, onDelete, onMove, onSwitchToComponents }) => {
     // Build a root container if elements are multiple roots; expect one root 'mjml'
     const rootElements = useMemo(() => elements || [], [elements])
 
@@ -204,6 +206,13 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ elements, selectedElementId, 
         <div className="layers-panel" onClick={() => onSelect(null)}>
             <div className="panel-header">
                 <h3>Layers</h3>
+                <button
+                    className="toggle-button"
+                    onClick={onSwitchToComponents}
+                    title="Show Components Panel"
+                >
+                    ✖
+                </button>
             </div>
             <div className="layers-tree">
                 {rootElements.map((el, idx) => (
