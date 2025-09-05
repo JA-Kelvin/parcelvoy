@@ -197,6 +197,16 @@
     box-shadow: -8px -8px 0px var(--color-shadow);
 }
 
+/* Mobile Right Panel Toggle Button */
+.mobile-right-panel-toggle {
+    display: none; /* Hidden by default on desktop */
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .components-panel {
@@ -217,6 +227,11 @@
         margin-bottom: 0;
         margin-right: 8px;
         font-size: 20px;
+    }
+    
+    /* Show mobile toggle button only on mobile */
+    .mobile-right-panel-toggle {
+        display: flex !important;
     }
 }
 

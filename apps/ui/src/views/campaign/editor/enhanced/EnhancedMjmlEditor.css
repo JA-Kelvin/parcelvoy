@@ -387,7 +387,12 @@
     overflow: hidden;
 }
 
-/* Responsive Design */
+/* Button Label Responsive Classes */
+.button-label {
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
 @media (max-width: 1024px) {
     .editor-toolbar {
         padding: 8px 12px;
@@ -397,6 +402,13 @@
         width: 32px;
         height: 32px;
         font-size: 14px;
+        min-width: 32px;
+        padding: 0 6px;
+    }
+
+    /* Hide button labels on medium screens, keep icons */
+    .toolbar-button .button-label {
+        display: none;
     }
     
     .template-name {

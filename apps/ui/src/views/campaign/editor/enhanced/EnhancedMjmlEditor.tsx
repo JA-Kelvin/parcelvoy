@@ -1279,7 +1279,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                 onClick={() => setShowSaveTemplateModal(true)}
                                 title="Save selected section or full email as reusable template"
                             >
-                                🧩 Create Template
+                                🧩<span className="button-label">Create Template</span>
                             </button>
                             <button
                                 className="toolbar-button"
@@ -1287,35 +1287,35 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                 disabled={!clipboardElement}
                                 title="Paste element (Ctrl+V)"
                             >
-                                📋 Paste
+                                📋<span className="button-label">Paste</span>
                             </button>
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowImportModal(true)}
                                 title="Import MJML Content"
                             >
-                                📥 Import
+                                📥<span className="button-label">Import</span>
                             </button>
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowHeadEditorModal(true)}
                                 title="Edit global CSS in <mj-head> (mj-style)"
                             >
-                                🎨 Head Styles
+                                🎨<span className="button-label">Head Styles</span>
                             </button>
                             <button
                                 className="toolbar-button"
                                 onClick={() => setShowEnhancedPreview(true)}
                                 title="Preview Email with Code View"
                             >
-                                🔍 Preview
+                                🔍<span className="button-label">Preview</span>
                             </button>
                             <button
                                 className={`toolbar-button ${rightPanelCollapsed ? 'active' : ''}`}
                                 onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
                                 title="Toggle Right Panel"
                             >
-                                {rightPanelCollapsed ? '⬅️ Expand' : '➡️ Collapse'}
+                                {rightPanelCollapsed ? '⬅️' : '➡️'}<span className="button-label">{rightPanelCollapsed ? 'Expand' : 'Collapse'}</span>
                             </button>
                         </div>
                     </div>
@@ -1361,6 +1361,8 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                             presetTemplates={CUSTOM_TEMPLATES}
                                             savedTemplates={availableSavedTemplates}
                                             onSwitchToLayers={() => { setRightPanelCollapsed(false); setActiveRightTab('layers') }}
+                                            onToggleRightPanel={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+                                            rightPanelCollapsed={rightPanelCollapsed}
                                         />
                                     </ErrorBoundary>
                                 )}

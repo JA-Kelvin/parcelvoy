@@ -16,6 +16,8 @@ interface ComponentsPanelProps {
     savedTemplates?: TemplateBlock[]
     presetTemplates?: TemplateBlock[]
     onSwitchToLayers?: () => void
+    onToggleRightPanel?: () => void
+    rightPanelCollapsed?: boolean
 }
 
 // MJML Component definitions
@@ -471,12 +473,15 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
     savedTemplates,
     presetTemplates,
     onSwitchToLayers,
+    onToggleRightPanel,
+    rightPanelCollapsed = false,
 }) => {
     // Safety check for callback function
     const safeOnComponentDrag = onComponentDrag || (() => {})
     const safeOnOpenCustomTemplates = onOpenCustomTemplates ?? (() => {})
     const safeOnTemplateInsert = _onTemplateInsert ?? ((_id, _insertionMode) => {})
     const safeOnSwitchToLayers = onSwitchToLayers ?? (() => {})
+    const safeOnToggleRightPanel = onToggleRightPanel ?? (() => {})
     // Separate preset vs saved templates (fallbacks for backward compatibility)
     const presetBlocks = (presetTemplates && presetTemplates.length > 0) ? presetTemplates : CUSTOM_TEMPLATES
     const savedBlocks = (savedTemplates && savedTemplates.length > 0)
@@ -547,6 +552,15 @@ const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                                 title="Show Layers Panel"
                             >
                                 📂
+                            </button>
+                            {/* Mobile Right Panel Toggle Button */}
+                            <button
+                                className="toggle-button mobile-right-panel-toggle"
+                                onClick={safeOnToggleRightPanel}
+                                title={rightPanelCollapsed ? 'Show Right Panel' : 'Hide Right Panel'}
+                                aria-label={rightPanelCollapsed ? 'Show Right Panel' : 'Hide Right Panel'}
+                            >
+                                {rightPanelCollapsed ? '👁️' : '✖️'}
                             </button>
                         </div>
                         {categories.map(category => {

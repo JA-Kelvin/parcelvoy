@@ -17,11 +17,6 @@
     border-radius: 4px;
 }
 
-.droppable-element.element-mj-text:hover:not(:has(*:hover)) {
-    outline: 2px solid var(--color-blue) !important;
-    border-radius: 4px;
-}
-
 .droppable-element.selected {
     outline: 2px solid var(--color-grey) !important;
     outline-offset: 2px;
