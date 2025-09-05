@@ -339,7 +339,7 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
                         attributes: {
                             'font-size': '16px',
                             color: '#333333',
-                            padding: '0',
+                            padding: '10px 25px',
                         },
                         children: [],
                         content: 'Welcome to your new email template!',

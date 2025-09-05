@@ -183,7 +183,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         { key: 'align', label: 'Alignment', type: 'select', options: ['left', 'center', 'right'] },
                         { key: 'text-align', label: 'Text Align', type: 'select', options: ['left', 'center', 'right', 'justify'] },
                         { key: 'line-height', label: 'Line Height', type: 'text', placeholder: '1.5' },
-                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '10px' },
+                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '10px 25px' },
                         { key: 'margin', label: 'Margin', type: 'text', placeholder: '0px' },
                     ],
                     hasContent: true,
