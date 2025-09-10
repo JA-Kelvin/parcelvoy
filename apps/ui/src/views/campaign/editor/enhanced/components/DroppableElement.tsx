@@ -6,6 +6,13 @@ import './DroppableElement.css'
 import RichTextEditor from './RichTextEditor'
 import { generateId } from '../utils/mjmlParser'
 import { getAllowedChildren } from '../utils/mjmlRules'
+import {
+    parseAllStyles,
+    applyGlobalAttributes,
+    findMatchingCssRules,
+    cssPropertiesToReact,
+    ParsedStyles,
+} from '../utils/styleParser'
 
 // Narrow unknown drag items to those carrying type/tagName without assertions
 const isTypeOrTag = (value: unknown): value is { type?: string, tagName?: string } => {
@@ -35,6 +42,8 @@ interface DroppableElementProps {
     onInlineEditEnd?: () => void
     // Centralized hover tracking from Canvas: when provided, overrides local hover state
     hoveredElementId?: string | null
+    // All elements for style parsing
+    allElements?: EditorElement[]
 }
 
 const DroppableElement: React.FC<DroppableElementProps> = ({
@@ -58,6 +67,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
     onInlineEditStart,
     onInlineEditEnd,
     hoveredElementId,
+    allElements,
 }) => {
     // Safety checks for props
     if (!element) {
@@ -432,8 +442,26 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             boxSizing: 'border-box',
         }
 
-        // Apply MJML attributes as CSS styles
-        const { attributes } = element
+        // Parse global styles and attributes if available
+        let parsedStyles: ParsedStyles | null = null
+        let enhancedAttributes = element.attributes
+
+        if (allElements && allElements.length > 0) {
+            try {
+                parsedStyles = parseAllStyles(allElements)
+                // Apply global attributes to element attributes
+                enhancedAttributes = applyGlobalAttributes(
+                    element.tagName,
+                    element.attributes,
+                    parsedStyles.globalAttributes,
+                )
+            } catch (error) {
+                console.warn('Error parsing global styles:', error)
+            }
+        }
+
+        // Apply MJML attributes as CSS styles (now using enhanced attributes)
+        const { attributes } = { attributes: enhancedAttributes }
 
         // Colors
         // Important: do NOT apply mj-button colors to the container, they belong to the inner button only.
@@ -573,6 +601,31 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             case 'mj-accordion': {
                 baseStyle.border = attributes.border ?? undefined
                 break
+            }
+        }
+
+        // Apply CSS rules from mj-style if available
+        if (parsedStyles?.cssRules && parsedStyles.cssRules.length > 0) {
+            try {
+                // Extract classes from element attributes (if any)
+                const elementClasses = attributes.class ? attributes.class.split(' ') : []
+                const elementId = attributes.id
+
+                // Find matching CSS rules
+                const matchingRules = findMatchingCssRules(
+                    element.tagName,
+                    elementClasses,
+                    elementId,
+                    parsedStyles.cssRules,
+                )
+
+                // Apply matching CSS rules (in order of specificity)
+                matchingRules.forEach(rule => {
+                    const cssProps = cssPropertiesToReact(rule.properties)
+                    Object.assign(baseStyle, cssProps)
+                })
+            } catch (error) {
+                console.warn('Error applying CSS rules:', error)
             }
         }
 

@@ -505,6 +505,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 onInlineEditStart={() => setIsEditingAny(true)}
                 onInlineEditEnd={() => setIsEditingAny(false)}
                 hoveredElementId={hoveredElementId}
+                allElements={safeElements}
             >
                 {toArray(element.children).length > 0
                     && renderElements(toArray(element.children), element.id)}
