@@ -144,35 +144,31 @@ const extractGlobalAttributes = (mjmlElement: Element): Record<string, Record<st
         return globalAttributes
     }
 
-    console.log('Found mj-attributes with', mjAttributes.children.length, 'children')
-    console.log('mj-attributes innerHTML:', mjAttributes.innerHTML)
-    console.log('mj-attributes outerHTML:', mjAttributes.outerHTML)
-
     // Process attribute definitions - handle both direct children and nested structure
-    const processAttributeElement = (element: Element, depth: number = 0) => {
+    const processAttributeElement = (element: Element) => {
         const tagName = element.tagName.toLowerCase()
-        console.log(`${'  '.repeat(depth)}Processing attribute definition for tag: ${tagName}`)
 
-        // Extract attributes from this definition
-        const attrs: Record<string, string> = {}
-        for (let j = 0; j < element.attributes.length; j++) {
-            const attr = element.attributes[j]
-            // Skip xmlns attributes
-            if (attr.name !== 'xmlns') {
-                attrs[attr.name] = attr.value
-                console.log(`${'  '.repeat(depth)}  - ${attr.name}: ${attr.value}`)
+        // Only process MJML attribute definition tags
+        if (tagName.startsWith('mj-')) {
+            // Extract attributes from this definition
+            const attrs: Record<string, string> = {}
+            for (let j = 0; j < element.attributes.length; j++) {
+                const attr = element.attributes[j]
+                // Skip xmlns attributes
+                if (attr.name !== 'xmlns') {
+                    attrs[attr.name] = attr.value
+                }
             }
-        }
 
-        // Store the attributes for this tag type
-        if (Object.keys(attrs).length > 0) {
-            globalAttributes[tagName] = { ...globalAttributes[tagName], ...attrs }
-            console.log(`${'  '.repeat(depth)}Stored attributes for ${tagName}:`, attrs)
+            // Store the attributes for this tag type
+            if (Object.keys(attrs).length > 0) {
+                globalAttributes[tagName] = { ...globalAttributes[tagName], ...attrs }
+            }
         }
 
         // If this element has children, process them recursively (for nested structure)
         for (let i = 0; i < element.children.length; i++) {
-            processAttributeElement(element.children[i], depth + 1)
+            processAttributeElement(element.children[i])
         }
     }
 
@@ -192,18 +188,11 @@ const applyGlobalAttributes = (
 ): void => {
     const tagName = element.tagName
 
-    // Debug logging
-    console.log(`Applying global attributes to ${tagName}:`, {
-        availableGlobalAttributes: Object.keys(globalAttributes),
-        elementAttributes: element.attributes,
-    })
-
     // Apply mj-all attributes to all elements
     if (globalAttributes['mj-all']) {
         Object.entries(globalAttributes['mj-all']).forEach(([key, value]) => {
             if (!element.attributes[key]) {
                 element.attributes[key] = value
-                console.log(`Applied mj-all attribute ${key}=${value} to ${tagName}`)
             }
         })
     }
@@ -213,11 +202,8 @@ const applyGlobalAttributes = (
         Object.entries(globalAttributes[tagName]).forEach(([key, value]) => {
             if (!element.attributes[key]) {
                 element.attributes[key] = value
-                console.log(`Applied ${tagName} attribute ${key}=${value}`)
             }
         })
-    } else {
-        console.log(`No global attributes found for tag: ${tagName}`)
     }
 }
 
