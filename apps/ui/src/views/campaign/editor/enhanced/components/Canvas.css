@@ -180,4 +180,20 @@ linear-gradient(-45deg, transparent 75%, var(--color-grey-soft) 75%);
     }
 }
 
+/* Disable link clicks in editing mode */
+.canvas:not(.preview-mode) a {
+    pointer-events: none;
+    cursor: default;
+}
+
+.canvas:not(.preview-mode) a:hover {
+    text-decoration: none;
+}
+
+/* In preview mode, links should be clickable */
+.canvas.preview-mode a {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
 /* Dark theme driven via [data-theme="dark"] tokens in variables.css */
