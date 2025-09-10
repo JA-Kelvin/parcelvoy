@@ -576,7 +576,7 @@ const Canvas: React.FC<CanvasProps> = ({
                     ? (
                         <div
                             className="mjml-body-wrapper"
-                            style={bodyStyles}
+                            style={{ ...bodyStyles, width: '800px', maxWidth: '800px', background: 'var(--color-background)' }}
                         >
                             {renderElements(toArray(mjmlBody.children), mjmlBody.id)}
                         </div>
