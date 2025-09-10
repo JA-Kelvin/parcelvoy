@@ -692,11 +692,11 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 // Don't show for imported sections that might have content or specific styling
                 const hasChildren = element.children && element.children.length > 0
                 const hasContent = element.content && element.content.trim().length > 0
-                const hasSignificantAttributes = element.attributes && Object.keys(element.attributes).some(key => 
-                    key !== 'background-color' || element.attributes[key] !== '#ffffff'
+                const hasSignificantAttributes = element.attributes && Object.keys(element.attributes).some(key =>
+                    key !== 'background-color' || element.attributes[key] !== '#ffffff',
                 )
                 const isEmptyNewSection = !hasChildren && !hasContent && !hasSignificantAttributes
-                
+
                 return (
                     <div className="mj-section-content">
                         {isEmptyNewSection && !isPreviewMode && (
