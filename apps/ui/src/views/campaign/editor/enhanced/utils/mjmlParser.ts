@@ -56,6 +56,8 @@ export const serializeElementToMjml = (element: EditorElement): string => {
 export const parseMJMLString = (mjmlString: string): EditorElement[] => {
     try {
         const original = String(mjmlString || '')
+        console.log('Parsing MJML:', original.substring(0, 200) + '...')
+
         // Step 1: ensure fragments are wrapped
         const wrapped = wrapIfFragment(original)
         // Step 2: sanitize stray ampersands to satisfy XML parser
@@ -101,6 +103,7 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
             mjmlRoot.attributes[attr.name] = attr.value
         }
 
+        console.log('Parsed MJML structure:', JSON.stringify(mjmlRoot, null, 2))
         return [mjmlRoot]
     } catch (error) {
         console.error('Error parsing MJML:', error)
@@ -159,21 +162,12 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
         ])
 
         // Tags that are self-closing attribute definitions (mj-all, mj-text, etc. inside mj-attributes)
+        // Note: Only include tags that appear as attribute definitions, not structural containers
         const attributeDefinitionTags = new Set([
             'mj-all',
-            'mj-text',
-            'mj-button',
-            'mj-image',
-            'mj-section',
-            'mj-column',
-            'mj-wrapper',
-            'mj-hero',
-            'mj-navbar',
-            'mj-social',
-            'mj-divider',
-            'mj-spacer',
-            'mj-accordion',
-            'mj-carousel',
+            // Remove structural tags that can have children:
+            // 'mj-text', 'mj-button', 'mj-section', 'mj-column', 'mj-wrapper', 'mj-hero', 'mj-navbar', 'mj-social', 'mj-accordion', 'mj-carousel'
+            // These should only be treated as attribute definitions when inside mj-attributes, not in regular content
         ])
 
         if (contentHtmlTags.has(editorElement.tagName)) {
