@@ -502,16 +502,24 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             }
             case 'mj-column': {
                 const width = attributes.width
-                if (width) {
+                if (width && width.trim() !== '') {
+                    // Explicit width set
                     baseStyle.flex = `0 0 ${width}`
                     baseStyle.width = width
                     baseStyle.maxWidth = width
                 } else {
+                    // No width or empty width - use equal distribution
+                    // This matches MJML behavior where columns without width get equal shares
                     baseStyle.flex = '1 1 0'
+                    baseStyle.minWidth = '0'
                 }
                 if (attributes['vertical-align']) {
                     const v = String(attributes['vertical-align']).toLowerCase()
                     baseStyle.alignSelf = v === 'top' ? 'flex-start' : v === 'middle' ? 'center' : v === 'bottom' ? 'flex-end' : undefined
+                }
+                // Default MJML column behavior: center-align content (matches align="center" in generated HTML)
+                if (!baseStyle.textAlign) {
+                    baseStyle.textAlign = 'center'
                 }
                 break
             }
@@ -649,13 +657,17 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                         : `${parseInt(attributes.width)}px`)
                                 : '100%',
                             height: 'auto',
-                            display: 'inline-block',
+                            display: 'block',
                             borderRadius: attributes['border-radius'],
-                            ...(attributes.align === 'center'
-                                ? { marginLeft: 'auto', marginRight: 'auto' }
+                            // Constrain image to parent column width (matches MJML behavior)
+                            maxWidth: '100%',
+                            // Let the parent column's text-align handle the alignment
+                            // This matches how MJML renders images in the preview
+                            margin: attributes.align === 'center'
+                                ? '0 auto'
                                 : attributes.align === 'right'
-                                    ? { marginLeft: 'auto' }
-                                    : {}),
+                                    ? '0 0 0 auto'
+                                    : '0',
                         }}
                     />
                 )
