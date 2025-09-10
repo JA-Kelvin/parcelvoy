@@ -517,10 +517,6 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     const v = String(attributes['vertical-align']).toLowerCase()
                     baseStyle.alignSelf = v === 'top' ? 'flex-start' : v === 'middle' ? 'center' : v === 'bottom' ? 'flex-end' : undefined
                 }
-                // Default MJML column behavior: center-align content (matches align="center" in generated HTML)
-                if (!baseStyle.textAlign) {
-                    baseStyle.textAlign = 'center'
-                }
                 break
             }
             case 'mj-hero': {

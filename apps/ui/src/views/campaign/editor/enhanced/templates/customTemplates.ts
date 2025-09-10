@@ -82,7 +82,7 @@ const HERO_IMAGE_TITLE_CTA = `
 
 const FEATURE_IMAGE_LEFT_TEXT_RIGHT = `
 <mj-section padding="10px 25px">
-  <mj-column width="300px">
+  <mj-column>
     <mj-image alt="Orange flower" src="https://placehold.co/270x288/png" width="270" border-radius="8px" />
   </mj-column>
   <mj-column>

@@ -136,23 +136,27 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             return
         }
 
-        // mj-button: width supports px or %. Coerce numeric to px; clear invalid.
+        // mj-button: width supports px or %. Allow free typing, normalize on blur/complete values only.
         if (selectedElement.tagName === 'mj-button' && key === 'width') {
             const raw = (value || '').trim()
             if (raw === '') {
                 updatedAttributes[key] = undefined
             } else if (/^\s*\d+\s*%\s*$/i.test(raw)) {
-                const m = raw.match(/^(\s*(\d+)\s*)%\s*$/i)
-                const percent = m?.[2]
-                updatedAttributes[key] = percent ? `${percent}%` : undefined
-            } else {
+                // Complete percentage value
+                const m = raw.match(/^\s*(\d+)\s*%\s*$/i)
+                const percent = m?.[1]
+                updatedAttributes[key] = percent ? `${percent}%` : raw
+            } else if (/^\s*\d+\s*(px)?\s*$/i.test(raw)) {
+                // Complete pixel value (with or without px)
                 const m = raw.match(/^\s*(\d+)\s*(px)?\s*$/i)
                 const px = m?.[1]
-                if (px) {
-                    updatedAttributes[key] = `${px}px`
-                } else {
-                    updatedAttributes[key] = undefined
-                }
+                updatedAttributes[key] = px ? `${px}px` : raw
+            } else if (/^\s*\d+\s*$/.test(raw)) {
+                // Just a number - allow it for easier typing, will be normalized to px
+                updatedAttributes[key] = `${raw}px`
+            } else {
+                // Allow partial typing (like "20" while typing "200px")
+                updatedAttributes[key] = raw
             }
             onElementUpdate(selectedElement.id, updatedAttributes)
             return
