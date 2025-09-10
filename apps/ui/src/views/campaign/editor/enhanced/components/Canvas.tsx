@@ -7,6 +7,7 @@ import { generateId } from '../utils/mjmlParser'
 import DroppableElement from './DroppableElement'
 import './Canvas.css'
 import { toArray } from '../utils/arrayUtils'
+import { parseAllStyles, getBodyStyles } from '../utils/styleParser'
 
 interface CanvasProps {
     elements: EditorElement[]
@@ -547,6 +548,21 @@ const Canvas: React.FC<CanvasProps> = ({
         console.log('- Will show empty state:', !mjmlBody)
     }
 
+    // Calculate mj-body styles for canvas
+    const getCanvasBodyStyles = (): React.CSSProperties => {
+        if (safeElements.length === 0) return {}
+
+        try {
+            const parsedStyles = parseAllStyles(safeElements)
+            return getBodyStyles(safeElements, parsedStyles.globalAttributes, parsedStyles.cssRules)
+        } catch (error) {
+            console.warn('Error applying body styles to canvas:', error)
+            return {}
+        }
+    }
+
+    const bodyStyles = getCanvasBodyStyles()
+
     return (
         <div className="canvas-container">
             <div
@@ -558,7 +574,10 @@ const Canvas: React.FC<CanvasProps> = ({
             >
                 {mjmlBody
                     ? (
-                        <div className="mjml-body-wrapper">
+                        <div
+                            className="mjml-body-wrapper"
+                            style={bodyStyles}
+                        >
                             {renderElements(toArray(mjmlBody.children), mjmlBody.id)}
                         </div>
                     )

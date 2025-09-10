@@ -138,6 +138,14 @@ export const extractMjmlAttributes = (elements: EditorElement[]): Record<string,
     return globalAttributes
 }
 
+// Extract mj-body element and its styles
+export const extractMjmlBody = (elements: EditorElement[]): EditorElement | null => {
+    const mjmlRoot = elements.find(e => e.tagName === 'mjml')
+    if (!mjmlRoot) return null
+
+    return mjmlRoot.children?.find(c => c.tagName === 'mj-body') ?? null
+}
+
 // Parse all styles from MJML elements
 export const parseAllStyles = (elements: EditorElement[]): ParsedStyles => {
     const globalCss = extractMjmlStyles(elements)
@@ -253,4 +261,69 @@ export const cssPropertiesToReact = (properties: Record<string, string>): React.
     })
 
     return reactStyles as React.CSSProperties
+}
+
+// Apply mj-body styles to canvas container
+export const getBodyStyles = (
+    elements: EditorElement[],
+    globalAttributes: Record<string, Record<string, string>>,
+    cssRules: CSSRule[],
+): React.CSSProperties => {
+    const mjBody = extractMjmlBody(elements)
+    if (!mjBody) return {}
+
+    // Start with mj-body attributes
+    let bodyAttributes = { ...mjBody.attributes }
+
+    // Apply global mj-body attributes if any
+    if (globalAttributes['mj-body']) {
+        bodyAttributes = {
+            ...globalAttributes['mj-body'],
+            ...bodyAttributes, // Element attributes override global
+        }
+    }
+
+    // Convert MJML attributes to CSS
+    const baseStyles: React.CSSProperties = {}
+
+    // Background
+    if (bodyAttributes['background-color']) {
+        baseStyles.backgroundColor = bodyAttributes['background-color']
+    }
+    if (bodyAttributes['background-url']) {
+        baseStyles.backgroundImage = `url("${bodyAttributes['background-url']}")`
+        baseStyles.backgroundRepeat = bodyAttributes['background-repeat'] || 'no-repeat'
+        baseStyles.backgroundSize = bodyAttributes['background-size'] || 'cover'
+        baseStyles.backgroundPosition = bodyAttributes['background-position'] || 'center'
+    }
+
+    // Typography
+    if (bodyAttributes['font-family']) baseStyles.fontFamily = bodyAttributes['font-family']
+    if (bodyAttributes['font-size']) baseStyles.fontSize = bodyAttributes['font-size']
+    if (bodyAttributes.color) baseStyles.color = bodyAttributes.color
+
+    // Width and alignment
+    if (bodyAttributes.width) {
+        baseStyles.width = bodyAttributes.width
+        baseStyles.maxWidth = bodyAttributes.width
+    } else {
+        // Default MJML body width
+        baseStyles.width = '600px'
+        baseStyles.maxWidth = '600px'
+    }
+
+    // Center the body by default (MJML behavior)
+    baseStyles.margin = '0 auto'
+
+    // Apply CSS rules that match mj-body
+    const bodyClasses = bodyAttributes.class ? bodyAttributes.class.split(' ') : []
+    const bodyId = bodyAttributes.id
+    const matchingRules = findMatchingCssRules('mj-body', bodyClasses, bodyId, cssRules)
+
+    matchingRules.forEach(rule => {
+        const cssProps = cssPropertiesToReact(rule.properties)
+        Object.assign(baseStyles, cssProps)
+    })
+
+    return baseStyles
 }
