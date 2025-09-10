@@ -402,6 +402,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     ],
                     hasContent: false,
                 }
+            case 'mj-body':
+                return {
+                    attributes: [
+                        { key: 'background-color', label: 'Background Color', type: 'color' },
+                        { key: 'width', label: 'Email Width', type: 'text', placeholder: '600px' },
+                        { key: 'css-class', label: 'CSS Class', type: 'text', placeholder: 'email-body' },
+                    ],
+                    hasContent: false,
+                }
             case 'mj-raw':
                 return {
                     attributes: [
