@@ -12,12 +12,13 @@ import Button from '../../ui/Button'
 import { Column, Columns } from '../../ui/Columns'
 import TextInput from '../../ui/form/TextInput'
 import Modal, { ModalProps } from '../../ui/Modal'
-import { ChannelType, TemplateProofParams } from '../../types'
+import { ChannelType, Template, TemplateProofParams } from '../../types'
 import FormWrapper from '../../ui/form/FormWrapper'
 import SourceEditor from '../../ui/SourceEditor'
 import { useTranslation } from 'react-i18next'
 import { flattenUser } from '../../ui/utils'
 import { UserLookup } from '../users/UserLookup'
+import VariantSelector from './variants/VariantSelector'
 
 interface SendProofProps extends Omit<ModalProps, 'title'> {
     type: ChannelType
@@ -42,40 +43,25 @@ const SendProof = ({ open, onClose, onSubmit, type }: SendProofProps) => {
     )
 }
 
-export default function CampaignPreview() {
+interface TemplatePreviewProps {
+    template: Template
+}
 
+const TemplatePreview = ({ template }: TemplatePreviewProps) => {
     const [project] = useContext(ProjectContext)
     const { t } = useTranslation()
-    const { currentTemplate } = useContext(TemplateContext)
     const showAddState = useState(false)
     const [isUserLookupOpen, setIsUserLookupOpen] = useState(false)
     const [templatePreviewError, setTemplatePreviewError] = useState<string | undefined>(undefined)
     const [isSendProofOpen, setIsSendProofOpen] = useState(false)
     const [proofResponse, setProofResponse] = useState<any>(undefined)
-
-    if (!currentTemplate) {
-        return (<>
-            <Heading title={t('preview')} size="h3" actions={
-                <>
-                    <LocaleSelector showAddState={showAddState} />
-                </>
-            } />
-            <Alert
-                variant="plain"
-                title={t('add_template')}
-                body={t('no_template_alert_body')}
-                actions={<Button onClick={() => showAddState[1](true)}>{t('create_template')}</Button>}
-            />
-        </>)
-    }
-
-    const [data, setData] = useState(currentTemplate.data)
+    const [data, setData] = useState(template.data)
     const [value, setValue] = useState<string | undefined>('{\n    "user": {},\n    "event": {}\n}')
-    useEffect(() => { handleEditorChange(value) }, [value, currentTemplate])
+    useEffect(() => { handleEditorChange(value) }, [value, template])
 
     const handleEditorChange = useMemo(() => debounce(async (value?: string) => {
         try {
-            const { data } = await api.templates.preview(project.id, currentTemplate.id, JSON.parse(value ?? '{}'))
+            const { data } = await api.templates.preview(project.id, template.id, JSON.parse(value ?? '{}'))
             setTemplatePreviewError(undefined)
             setData(data)
         } catch (error: any) {
@@ -85,11 +71,11 @@ export default function CampaignPreview() {
             }
             setTemplatePreviewError(error.message)
         }
-    }), [currentTemplate])
+    }), [template])
 
     const handleSendProof = async (recipient: string) => {
         try {
-            const response = await api.templates.proof(project.id, currentTemplate.id, {
+            const response = await api.templates.proof(project.id, template.id, {
                 variables: JSON.parse(value ?? '{}'),
                 recipient,
             })
@@ -103,7 +89,7 @@ export default function CampaignPreview() {
             return
         }
         setIsSendProofOpen(false)
-        currentTemplate.type === 'webhook'
+        template.type === 'webhook'
             ? toast.success('Webhook test has been successfully sent!')
             : toast.success('Template proof has been successfully sent!')
     }
@@ -134,7 +120,7 @@ export default function CampaignPreview() {
                 </Column>
                 <Column fullscreen={true}>
                     <Heading title="Preview" size="h4" actions={
-                        currentTemplate.type === 'webhook'
+                        template.type === 'webhook'
                             ? <Button
                                 size="small"
                                 variant="secondary"
@@ -149,7 +135,7 @@ export default function CampaignPreview() {
                         title={t('template_error')}>
                         {t('template_handlebars_error')}{templatePreviewError}
                     </Alert>}
-                    <Preview template={{ type: currentTemplate.type, data }} response={proofResponse} />
+                    <Preview template={{ type: template.type, data }} response={proofResponse} />
                 </Column>
             </Columns>
 
@@ -166,7 +152,32 @@ export default function CampaignPreview() {
                 open={isSendProofOpen}
                 onClose={setIsSendProofOpen}
                 onSubmit={handleSendProof}
-                type={currentTemplate.type} />
+                type={template.type} />
         </>
     )
+}
+
+export default function CampaignPreview() {
+    const { t } = useTranslation()
+    const { currentTemplate } = useContext(TemplateContext)
+    const showAddState = useState(false)
+
+    if (!currentTemplate) {
+        return <>
+            <Heading title={t('preview')} size="h3" actions={
+                <>
+                    <VariantSelector />
+                    <LocaleSelector showAddState={showAddState} />
+                </>
+            } />
+            <Alert
+                variant="plain"
+                title={t('add_template')}
+                body={t('no_template_alert_body')}
+                actions={<Button onClick={() => showAddState[1](true)}>{t('create_template')}</Button>}
+            />
+        </>
+    }
+
+    return <TemplatePreview template={currentTemplate} />
 }

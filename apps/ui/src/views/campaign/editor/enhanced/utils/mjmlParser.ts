@@ -153,6 +153,27 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
             // mj-head children that carry raw text content
             'mj-preview',
             'mj-style',
+            'mj-title',
+            'mj-font',
+            'mj-breakpoint',
+        ])
+
+        // Tags that are self-closing attribute definitions (mj-all, mj-text, etc. inside mj-attributes)
+        const attributeDefinitionTags = new Set([
+            'mj-all',
+            'mj-text',
+            'mj-button',
+            'mj-image',
+            'mj-section',
+            'mj-column',
+            'mj-wrapper',
+            'mj-hero',
+            'mj-navbar',
+            'mj-social',
+            'mj-divider',
+            'mj-spacer',
+            'mj-accordion',
+            'mj-carousel',
         ])
 
         if (contentHtmlTags.has(editorElement.tagName)) {
@@ -169,6 +190,9 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
                 // Fallback to textContent if serializer produced empty string
                 editorElement.content = child.textContent.trim()
             }
+        } else if (attributeDefinitionTags.has(editorElement.tagName)) {
+            // For attribute definition tags inside mj-attributes, they are self-closing with only attributes
+            // No content or children to parse - attributes are already handled above
         } else {
             // Parse text content for leaf nodes
             if (child.children.length === 0 && child.textContent?.trim()) {
@@ -244,7 +268,16 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
 
     // Handle void elements (self-closing)
     const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-carousel-image']
+
+    // Handle attribute definition elements (self-closing with attributes only)
+    const attributeDefinitionElements = ['mj-all', 'mj-text', 'mj-button', 'mj-image', 'mj-section', 'mj-column', 'mj-wrapper', 'mj-hero', 'mj-navbar', 'mj-social', 'mj-divider', 'mj-spacer', 'mj-accordion', 'mj-carousel']
+
     if (voidElements.includes(actualTagName) && !content && (!children || children.length === 0)) {
+        return `${indent}<${actualTagName}${attributesPart} />`
+    }
+
+    // Handle attribute definition elements inside mj-attributes (self-closing with attributes)
+    if (attributeDefinitionElements.includes(actualTagName) && !content && (!children || children.length === 0)) {
         return `${indent}<${actualTagName}${attributesPart} />`
     }
 

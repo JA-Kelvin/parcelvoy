@@ -4,8 +4,12 @@
 
 export const ALLOWED_CHILDREN: Record<string, string[]> = {
     // Root/body level
-    mjml: ['mj-body'],
+    mjml: ['mj-head', 'mj-body'],
     'mj-body': ['mj-section', 'enhanced-section', 'mj-wrapper', 'mj-hero'],
+
+    // Head elements
+    'mj-head': ['mj-attributes', 'mj-style', 'mj-preview', 'mj-title', 'mj-font', 'mj-breakpoint'],
+    'mj-attributes': ['mj-all', 'mj-text', 'mj-button', 'mj-image', 'mj-section', 'mj-column', 'mj-wrapper', 'mj-hero', 'mj-navbar', 'mj-social', 'mj-divider', 'mj-spacer', 'mj-accordion', 'mj-carousel'],
 
     // Sections
     'mj-section': ['mj-column', 'mj-group'],

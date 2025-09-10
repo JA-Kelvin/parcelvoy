@@ -618,7 +618,7 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                                 backgroundColor: attributes['background-color'] ?? 'var(--color-blue)',
                                 color: attributes.color ?? 'var(--color-on-primary)',
                                 borderRadius: attributes['border-radius'] ?? '4px',
-                                padding: attributes['inner-padding'] ?? attributes.padding ?? '10px 25px',
+                                padding: attributes['inner-padding'] ?? attributes.padding ?? '0',
                                 border: attributes.border ?? 'none',
                                 cursor: 'pointer',
                                 fontSize: attributes['font-size'] ?? '14px',

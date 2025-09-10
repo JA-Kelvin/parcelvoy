@@ -21,6 +21,7 @@ import LayersPanel from './components/LayersPanel'
 import CustomTemplatesModal from './components/CustomTemplatesModal'
 import SaveCustomTemplateModal from './components/SaveCustomTemplateModal'
 import HeadEditorModal from './components/HeadEditorModal'
+import AttributesEditorModal from './components/AttributesEditorModal'
 import { CUSTOM_TEMPLATES } from './templates/customTemplates'
 import './EnhancedMjmlEditor.css'
 import { toast } from 'react-hot-toast/headless'
@@ -506,6 +507,7 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
     const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
     const [clipboardElement, setClipboardElement] = useState<EditorElement | null>(null)
     const [showHeadEditorModal, setShowHeadEditorModal] = useState(false)
+    const [showAttributesModal, setShowAttributesModal] = useState(false)
 
     // Initialize editor state with a function to ensure proper initialization
     const getInitialState = (): HistoryState => {
@@ -1305,6 +1307,13 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                             </button>
                             <button
                                 className="toolbar-button"
+                                onClick={() => setShowAttributesModal(true)}
+                                title="Edit global component attributes using <mj-attributes>"
+                            >
+                                🎯<span className="button-label">Global Attributes</span>
+                            </button>
+                            <button
+                                className="toolbar-button"
                                 onClick={() => setShowEnhancedPreview(true)}
                                 title="Preview Email with Code View"
                             >
@@ -1395,6 +1404,11 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                                             onDelete={handleElementDelete}
                                             onMove={handleElementMove}
                                             onSwitchToComponents={() => setActiveRightTab('components')}
+                                            onDoubleClick={(elementId) => {
+                                                handleElementSelect(elementId)
+                                                setRightPanelCollapsed(false)
+                                                setActiveRightTab('properties')
+                                            }}
                                         />
                                     </ErrorBoundary>
                                 )}
@@ -1445,15 +1459,21 @@ const EnhancedMjmlEditor: React.FC<EnhancedMjmlEditorProps> = ({
                     onClose={() => setShowHeadEditorModal(false)}
                     elements={editorState.present}
                     onApply={(updated) => {
-                        try {
-                            dispatch({ type: 'REPLACE_PRESENT', payload: { elements: updated, selectId: editorState.selectedElementId ?? null } })
-                            toast.success('Updated head styles')
-                        } catch (e) {
-                            console.error('Failed to apply head styles:', e)
-                            toast.error('Failed to update head styles')
-                        } finally {
-                            setShowHeadEditorModal(false)
-                        }
+                        dispatch({ type: 'REPLACE_PRESENT', payload: { elements: updated } })
+                        setShowHeadEditorModal(false)
+                        toast.success('Head styles updated successfully!')
+                    }}
+                />
+
+                {/* Global Attributes Editor Modal */}
+                <AttributesEditorModal
+                    isOpen={showAttributesModal}
+                    onClose={() => setShowAttributesModal(false)}
+                    elements={editorState.present}
+                    onApply={(updated) => {
+                        dispatch({ type: 'REPLACE_PRESENT', payload: { elements: updated } })
+                        setShowAttributesModal(false)
+                        toast.success('Global attributes updated successfully!')
                     }}
                 />
             </div>

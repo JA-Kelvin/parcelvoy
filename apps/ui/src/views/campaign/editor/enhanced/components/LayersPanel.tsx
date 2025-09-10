@@ -12,6 +12,7 @@ interface LayersPanelProps {
     onDelete: (elementId: string) => void
     onMove: (elementId: string, newParentId: string, newIndex: number) => void
     onSwitchToComponents?: () => void
+    onDoubleClick?: (elementId: string) => void
 }
 
 const iconForTag = (tag: string): string => {
@@ -49,6 +50,7 @@ interface LayerItemProps {
     onSelect: (id: string) => void
     onDelete: (id: string) => void
     onMove: (id: string, newParentId: string, newIndex: number) => void
+    onDoubleClick?: (id: string) => void
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
@@ -60,6 +62,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
     onSelect,
     onDelete,
     onMove,
+    onDoubleClick,
 }) => {
     const [expanded, setExpanded] = useState(true)
     const ref = useRef<HTMLDivElement>(null)
@@ -154,7 +157,11 @@ const LayerItem: React.FC<LayerItemProps> = ({
                 isOver && dropMode ? `dropping-${dropMode}` : '',
             ].filter(Boolean).join(' ')}
             onClick={(e) => { e.stopPropagation(); onSelect(element.id) }}
-            onDoubleClick={(e) => { e.stopPropagation(); onSelect(element.id) }}
+            onDoubleClick={(e) => {
+                e.stopPropagation()
+                onSelect(element.id)
+                onDoubleClick?.(element.id)
+            }}
         >
             <div className="layer-row">
                 {hasChildren
@@ -190,6 +197,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
                             onSelect={onSelect}
                             onDelete={onDelete}
                             onMove={onMove}
+                            onDoubleClick={onDoubleClick}
                         />
                     ))}
                 </div>
@@ -198,7 +206,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
     )
 }
 
-const LayersPanel: React.FC<LayersPanelProps> = ({ elements, selectedElementId, onSelect, onDelete, onMove, onSwitchToComponents }) => {
+const LayersPanel: React.FC<LayersPanelProps> = ({ elements, selectedElementId, onSelect, onDelete, onMove, onSwitchToComponents, onDoubleClick }) => {
     // Build a root container if elements are multiple roots; expect one root 'mjml'
     const rootElements = useMemo(() => elements || [], [elements])
 
@@ -226,6 +234,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ elements, selectedElementId, 
                         onSelect={(id) => onSelect(id)}
                         onDelete={onDelete}
                         onMove={onMove}
+                        onDoubleClick={onDoubleClick}
                     />
                 ))}
             </div>

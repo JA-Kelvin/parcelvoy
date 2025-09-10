@@ -55,6 +55,7 @@ const EnhancedPreviewModal: React.FC<EnhancedPreviewModalProps> = ({
 
     useEffect(() => {
         if (isOpen && elements.length > 0) {
+            setActiveTab('visual')
             void generatePreview()
         }
     }, [isOpen, elements])
