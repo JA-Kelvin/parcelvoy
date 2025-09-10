@@ -38,16 +38,21 @@
     max-width: 600px;
     border-radius: 0px;
     margin: auto;
+    /* Default padding when not specified in MJML attributes */
+    padding: 20px 0;
 }
 
 /* Enhanced section mirrors mj-section styling */
 .element-enhanced-section {
     margin-bottom: 10px;
     border-radius: 4px;
+    /* Default padding when not specified in MJML attributes */
+    padding: 20px 0;
 }
 
 .element-mj-column {
-    padding: 0px;
+    /* Default padding when not specified in MJML attributes */
+    padding: 10px 25px;
     border: 1px dashed transparent;
     min-height: 30px;
     position: relative;
@@ -638,14 +643,16 @@
 /* Remove editor-only spacing/affordances in preview mode for parity */
 .droppable-element.preview-mode.element-mj-section {
     margin-bottom: 0;
+    /* Don't override padding in preview mode - let getElementStyle() handle it */
 }
 
 .droppable-element.preview-mode.element-enhanced-section {
     margin-bottom: 0;
+    /* Don't override padding in preview mode - let getElementStyle() handle it */
 }
 
 .droppable-element.preview-mode.element-mj-column {
-    padding: 0;
+    /* Don't override padding in preview mode - let getElementStyle() handle it */
     border: none;
 }
 

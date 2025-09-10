@@ -374,7 +374,9 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
             id: generateId(),
             type: 'mj-column',
             tagName: 'mj-column',
-            attributes: {},
+            attributes: {
+                padding: '10px 25px',
+            },
             children: [],
         }
 

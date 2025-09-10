@@ -344,7 +344,6 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
             type: 'mj-body',
             tagName: 'mj-body',
             attributes: {
-                'background-color': '#f4f4f4',
             },
             children: [{
                 id: generateId(),
@@ -352,13 +351,15 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
                 tagName: 'mj-section',
                 attributes: {
                     'background-color': '#ffffff',
-                    padding: '10px 25px',
+                    padding: '20px 0',
                 },
                 children: [{
                     id: generateId(),
                     type: 'mj-column',
                     tagName: 'mj-column',
-                    attributes: {},
+                    attributes: {
+                        padding: '10px 25px',
+                    },
                     children: [{
                         id: generateId(),
                         type: 'mj-text',
@@ -366,7 +367,6 @@ export const createDefaultMjmlStructure = (): EditorElement[] => {
                         attributes: {
                             'font-size': '16px',
                             color: '#333333',
-                            padding: '10px 25px',
                         },
                         children: [],
                         content: 'Welcome to your new email template!',

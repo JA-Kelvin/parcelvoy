@@ -254,7 +254,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     attributes: [
                         { key: 'width', label: 'Width', type: 'text', placeholder: '100%' },
                         { key: 'background-color', label: 'Background Color', type: 'color' },
-                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '0' },
+                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '10px 25px' },
                         { key: 'border', label: 'Border', type: 'text', placeholder: '1px solid #ccc' },
                         { key: 'border-radius', label: 'Border Radius', type: 'text', placeholder: '4px' },
                     ],

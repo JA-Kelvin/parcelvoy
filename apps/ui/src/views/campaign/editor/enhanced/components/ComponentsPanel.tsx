@@ -30,7 +30,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '📐',
         defaultAttributes: {
-            padding: '10px 25px',
+            padding: '20px 0',
         },
         allowedChildren: ['mj-column', 'mj-group'],
     },
@@ -41,7 +41,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         category: 'layout',
         icon: '✨',
         defaultAttributes: {
-            padding: '10px 25px',
+            padding: '20px 0',
         },
         allowedChildren: ['mj-column', 'mj-group'],
     },
@@ -53,6 +53,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         icon: '📏',
         defaultAttributes: {
             width: '100%',
+            padding: '10px 25px',
         },
         allowedChildren: ['mj-text', 'mj-image', 'mj-button', 'mj-divider', 'mj-spacer', 'mj-social', 'mj-raw', 'mj-navbar', 'mj-table', 'mj-accordion', 'mj-carousel'],
     },
