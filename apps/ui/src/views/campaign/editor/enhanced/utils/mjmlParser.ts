@@ -88,13 +88,16 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
         const mjmlElement = doc.querySelector('mjml')
         if (!mjmlElement) throw new Error('No MJML root element found')
 
+        // Extract global attributes from mj-attributes before parsing
+        const globalAttributes = extractGlobalAttributes(mjmlElement)
+
         // Create the MJML root element with its children
         const mjmlRoot: EditorElement = {
             id: generateId(),
             type: 'mjml',
             tagName: 'mjml',
             attributes: {},
-            children: parseElementRecursive(mjmlElement),
+            children: parseElementRecursive(mjmlElement, globalAttributes),
         }
 
         // Parse attributes of the mjml element
@@ -124,8 +127,67 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
     }
 }
 
+// Extract global attributes from mj-attributes section
+const extractGlobalAttributes = (mjmlElement: Element): Record<string, Record<string, string>> => {
+    const globalAttributes: Record<string, Record<string, string>> = {}
+
+    // Find mj-head and mj-attributes elements
+    const mjHead = mjmlElement.querySelector('mj-head')
+    if (!mjHead) return globalAttributes
+
+    const mjAttributes = mjHead.querySelector('mj-attributes')
+    if (!mjAttributes) return globalAttributes
+
+    // Process each attribute definition
+    for (let i = 0; i < mjAttributes.children.length; i++) {
+        const attrDef = mjAttributes.children[i]
+        const tagName = attrDef.tagName.toLowerCase()
+
+        // Extract attributes from this definition
+        const attrs: Record<string, string> = {}
+        for (let j = 0; j < attrDef.attributes.length; j++) {
+            const attr = attrDef.attributes[j]
+            attrs[attr.name] = attr.value
+        }
+
+        // Store the attributes for this tag type
+        if (Object.keys(attrs).length > 0) {
+            globalAttributes[tagName] = { ...globalAttributes[tagName], ...attrs }
+        }
+    }
+
+    console.log('Extracted global attributes:', globalAttributes)
+    return globalAttributes
+}
+
+// Apply global attributes to an element based on its tag name
+const applyGlobalAttributes = (
+    element: EditorElement,
+    globalAttributes: Record<string, Record<string, string>>,
+): void => {
+    const tagName = element.tagName
+
+    // Apply mj-all attributes to all elements
+    if (globalAttributes['mj-all']) {
+        Object.entries(globalAttributes['mj-all']).forEach(([key, value]) => {
+            if (!element.attributes[key]) {
+                element.attributes[key] = value
+            }
+        })
+    }
+
+    // Apply tag-specific attributes
+    if (globalAttributes[tagName]) {
+        Object.entries(globalAttributes[tagName]).forEach(([key, value]) => {
+            if (!element.attributes[key]) {
+                element.attributes[key] = value
+            }
+        })
+    }
+}
+
 // Parse DOM element to editor element recursively
-const parseElementRecursive = (element: Element): EditorElement[] => {
+const parseElementRecursive = (element: Element, globalAttributes: Record<string, Record<string, string>> = {}): EditorElement[] => {
     const result: EditorElement[] = []
 
     for (let i = 0; i < element.children.length; i++) {
@@ -142,6 +204,12 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
         for (let j = 0; j < child.attributes.length; j++) {
             const attr = child.attributes[j]
             editorElement.attributes[attr.name] = attr.value
+        }
+
+        // Apply global attributes from mj-attributes (only if not inside mj-head)
+        const isInsideMjHead = child.closest('mj-head') !== null
+        if (!isInsideMjHead) {
+            applyGlobalAttributes(editorElement, globalAttributes)
         }
 
         // Tags whose inner HTML should be treated as content rather than parsed into child elements
@@ -195,7 +263,7 @@ const parseElementRecursive = (element: Element): EditorElement[] => {
 
             // Parse children recursively for structural MJML tags
             if (child.children.length > 0) {
-                editorElement.children = parseElementRecursive(child)
+                editorElement.children = parseElementRecursive(child, globalAttributes)
             }
         }
 
