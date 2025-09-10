@@ -47,6 +47,34 @@ const parseHtmlDoc = (content: string): Document => {
     return parser.parseFromString(content, 'text/html')
 }
 
+// Ensure void MJML elements are self-closing to prevent XML parser nesting issues
+const ensureVoidElementsAreSelfClosing = (mjmlString: string): string => {
+    const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-carousel-image']
+    let result = mjmlString
+
+    voidElements.forEach(tagName => {
+        // Match opening tags that are not already self-closing
+        const regex = new RegExp(`<${tagName}([^>]*?)>(?!.*</${tagName}>)`, 'gi')
+        result = result.replace(regex, `<${tagName}$1 />`)
+
+        // Also handle cases where there might be content between opening and closing tags
+        const pairRegex = new RegExp(`<${tagName}([^>]*?)>([\\s\\S]*?)</${tagName}>`, 'gi')
+        result = result.replace(pairRegex, (match, attributes, content) => {
+            // If there's meaningful content, we need to restructure
+            const trimmedContent = content.trim()
+            if (trimmedContent) {
+                // Move the content after the self-closing tag
+                return `<${tagName}${attributes} />${trimmedContent}`
+            } else {
+                // Just make it self-closing
+                return `<${tagName}${attributes} />`
+            }
+        })
+    })
+
+    return result
+}
+
 // Public helper to serialize a single element subtree (without wrapping mjml/mj-body)
 export const serializeElementToMjml = (element: EditorElement): string => {
     return elementToMjmlString(element, 0)
@@ -61,7 +89,9 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
         // Step 1: ensure fragments are wrapped
         const wrapped = wrapIfFragment(original)
         // Step 2: sanitize stray ampersands to satisfy XML parser
-        const sanitized = sanitizeStrayAmpersands(wrapped)
+        let sanitized = sanitizeStrayAmpersands(wrapped)
+        // Step 3: ensure void elements are self-closing to prevent nesting issues
+        sanitized = ensureVoidElementsAreSelfClosing(sanitized)
 
         // First attempt: strict XML parse
         let doc = parseXmlDoc(sanitized)
@@ -91,13 +121,21 @@ export const parseMJMLString = (mjmlString: string): EditorElement[] => {
         // Extract global attributes from mj-attributes before parsing
         const globalAttributes = extractGlobalAttributes(mjmlElement)
 
-        // Create the MJML root element with its children
+        // Parse all children including mj-head and mj-body
+        const allChildren = parseElementRecursive(mjmlElement, globalAttributes)
+        console.log('All parsed children:', allChildren.map(c => ({ tagName: c.tagName, childrenCount: c.children?.length || 0 })))
+
+        // Separate mj-head and other children
+        const mjHeadChild = allChildren.find(child => child.tagName === 'mj-head')
+        const otherChildren = allChildren.filter(child => child.tagName !== 'mj-head')
+
+        // Create the MJML root element with proper child ordering
         const mjmlRoot: EditorElement = {
             id: generateId(),
             type: 'mjml',
             tagName: 'mjml',
             attributes: {},
-            children: parseElementRecursive(mjmlElement, globalAttributes),
+            children: mjHeadChild ? [mjHeadChild, ...otherChildren] : otherChildren,
         }
 
         // Parse attributes of the mjml element
@@ -188,19 +226,21 @@ const applyGlobalAttributes = (
 ): void => {
     const tagName = element.tagName
 
-    // Apply mj-all attributes to all elements
+    // Apply mj-all attributes to all elements (with priority handling)
     if (globalAttributes['mj-all']) {
         Object.entries(globalAttributes['mj-all']).forEach(([key, value]) => {
-            if (!element.attributes[key]) {
+            // Only apply if element doesn't have this attribute or if it's empty
+            if (!element.attributes[key] || element.attributes[key] === '') {
                 element.attributes[key] = value
             }
         })
     }
 
-    // Apply tag-specific attributes
+    // Apply tag-specific attributes (higher priority than mj-all)
     if (globalAttributes[tagName]) {
         Object.entries(globalAttributes[tagName]).forEach(([key, value]) => {
-            if (!element.attributes[key]) {
+            // Only apply if element doesn't have this attribute or if it's empty
+            if (!element.attributes[key] || element.attributes[key] === '') {
                 element.attributes[key] = value
             }
         })
@@ -210,6 +250,10 @@ const applyGlobalAttributes = (
 // Parse DOM element to editor element recursively
 const parseElementRecursive = (element: Element, globalAttributes: Record<string, Record<string, string>> = {}): EditorElement[] => {
     const result: EditorElement[] = []
+    console.log(`Parsing element: ${element.tagName}, children count: ${element.children.length}`)
+
+    // Treat certain MJML tags as void elements (must not contain children)
+    const voidTags = new Set(['mj-image', 'mj-divider', 'mj-spacer', 'mj-carousel-image'])
 
     for (let i = 0; i < element.children.length; i++) {
         const child = element.children[i]
@@ -229,8 +273,27 @@ const parseElementRecursive = (element: Element, globalAttributes: Record<string
 
         // Apply global attributes from mj-attributes (only if not inside mj-head)
         const isInsideMjHead = child.closest('mj-head') !== null
-        if (!isInsideMjHead) {
+        if (!isInsideMjHead && editorElement.tagName !== 'mj-head') {
             applyGlobalAttributes(editorElement, globalAttributes)
+        }
+
+        // If this is a void tag, do not attempt to parse or attach any children under it,
+        // even if the DOM parser erroneously exposed nested nodes.
+        if (voidTags.has(editorElement.tagName)) {
+            // Push the void element itself
+            result.push(editorElement)
+            console.log(`Added void element: ${editorElement.tagName}`)
+
+            // If the DOM erroneously nested following siblings inside this void tag,
+            // parse those nested children and append them as siblings in order.
+            if (child.children.length > 0) {
+                const flattened = parseElementRecursive(child, globalAttributes)
+                if (flattened.length > 0) {
+                    console.log(`Flattened ${flattened.length} nested children from void tag: ${editorElement.tagName}`)
+                    result.push(...flattened)
+                }
+            }
+            continue
         }
 
         // Tags whose inner HTML should be treated as content rather than parsed into child elements
@@ -264,11 +327,30 @@ const parseElementRecursive = (element: Element, globalAttributes: Record<string
             const serializer = new XMLSerializer()
             let inner = ''
             for (let n = 0; n < child.childNodes.length; n++) {
-                inner += serializer.serializeToString(child.childNodes[n])
+                const node = child.childNodes[n]
+                if (node.nodeType === Node.TEXT_NODE) {
+                    // Preserve text nodes as-is
+                    inner += node.textContent ?? ''
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    // Serialize element nodes with better HTML preservation
+                    const serialized = serializer.serializeToString(node)
+                    // Fix common serialization issues with deprecated tags and entities
+                    inner += serialized
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&amp;/g, '&') // Fix double-encoded ampersands
+                } else {
+                    inner += serializer.serializeToString(node)
+                }
             }
             const innerTrimmed = inner.trim()
             if (innerTrimmed) {
+                // Additional cleanup for common HTML issues
                 editorElement.content = innerTrimmed
+                    .replace(/xmlns="[^"]*"/g, '') // Remove xmlns attributes from serialized HTML
+                    .replace(/\s+/g, ' ') // Normalize whitespace
+                    .trim()
             } else if (child.textContent?.trim()) {
                 // Fallback to textContent if serializer produced empty string
                 editorElement.content = child.textContent.trim()
@@ -289,8 +371,10 @@ const parseElementRecursive = (element: Element, globalAttributes: Record<string
         }
 
         result.push(editorElement)
+        console.log(`Added element: ${editorElement.tagName}, content: ${editorElement.content ? 'has content' : 'no content'}, children: ${editorElement.children?.length || 0}`)
     }
 
+    console.log(`Returning ${result.length} elements from ${element.tagName}`)
     return result
 }
 
@@ -349,18 +433,21 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
 
     const attributesPart = attributesString ? ` ${attributesString}` : ''
 
-    // Handle void elements (self-closing)
+    // Handle void elements (self-closing) - these should ALWAYS be self-closing
     const voidElements = ['mj-image', 'mj-divider', 'mj-spacer', 'mj-carousel-image']
 
     // Handle attribute definition elements (self-closing with attributes only)
-    const attributeDefinitionElements = ['mj-all', 'mj-text', 'mj-button', 'mj-image', 'mj-section', 'mj-column', 'mj-wrapper', 'mj-hero', 'mj-navbar', 'mj-social', 'mj-divider', 'mj-spacer', 'mj-accordion', 'mj-carousel']
+    const attributeDefinitionElements = ['mj-all']
 
-    if (voidElements.includes(actualTagName) && !content && (!children || children.length === 0)) {
+    // Force void elements to be self-closing regardless of children
+    if (voidElements.includes(actualTagName)) {
         return `${indent}<${actualTagName}${attributesPart} />`
     }
 
     // Handle attribute definition elements inside mj-attributes (self-closing with attributes)
-    if (attributeDefinitionElements.includes(actualTagName) && !content && (!children || children.length === 0)) {
+    // Check if we're inside mj-attributes by looking at the tag context
+    const isAttributeDefinition = attributeDefinitionElements.includes(actualTagName) && !content && (!children || children.length === 0)
+    if (isAttributeDefinition) {
         return `${indent}<${actualTagName}${attributesPart} />`
     }
 
@@ -373,6 +460,7 @@ const elementToMjmlString = (element: EditorElement, indentLevel: number = 0): s
             || actualTagName === 'mj-button'
             || actualTagName === 'mj-preview'
             || actualTagName === 'mj-style'
+            || actualTagName === 'mj-title'
         ) {
             return `${indent}<${actualTagName}${attributesPart}>\n${childIndent}${safeContent}\n${indent}</${actualTagName}>`
         } else {
