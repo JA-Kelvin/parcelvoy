@@ -688,10 +688,18 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 )
 
             case 'mj-section': {
-                const isEmpty = !element.children || element.children.length === 0
+                // Only show placeholder for truly empty sections that were created in the editor
+                // Don't show for imported sections that might have content or specific styling
+                const hasChildren = element.children && element.children.length > 0
+                const hasContent = element.content && element.content.trim().length > 0
+                const hasSignificantAttributes = element.attributes && Object.keys(element.attributes).some(key => 
+                    key !== 'background-color' || element.attributes[key] !== '#ffffff'
+                )
+                const isEmptyNewSection = !hasChildren && !hasContent && !hasSignificantAttributes
+                
                 return (
                     <div className="mj-section-content">
-                        {isEmpty && !isPreviewMode && (
+                        {isEmptyNewSection && !isPreviewMode && (
                             <>
                                 <div className="empty-section-placeholder">
                                     Choose a layout to get started
