@@ -201,6 +201,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         { key: 'font-weight', label: 'Font Weight', type: 'select', options: ['normal', 'bold'] },
                         { key: 'border-radius', label: 'Border Radius', type: 'text', placeholder: '4px' },
                         { key: 'padding', label: 'Padding', type: 'text', placeholder: '12px 24px' },
+                        { key: 'inner-padding', label: 'Inner Padding', type: 'text', placeholder: '10px 25px' },
                         { key: 'width', label: 'Width', type: 'text', placeholder: '200px or 60%' },
                         { key: 'href', label: 'Link URL', type: 'url', placeholder: 'https://example.com' },
                         { key: 'target', label: 'Link Target', type: 'select', options: ['_self', '_blank'] },

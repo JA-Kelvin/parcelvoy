@@ -482,15 +482,17 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
         // MJML often uses `align` attribute (e.g., mj-text align="center"). Mirror it to CSS text-align.
         if (!baseStyle.textAlign && attributes.align) baseStyle.textAlign = attributes.align
 
-        // Spacing - padding
-        const hasSidePadding = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'].some((k) => attributes[k] !== undefined)
-        if (hasSidePadding) {
-            if (attributes['padding-top']) baseStyle.paddingTop = attributes['padding-top']
-            if (attributes['padding-right']) baseStyle.paddingRight = attributes['padding-right']
-            if (attributes['padding-bottom']) baseStyle.paddingBottom = attributes['padding-bottom']
-            if (attributes['padding-left']) baseStyle.paddingLeft = attributes['padding-left']
-        } else if (attributes.padding !== undefined) {
-            baseStyle.padding = attributes.padding
+        // Spacing - padding (only apply to text elements, not images)
+        if (element.tagName !== 'mj-image') {
+            const hasSidePadding = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'].some((k) => attributes[k] !== undefined)
+            if (hasSidePadding) {
+                if (attributes['padding-top']) baseStyle.paddingTop = attributes['padding-top']
+                if (attributes['padding-right']) baseStyle.paddingRight = attributes['padding-right']
+                if (attributes['padding-bottom']) baseStyle.paddingBottom = attributes['padding-bottom']
+                if (attributes['padding-left']) baseStyle.paddingLeft = attributes['padding-left']
+            } else if (attributes.padding !== undefined) {
+                baseStyle.padding = attributes.padding
+            }
         }
 
         // Spacing - margin
@@ -654,13 +656,43 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                     )
 
             case 'mj-button': {
-                // Respect alignment via container text-align (already handled in getElementStyle)
-                // Keep the actual button inline-block so it doesn't stretch full width.
-                // Support optional width attribute.
+                // MJML button alignment and width handling to match preview
                 const widthAttr = attributes.width as string | undefined
                 const btnWidth = widthAttr
                     ? (/[%px]$/i.test(widthAttr) ? widthAttr : `${parseInt(String(widthAttr), 10)}px`)
                     : undefined
+
+                // MJML button alignment - use align attribute or inherit from container
+                const buttonAlign = attributes.align || 'left'
+
+                // Container styles to match MJML behavior
+                const containerStyle: React.CSSProperties = {
+                    textAlign: buttonAlign,
+                    width: '100%',
+                }
+
+                // Button styles that match MJML rendering
+                const buttonStyle: React.CSSProperties = {
+                    ...(!content?.includes('img') && { backgroundColor: attributes['background-color'] ?? '#414141' }),
+                    color: attributes.color ?? '#ffffff',
+                    borderRadius: attributes['border-radius'] ?? '3px',
+                    border: attributes.border ?? 'none',
+                    cursor: 'pointer',
+                    fontSize: attributes['font-size'] ?? '13px',
+                    fontFamily: attributes['font-family'] ?? 'Ubuntu, Helvetica, Arial, sans-serif',
+                    fontWeight: attributes['font-weight'] ?? '400',
+                    textDecoration: 'none',
+                    textTransform: attributes['text-transform'] ?? 'none',
+                    margin: '0px',
+                    // Apply padding only if not an image context
+                    ...(!content?.includes('img') && { padding: attributes['inner-padding'] ?? '10px 25px' }),
+                    // Apply width if specified
+                    ...(btnWidth && { width: btnWidth }),
+                    // Handle height if specified
+                    ...(attributes.height && { height: attributes.height }),
+                    // Handle vertical alignment
+                    ...(attributes['vertical-align'] && { verticalAlign: attributes['vertical-align'] }),
+                }
 
                 return isEditing
                     ? (
@@ -671,24 +703,13 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                         />
                     )
                     : (
-                        <button
-                            className="mj-button-content"
-                            style={{
-                                backgroundColor: attributes['background-color'] ?? 'var(--color-blue)',
-                                color: attributes.color ?? 'var(--color-on-primary)',
-                                borderRadius: attributes['border-radius'] ?? '4px',
-                                padding: attributes['inner-padding'] ?? attributes.padding ?? '0',
-                                border: attributes.border ?? 'none',
-                                cursor: 'pointer',
-                                fontSize: attributes['font-size'] ?? '14px',
-                                fontFamily: attributes['font-family'],
-                                textDecoration: 'none',
-                                display: 'inline-block',
-                                width: btnWidth,
-                            }}
-                        >
-                            {content ?? 'Click me'}
-                        </button>
+                        <div style={containerStyle}>
+                            <button
+                                className="mj-button-content"
+                                style={buttonStyle}
+                                dangerouslySetInnerHTML={{ __html: content ?? 'Click me' }}
+                            />
+                        </div>
                     )
             }
 
@@ -754,15 +775,13 @@ const DroppableElement: React.FC<DroppableElementProps> = ({
                 // Check both the element's children data AND the React children prop
                 const hasDataChildren = element.children && element.children.length > 0
                 const hasReactChildren = children && React.Children.count(children) > 0
-                const hasContent = element.content && element.content.trim().length > 0
-                const hasSignificantAttributes = element.attributes && Object.keys(element.attributes).some(key =>
-                    key !== 'background-color' || element.attributes[key] !== '#ffffff',
-                )
-                const isEmptyNewSection = !hasDataChildren && !hasReactChildren && !hasContent && !hasSignificantAttributes
+
+                // Debug: Check if section is empty
+                const isEmpty = !hasDataChildren && !hasReactChildren
 
                 return (
                     <div className="mj-section-content">
-                        {isEmptyNewSection && !isPreviewMode && (
+                        {isEmpty && !isPreviewMode && (
                             <>
                                 <div className="empty-section-placeholder">
                                     Choose a layout to get started
