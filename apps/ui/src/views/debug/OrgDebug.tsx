@@ -70,35 +70,35 @@ export default function OrgDebug() {
                     <label>
                         <span style={{ marginRight: 8 }}>Provider ID</span>
                         <input
-                        type="number"
-                        value={providerId}
-                        onChange={e => setProviderId(e.target.value)}
-                        style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 6, width: 140 }}
-                        placeholder="e.g. 12"
-                    />
-                </label>
-                <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                    <input type="checkbox" checked={resetRate} onChange={e => setResetRate(e.target.checked)} />
-                    <span>Reset rate limiter window</span>
-                </label>
-                <Button
-                    onClick={async () => {
-                        if (!providerId) return
-                        setLoading(true)
-                        try {
-                            await client.post(`/admin/debug/providers/${providerId}/invalidate`, { reset_rate_limit: resetRate })
-                        } finally {
-                            setLoading(false)
-                        }
-                    }}
-                    isLoading={loading}
-                >Invalidate provider cache</Button>
+                            type="number"
+                            value={providerId}
+                            onChange={e => setProviderId(e.target.value)}
+                            style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 6, width: 140 }}
+                            placeholder="e.g. 12"
+                        />
+                    </label>
+                    <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                        <input type="checkbox" checked={resetRate} onChange={e => setResetRate(e.target.checked)} />
+                        <span>Reset rate limiter window</span>
+                    </label>
+                    <Button
+                        onClick={async () => {
+                            if (!providerId) return
+                            setLoading(true)
+                            try {
+                                await client.post(`/admin/debug/providers/${providerId}/invalidate`, { reset_rate_limit: resetRate })
+                            } finally {
+                                setLoading(false)
+                            }
+                        }}
+                        isLoading={loading}
+                    >Invalidate provider cache</Button>
                 </div>
                 <div style={{ marginTop: 8, color: '#6b7280' }}>
                     Use this after updating Integrations to push new rate limits/config to all workers immediately.
                 </div>
             </section>
-                    
+
             <section style={{ marginBottom: 24 }}>
                 <h2>Queue Status</h2>
                 {!status && <div>Loading...</div>}
@@ -115,7 +115,7 @@ export default function OrgDebug() {
                     </div>
                 )}
             </section>
-            
+
             <section style={{ marginBottom: 24 }}>
                 <h2>Recent Failed Jobs (Top 20)</h2>
                 <ul>
@@ -126,34 +126,34 @@ export default function OrgDebug() {
                     ))}
                 </ul>
             </section>
-                
+
             <section>
                 <h2>Sources</h2>
                 {sources && (
                     <div style={{ display: 'grid', gap: 16 }}>
-                    <div>
-                        <h3>MySQL</h3>
-                        <div>{sources.mysql.description}</div>
-                        <ul>
-                            {sources.mysql.examples.map((e, i) => <li key={`m-${i}`}>{e}</li>)}
-                        </ul>
+                        <div>
+                            <h3>MySQL</h3>
+                            <div>{sources.mysql.description}</div>
+                            <ul>
+                                {sources.mysql.examples.map((e, i) => <li key={`m-${i}`}>{e}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>ClickHouse</h3>
+                            <div>{sources.clickhouse.description}</div>
+                            <ul>
+                                {sources.clickhouse.examples.map((e, i) => <li key={`c-${i}`}>{e}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>Redis</h3>
+                            <div>{sources.redis.description}</div>
+                            <ul>
+                                {sources.redis.examples.map((e, i) => <li key={`r-${i}`}>{e}</li>)}
+                            </ul>
+                        </div>
                     </div>
-                    <div>
-                        <h3>ClickHouse</h3>
-                        <div>{sources.clickhouse.description}</div>
-                        <ul>
-                            {sources.clickhouse.examples.map((e, i) => <li key={`c-${i}`}>{e}</li>)}
-                        </ul>
-                    </div>
-                    <div>
-                        <h3>Redis</h3>
-                        <div>{sources.redis.description}</div>
-                        <ul>
-                            {sources.redis.examples.map((e, i) => <li key={`r-${i}`}>{e}</li>)}
-                        </ul>
-                    </div>
-                </div>
-            )}
+                )}
             </section>
         </div>
     )
