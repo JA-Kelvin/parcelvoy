@@ -16,6 +16,14 @@ interface QueueStatus {
     concurrency?: number
 }
 
+interface ActiveJob {
+    id?: string
+    name?: string
+    attemptsMade?: number
+    timestamp?: number
+    processedOn?: number
+}
+
 interface SourcesInfo {
     mysql: { description: string, examples: string[] }
     clickhouse: { description: string, examples: string[] }
@@ -24,6 +32,7 @@ interface SourcesInfo {
 
 export default function OrgDebug() {
     const [status, setStatus] = useState<QueueStatus | null>(null)
+    const [active, setActive] = useState<ActiveJob[]>([])
     const [sources, setSources] = useState<SourcesInfo | null>(null)
     const [loading, setLoading] = useState(false)
     const [providerId, setProviderId] = useState<string>('')
@@ -32,6 +41,8 @@ export default function OrgDebug() {
     const refresh = async () => {
         const s = await client.get<QueueStatus>('/admin/debug/queue/status').then(r => r.data)
         setStatus(s)
+        const a = await client.get<ActiveJob[]>('/admin/debug/queue/active').then(r => r.data)
+        setActive(a)
     }
 
     useEffect(() => {
@@ -51,7 +62,7 @@ export default function OrgDebug() {
 
     return (
         <div className="page-content">
-            <div className="heading heading-h1"><div className="heading-text"><h1>Admin Debug</h1></div></div>
+            <div className="heading heading-h2"><div className="heading-text"><h1>Admin Debug</h1></div></div>
 
             <section style={{ marginBottom: 24 }}>
                 <h2>Queue Controls</h2>
@@ -113,6 +124,22 @@ export default function OrgDebug() {
                         <div><b>Redis Ping</b>: {status.redis.ping}</div>
                         <div><b>Redis Keys</b>: {status.redis.keys}</div>
                     </div>
+                )}
+            </section>
+
+            <section style={{ marginBottom: 24 }}>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Active Jobs (Top 50)</h2></div></div>
+                {active.length === 0 && <div>None</div>}
+                {active.length > 0 && (
+                    <ul>
+                        {active.map((j, idx) => (
+                            <li key={j.id ?? idx}>
+                                <code>{j.name ?? '(unknown)'}</code>
+                                {' '}— id: {j.id ?? '-'} · attempts: {j.attemptsMade ?? 0}
+                                {' '}· started: {j.processedOn ? new Date(j.processedOn).toLocaleString() : '-'}
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </section>
 

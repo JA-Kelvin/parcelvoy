@@ -83,7 +83,7 @@ export default function ProjectDebug() {
 
     return (
         <div className="page-content">
-            <div className="heading heading-h1"><div className="heading-text"><h1>Project Debug</h1></div></div>
+            <div className="heading heading-h2"><div className="heading-text"><h1>Project Debug</h1></div></div>
 
             <section style={{ marginBottom: 24 }}>
                 <div className="heading heading-h2"><div className="heading-text"><h2>Campaigns</h2></div></div>

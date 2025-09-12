@@ -50,6 +50,16 @@ import { Translation } from 'react-i18next'
 import Organization from './organization/Organization'
 import DataSchema from './settings/DataSchema'
 
+const debugOrg: RouteObject = { path: 'debug', element: <OrgDebug /> }
+const debugProject: RouteObject = { path: 'debug', element: <ProjectDebug /> }
+const debugProjectLink = {
+    key: 'debug',
+    to: 'debug',
+    children: <Translation>{t => t('debug')}</Translation>,
+    icon: <SettingsIcon />,
+    minRole: 'admin',
+} as const
+
 export const useRoute = (includeProject = true) => {
     const { projectId = '' } = useParams()
     const navigate = useNavigate()
@@ -139,13 +149,10 @@ export const createRouter = ({
                         element: <Performance />,
                     },
                     {
-                        path: 'debug',
-                        element: <OrgDebug />,
-                    },
-                    {
                         path: 'settings',
                         element: <OrganizationSettings />,
                     },
+                    debugOrg,
                 ],
             },
             {
@@ -187,19 +194,13 @@ export const createRouter = ({
                                     minRole: 'editor',
                                 },
                                 {
-                                    key: 'debug',
-                                    to: 'debug',
-                                    children: <Translation>{ t => t('debug') }</Translation>,
-                                    icon: <SettingsIcon />,
-                                    minRole: 'admin',
-                                },
-                                {
                                     key: 'settings',
                                     to: 'settings',
                                     children: <Translation>{ t => t('settings') }</Translation>,
                                     icon: <SettingsIcon />,
                                     minRole: 'admin',
                                 },
+                                debugProjectLink,
                             ])}
                         >
                             <Outlet />
@@ -307,10 +308,6 @@ export const createRouter = ({
                         apiPath: api.lists,
                         element: <Lists />,
                     }),
-                    {
-                        path: 'debug',
-                        element: <ProjectDebug />,
-                    },
                     createStatefulRoute({
                         path: 'lists/:entityId',
                         apiPath: api.lists,
@@ -364,6 +361,7 @@ export const createRouter = ({
                             },
                         ],
                     },
+                    debugProject,
                 ],
             },
             {
