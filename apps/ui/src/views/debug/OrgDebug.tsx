@@ -50,7 +50,7 @@ export default function OrgDebug() {
     }
 
     return (
-        <div style={{ padding: 16 }}>
+        <div className="page-content">
             <h1>Admin Debug</h1>
 
             <section style={{ marginBottom: 24 }}>

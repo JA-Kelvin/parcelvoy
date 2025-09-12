@@ -35,13 +35,18 @@ export default function ProjectDebug() {
     const [loading, setLoading] = useState(false)
     const [diag, setDiag] = useState<Record<number, CampaignDiag>>({})
     const [jdiag, setJDiag] = useState<Record<number, JourneyDiag>>({})
+    const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
 
     const base = useMemo(() => `/admin/projects/${projectId}/debug`, [projectId])
+    const LIMIT = useMemo(() => 50, [])
 
     const load = async () => {
         if (!projectId) return
-        const cs = await client.get<{ results: CampaignRow[] }>(`${base}/campaigns`).then(r => r.data.results)
-        setCampaigns(cs)
+        const first = await client.get<{ results: CampaignRow[], nextCursor?: string }>(
+            `${base}/campaigns?limit=${LIMIT}`,
+        ).then(r => r.data)
+        setCampaigns(first.results)
+        setNextCursor(first.nextCursor)
         const js = await client.get<JourneyRow[]>(`${base}/journeys`).then(r => r.data)
         setJourneys(js)
     }
@@ -50,6 +55,20 @@ export default function ProjectDebug() {
 
     const run = async (fn: () => Promise<any>) => {
         try { setLoading(true); await fn(); await load() } finally { setLoading(false) }
+    }
+
+    const loadMore = async () => {
+        if (!projectId || !nextCursor) return
+        try {
+            setLoading(true)
+            const more = await client.get<{ results: CampaignRow[], nextCursor?: string }>(
+                `${base}/campaigns?limit=${LIMIT}&cursor=${encodeURIComponent(nextCursor)}&page=next`,
+            ).then(r => r.data)
+            setCampaigns(prev => [...prev, ...more.results])
+            setNextCursor(more.nextCursor)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const diagnose = async (id: number) => {
@@ -63,7 +82,7 @@ export default function ProjectDebug() {
     }
 
     return (
-        <div style={{ padding: 16 }}>
+        <div className="page-content">
             <h1>Project Debug</h1>
 
             <section style={{ marginBottom: 24 }}>
@@ -89,6 +108,11 @@ export default function ProjectDebug() {
                         </div>
                     ))}
                 </div>
+                {nextCursor && (
+                    <div style={{ marginTop: 12 }}>
+                        <Button onClick={loadMore} isLoading={loading}>Load more</Button>
+                    </div>
+                )}
             </section>
 
             <section>
