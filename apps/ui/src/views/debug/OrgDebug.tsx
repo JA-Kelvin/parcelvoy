@@ -24,6 +24,35 @@ interface ActiveJob {
     processedOn?: number
 }
 
+interface WaitingJob {
+    id?: string
+    name?: string
+    timestamp?: number
+    priority?: number
+    delay?: number
+}
+
+interface DelayedJob {
+    id?: string
+    name?: string
+    timestamp?: number
+    delay?: number
+    opts?: Record<string, unknown>
+}
+
+interface JobDetail {
+    id?: string
+    name?: string
+    attemptsMade?: number
+    timestamp?: number
+    processedOn?: number
+    finishedOn?: number
+    failedReason?: string
+    state?: string
+    data?: any
+    opts?: any
+}
+
 interface SourcesInfo {
     mysql: { description: string, examples: string[] }
     clickhouse: { description: string, examples: string[] }
@@ -33,6 +62,9 @@ interface SourcesInfo {
 export default function OrgDebug() {
     const [status, setStatus] = useState<QueueStatus | null>(null)
     const [active, setActive] = useState<ActiveJob[]>([])
+    const [waiting, setWaiting] = useState<WaitingJob[]>([])
+    const [delayed, setDelayed] = useState<DelayedJob[]>([])
+    const [jobDetail, setJobDetail] = useState<JobDetail | null>(null)
     const [sources, setSources] = useState<SourcesInfo | null>(null)
     const [loading, setLoading] = useState(false)
     const [providerId, setProviderId] = useState<string>('')
@@ -43,6 +75,11 @@ export default function OrgDebug() {
         setStatus(s)
         const a = await client.get<ActiveJob[]>('/admin/debug/queue/active').then(r => r.data)
         setActive(a)
+        const w = await client.get<WaitingJob[]>('/admin/debug/queue/waiting').then(r => r.data)
+        setWaiting(w)
+        const d = await client.get<DelayedJob[]>('/admin/debug/queue/delayed').then(r => r.data)
+        setDelayed(d)
+        setJobDetail(null)
     }
 
     useEffect(() => {
@@ -137,11 +174,87 @@ export default function OrgDebug() {
                                 <code>{j.name ?? '(unknown)'}</code>
                                 {' '}— id: {j.id ?? '-'} · attempts: {j.attemptsMade ?? 0}
                                 {' '}· started: {j.processedOn ? new Date(j.processedOn).toLocaleString() : '-'}
+                                {' '}
+                                {j.id && (
+                                    <Button
+                                        variant="secondary"
+                                        style={{ marginLeft: 8, padding: '2px 6px' }}
+                                        onClick={async () => {
+                                            const detail = await client.get<JobDetail>(`/admin/debug/queue/job/${j.id}`).then(r => r.data)
+                                            setJobDetail(detail)
+                                        }}
+                                    >View</Button>
+                                )}
                             </li>
                         ))}
                     </ul>
                 )}
             </section>
+
+            <section style={{ marginBottom: 24 }}>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Waiting Jobs (Top 50)</h2></div></div>
+                {waiting.length === 0 && <div>None</div>}
+                {waiting.length > 0 && (
+                    <ul>
+                        {waiting.map((j, idx) => (
+                            <li key={j.id ?? idx}>
+                                <code>{j.name ?? '(unknown)'}</code>
+                                {' '}— id: {j.id ?? '-'} · priority: {j.priority ?? '-'}
+                                {' '}· queued: {j.timestamp ? new Date(j.timestamp).toLocaleString() : '-'}
+                                {' '}
+                                {j.id && (
+                                    <Button
+                                        variant="secondary"
+                                        style={{ marginLeft: 8, padding: '2px 6px' }}
+                                        onClick={async () => {
+                                            const detail = await client.get<JobDetail>(`/admin/debug/queue/job/${j.id}`).then(r => r.data)
+                                            setJobDetail(detail)
+                                        }}
+                                    >View</Button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
+
+            <section style={{ marginBottom: 24 }}>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Delayed Jobs (Top 50)</h2></div></div>
+                {delayed.length === 0 && <div>None</div>}
+                {delayed.length > 0 && (
+                    <ul>
+                        {delayed.map((j, idx) => (
+                            <li key={j.id ?? idx}>
+                                <code>{j.name ?? '(unknown)'}</code>
+                                {' '}— id: {j.id ?? '-'} · delay: {j.delay ?? '-'}ms
+                                {' '}· queued: {j.timestamp ? new Date(j.timestamp).toLocaleString() : '-'}
+                                {' '}
+                                {j.id && (
+                                    <Button
+                                        variant="secondary"
+                                        style={{ marginLeft: 8, padding: '2px 6px' }}
+                                        onClick={async () => {
+                                            const detail = await client.get<JobDetail>(`/admin/debug/queue/job/${j.id}`).then(r => r.data)
+                                            setJobDetail(detail)
+                                        }}
+                                    >View</Button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
+
+            {jobDetail && (
+                <section style={{ marginBottom: 24 }}>
+                    <div className="heading heading-h2"><div className="heading-text"><h2>Job Detail</h2></div></div>
+                    <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, overflowX: 'auto' }}>
+                        <pre style={{ margin: 0 }}>
+                            {JSON.stringify(jobDetail, null, 2)}
+                        </pre>
+                    </div>
+                </section>
+            )}
 
             <section style={{ marginBottom: 24 }}>
                 <div className="heading heading-h2"><div className="heading-text"><h2>Recent Failed Jobs (Top 20)</h2></div></div>
