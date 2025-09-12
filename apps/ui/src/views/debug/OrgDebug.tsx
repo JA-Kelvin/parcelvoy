@@ -51,7 +51,7 @@ export default function OrgDebug() {
 
     return (
         <div className="page-content">
-            <h1>Admin Debug</h1>
+            <div className="heading heading-h1"><div className="heading-text"><h1>Admin Debug</h1></div></div>
 
             <section style={{ marginBottom: 24 }}>
                 <h2>Queue Controls</h2>
@@ -65,7 +65,7 @@ export default function OrgDebug() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-                <h2>Provider Cache</h2>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Provider Cache</h2></div></div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <label>
                         <span style={{ marginRight: 8 }}>Provider ID</span>
@@ -100,7 +100,7 @@ export default function OrgDebug() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-                <h2>Queue Status</h2>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Queue Status</h2></div></div>
                 {!status && <div>Loading...</div>}
                 {status && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
@@ -117,7 +117,7 @@ export default function OrgDebug() {
             </section>
 
             <section style={{ marginBottom: 24 }}>
-                <h2>Recent Failed Jobs (Top 20)</h2>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Recent Failed Jobs (Top 20)</h2></div></div>
                 <ul>
                     {status?.failed?.map((j, idx) => (
                         <li key={idx}>
@@ -128,7 +128,7 @@ export default function OrgDebug() {
             </section>
 
             <section>
-                <h2>Sources</h2>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Sources</h2></div></div>
                 {sources && (
                     <div style={{ display: 'grid', gap: 16 }}>
                         <div>

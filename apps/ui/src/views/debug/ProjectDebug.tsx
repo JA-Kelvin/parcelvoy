@@ -38,7 +38,7 @@ export default function ProjectDebug() {
     const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
 
     const base = useMemo(() => `/admin/projects/${projectId}/debug`, [projectId])
-    const LIMIT = useMemo(() => 50, [])
+    const LIMIT = useMemo(() => 25, [])
 
     const load = async () => {
         if (!projectId) return
@@ -83,10 +83,10 @@ export default function ProjectDebug() {
 
     return (
         <div className="page-content">
-            <h1>Project Debug</h1>
+            <div className="heading heading-h1"><div className="heading-text"><h1>Project Debug</h1></div></div>
 
             <section style={{ marginBottom: 24 }}>
-                <h2>Campaigns</h2>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Campaigns</h2></div></div>
                 <div style={{ display: 'grid', gap: 12 }}>
                     {campaigns.map(c => (
                         <div key={c.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
@@ -116,7 +116,7 @@ export default function ProjectDebug() {
             </section>
 
             <section>
-                <h2>Journeys</h2>
+                <div className="heading heading-h2"><div className="heading-text"><h2>Journeys</h2></div></div>
                 <div style={{ display: 'grid', gap: 12 }}>
                     {journeys.map(j => (
                         <div key={j.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>

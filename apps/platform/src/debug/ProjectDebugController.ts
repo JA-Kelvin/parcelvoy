@@ -46,7 +46,11 @@ router.get('/campaigns/:campaignId/diagnostics', async (ctx) => {
     const delivery = await campaignDeliveryProgress(id)
 
     // Ready-to-send now (pending+throttled and <= NOW())
-    const ready = await campaignSendReadyQuery(id, true).count<{ c: number }[]>({ c: '*' }).first()
+    // Clear selected columns before count to avoid ONLY_FULL_GROUP_BY errors
+    const ready = await campaignSendReadyQuery(id, true)
+        .clearSelect()
+        .count<{ c: number }[]>({ c: '*' })
+        .first()
 
     ctx.body = {
         id: c.id,
