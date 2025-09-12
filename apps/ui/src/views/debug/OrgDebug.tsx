@@ -26,6 +26,8 @@ export default function OrgDebug() {
     const [status, setStatus] = useState<QueueStatus | null>(null)
     const [sources, setSources] = useState<SourcesInfo | null>(null)
     const [loading, setLoading] = useState(false)
+    const [providerId, setProviderId] = useState<string>('')
+    const [resetRate, setResetRate] = useState<boolean>(true)
 
     const refresh = async () => {
         const s = await client.get<QueueStatus>('/admin/debug/queue/status').then(r => r.data)
@@ -61,6 +63,41 @@ export default function OrgDebug() {
                     <Button onClick={refresh} variant="secondary">Refresh Status</Button>
                 </div>
             </section>
+
+      <section style={{ marginBottom: 24 }}>
+        <h2>Provider Cache</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label>
+            <span style={{ marginRight: 8 }}>Provider ID</span>
+            <input
+              type="number"
+              value={providerId}
+              onChange={e => setProviderId(e.target.value)}
+              style={{ padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 6, width: 140 }}
+              placeholder="e.g. 12"
+            />
+          </label>
+          <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            <input type="checkbox" checked={resetRate} onChange={e => setResetRate(e.target.checked)} />
+            <span>Reset rate limiter window</span>
+          </label>
+          <Button
+            onClick={async () => {
+              if (!providerId) return
+              setLoading(true)
+              try {
+                await client.post(`/admin/debug/providers/${providerId}/invalidate`, { reset_rate_limit: resetRate })
+              } finally {
+                setLoading(false)
+              }
+            }}
+            isLoading={loading}
+          >Invalidate provider cache</Button>
+        </div>
+        <div style={{ marginTop: 8, color: '#6b7280' }}>
+          Use this after updating Integrations to push new rate limits/config to all workers immediately.
+        </div>
+      </section>
 
             <section style={{ marginBottom: 24 }}>
                 <h2>Queue Status</h2>

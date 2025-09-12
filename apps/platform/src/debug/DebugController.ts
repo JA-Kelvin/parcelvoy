@@ -5,6 +5,8 @@ import JourneyDelayJob from '../journey/JourneyDelayJob'
 import ProcessCampaignsJob from '../campaigns/ProcessCampaignsJob'
 import CampaignStateJob from '../campaigns/CampaignStateJob'
 import ScheduledEntranceOrchestratorJob from '../journey/ScheduledEntranceOrchestratorJob'
+import Provider from '../providers/Provider'
+import { publishProviderInvalidation } from '../providers/ProviderInvalidation'
 
 const router = new Router({
     prefix: '/debug',
@@ -71,6 +73,21 @@ router.post('/queue/resume-and-kick', async (ctx) => {
     await App.main.queue.enqueue(ProcessCampaignsJob.from())
     await App.main.queue.enqueue(CampaignStateJob.from())
     await App.main.queue.enqueue(ScheduledEntranceOrchestratorJob.from())
+    ctx.status = 204
+})
+
+// Invalidate provider cache across processes (and optionally reset ratelimit window)
+router.post('/providers/:providerId/invalidate', async (ctx) => {
+    const id = parseInt(ctx.params.providerId, 10)
+    const provider = await Provider.find(id)
+    if (!provider) { ctx.throw(404); return }
+    const reset = (ctx.request.body as any)?.reset_rate_limit ?? (ctx.query.reset === 'true')
+    await publishProviderInvalidation(App.main, {
+        id: provider.id,
+        project_id: provider.project_id,
+        group: provider.group,
+        reset_rate_limit: !!reset,
+    })
     ctx.status = 204
 })
 

@@ -559,16 +559,16 @@ export const campaignPopulationProgress = async (campaign: Campaign): Promise<Ca
 }
 
 export const campaignDeliveryProgress = async (campaignId: number): Promise<CampaignProgress> => {
-    const progress = await CampaignSend.query()
+    const row = await CampaignSend.query()
         .where('campaign_id', campaignId)
         .select(CampaignSend.raw("SUM(IF(state = 'sent', 1, 0)) AS sent, SUM(IF(state IN('pending', 'throttled'), 1, 0)) AS pending, COUNT(*) AS total, SUM(IF(opened_at IS NOT NULL, 1, 0)) AS opens, SUM(IF(clicks > 0, 1, 0)) AS clicks"))
         .first()
     return {
-        sent: parseInt(progress.sent ?? 0),
-        pending: parseInt(progress.pending ?? 0),
-        total: parseInt(progress.total ?? 0),
-        opens: parseInt(progress.opens ?? 0),
-        clicks: parseInt(progress.clicks ?? 0),
+        sent: parseInt((row as any)?.sent ?? 0),
+        pending: parseInt((row as any)?.pending ?? 0),
+        total: parseInt((row as any)?.total ?? 0),
+        opens: parseInt((row as any)?.opens ?? 0),
+        clicks: parseInt((row as any)?.clicks ?? 0),
     }
 }
 
