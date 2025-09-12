@@ -1,4 +1,5 @@
 import App from '../app'
+import { publishProviderInvalidation } from './ProviderInvalidation'
 import Provider, { ProviderMap, ProviderParams, ExternalProviderParams } from './Provider'
 
 export const getProvider = async (id: number, projectId?: number) => {
@@ -63,6 +64,16 @@ export const updateProvider = async (id: number, params: ExternalProviderParams,
     app.remove(Provider.cacheKey.default(provider.project_id, provider.group))
 
     await setDefault(provider)
+
+    // Notify other processes (e.g., worker) to evict in-memory caches and optionally reset ratelimit window
+    const resetRateLimit = Object.prototype.hasOwnProperty.call(params, 'rate_limit')
+        || Object.prototype.hasOwnProperty.call(params, 'rate_interval')
+    await publishProviderInvalidation(app, {
+        id: provider.id,
+        project_id: provider.project_id,
+        group: provider.group,
+        reset_rate_limit: resetRateLimit,
+    })
 
     return provider
 }

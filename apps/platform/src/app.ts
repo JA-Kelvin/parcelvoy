@@ -15,6 +15,7 @@ import ErrorHandler from './error/ErrorHandler'
 import { DefaultRedis, Redis } from './config/redis'
 import EventEmitter from 'eventemitter2'
 import { migrateToClickhouse } from './utilities/migrate'
+import { setupProviderInvalidationSubscriber } from './providers/ProviderInvalidation'
 
 export default class App {
     private static $main: App
@@ -83,6 +84,8 @@ export default class App {
         this.redis = DefaultRedis(env.redis)
         this.clickhouse = loadClickhouse(env.clickhouse)
         this.stats = loadStats(env.redis)
+        // Subscribe to cross-process provider invalidation (cache + ratelimit resets)
+        setupProviderInvalidationSubscriber(this)
         this.unhandledErrorListener()
     }
 
