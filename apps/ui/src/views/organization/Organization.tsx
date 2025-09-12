@@ -37,21 +37,21 @@ export default function Organization({ filter }: OrganizationProps) {
             minRole: 'admin',
         },
         {
-            key: 'debug',
-            to: 'debug',
-            children: <Translation>{ t => t('debug') }</Translation>,
-            icon: <SettingsIcon />,
-            minRole: 'admin',
-        },
-        {
             key: 'settings',
             to: 'settings',
             children: <Translation>{ t => t('settings') }</Translation>,
             icon: <SettingsIcon />,
             minRole: 'admin',
         },
+        {
+            key: 'debug',
+            to: 'debug',
+            children: <Translation>{ t => t('debug') }</Translation>,
+            icon: <SettingsIcon />,
+            minRole: 'admin',
+        },
     ]
-    const filteredLinks = filter(defaultLinks).filter(({ minRole }) => !minRole || checkOrganizationRole(minRole, admin?.role))
+    const filteredLinks = filter(defaultLinks.filter(({ key }) => key !== 'debug')).filter(({ minRole }) => !minRole || checkOrganizationRole(minRole, admin?.role))
 
     return (
         <StatefulLoaderContextProvider context={OrganizationContext}>

@@ -50,6 +50,7 @@ import { Translation } from 'react-i18next'
 import Organization from './organization/Organization'
 import DataSchema from './settings/DataSchema'
 
+const SHOW_DEBUG_MENU = false
 const debugOrg: RouteObject = { path: 'debug', element: <OrgDebug /> }
 const debugProject: RouteObject = { path: 'debug', element: <ProjectDebug /> }
 const debugProjectLink = {
@@ -200,7 +201,7 @@ export const createRouter = ({
                                     icon: <SettingsIcon />,
                                     minRole: 'admin',
                                 },
-                                debugProjectLink,
+                                ...(SHOW_DEBUG_MENU ? [debugProjectLink] : []),
                             ])}
                         >
                             <Outlet />
