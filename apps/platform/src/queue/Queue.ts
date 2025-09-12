@@ -119,4 +119,32 @@ export default class Queue {
     async failed(): Promise<QueueMetric | undefined> {
         return await this.provider.failed?.()
     }
+
+    async active(): Promise<Array<{ id?: string, name?: string, attemptsMade?: number, timestamp?: number, processedOn?: number }>> {
+        if (this.provider.active) {
+            return await this.provider.active()
+        }
+        return []
+    }
+
+    async waiting(): Promise<Array<{ id?: string, name?: string, timestamp?: number, priority?: number, delay?: number }>> {
+        if (this.provider.waiting) {
+            return await this.provider.waiting()
+        }
+        return []
+    }
+
+    async delayed(): Promise<Array<{ id?: string, name?: string, timestamp?: number, delay?: number, opts?: Record<string, unknown> }>> {
+        if (this.provider.delayed) {
+            return await this.provider.delayed()
+        }
+        return []
+    }
+
+    async job(id: string): Promise<{ id?: string, name?: string, attemptsMade?: number, timestamp?: number, processedOn?: number, finishedOn?: number, failedReason?: string, state?: string, data?: any, opts?: any } | null> {
+        if (this.provider.job) {
+            return await this.provider.job(id)
+        }
+        return null
+    }
 }

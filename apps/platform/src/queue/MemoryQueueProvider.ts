@@ -67,6 +67,17 @@ export default class MemoryQueueProvider implements QueueProvider {
         this.loop = undefined
     }
 
+    async active() {
+        // In-memory provider does not track active separately; return empty for debug purposes.
+        return [] as Array<{
+            id?: string
+            name?: string
+            attemptsMade?: number
+            timestamp?: number
+            processedOn?: number
+        }>
+    }
+
     private async process() {
         let jobId = this.backlog.shift()
         while (jobId) {

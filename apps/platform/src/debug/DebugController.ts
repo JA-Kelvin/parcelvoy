@@ -41,6 +41,28 @@ router.get('/queue/status', async (ctx) => {
     }
 })
 
+router.get('/queue/active', async (ctx) => {
+    const active = await App.main.queue.active()
+    ctx.body = active
+})
+
+router.get('/queue/waiting', async (ctx) => {
+    const waiting = await App.main.queue.waiting()
+    ctx.body = waiting
+})
+
+router.get('/queue/delayed', async (ctx) => {
+    const delayed = await App.main.queue.delayed()
+    ctx.body = delayed
+})
+
+router.get('/queue/job/:id', async (ctx) => {
+    const id = String(ctx.params.id)
+    const job = await App.main.queue.job(id)
+    if (!job) { ctx.throw(404); return }
+    ctx.body = job
+})
+
 router.post('/queue/pause', async (ctx) => {
     await App.main.queue.pause()
     ctx.status = 204

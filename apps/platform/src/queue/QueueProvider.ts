@@ -35,4 +35,44 @@ export default interface QueueProvider {
     close(): void
     metrics?(period: MetricPeriod): Promise<QueueMetric>
     failed?(): Promise<any>
+    /**
+     * Return a simplified list of active jobs for debugging/inspection.
+     * Providers that cannot supply this information can return an empty array.
+     */
+    active?(): Promise<Array<{
+        id?: string
+        name?: string
+        attemptsMade?: number
+        timestamp?: number
+        processedOn?: number
+    }>>
+    /** Upcoming jobs that are queued and waiting to be processed */
+    waiting?(): Promise<Array<{
+        id?: string
+        name?: string
+        timestamp?: number
+        priority?: number
+        delay?: number
+    }>>
+    /** Jobs that are delayed/scheduled for the future */
+    delayed?(): Promise<Array<{
+        id?: string
+        name?: string
+        timestamp?: number
+        delay?: number
+        opts?: Record<string, unknown>
+    }>>
+    /** Fetch a single job detail by id */
+    job?(id: string): Promise<{
+        id?: string
+        name?: string
+        attemptsMade?: number
+        timestamp?: number
+        processedOn?: number
+        finishedOn?: number
+        failedReason?: string
+        state?: string
+        data?: any
+        opts?: any
+    } | null>
 }

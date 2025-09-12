@@ -169,6 +169,77 @@ export default class RedisQueueProvider implements QueueProvider {
         }
     }
 
+    async active() {
+        try {
+            const jobs = await this.bull.getActive()
+            return jobs.slice(0, 50).map(j => ({
+                id: j.id,
+                name: j.name,
+                attemptsMade: j.attemptsMade,
+                timestamp: j.timestamp,
+                processedOn: (j as any).processedOn,
+            }))
+        } catch (error) {
+            logger.error(error, 'redis:error:active')
+            return []
+        }
+    }
+
+    async waiting() {
+        try {
+            const jobs = await this.bull.getWaiting()
+            return jobs.slice(0, 50).map(j => ({
+                id: j.id,
+                name: j.name,
+                timestamp: j.timestamp,
+                priority: (j as any).opts?.priority,
+                delay: (j as any).delay,
+            }))
+        } catch (error) {
+            logger.error(error, 'redis:error:waiting')
+            return []
+        }
+    }
+
+    async delayed() {
+        try {
+            const jobs = await this.bull.getDelayed()
+            return jobs.slice(0, 50).map(j => ({
+                id: j.id,
+                name: j.name,
+                timestamp: j.timestamp,
+                delay: (j as any).delay,
+                opts: (j as any).opts,
+            }))
+        } catch (error) {
+            logger.error(error, 'redis:error:delayed')
+            return []
+        }
+    }
+
+    async job(id: string) {
+        try {
+            const j = await this.bull.getJob(id)
+            if (!j) return null
+            const state = await j.getState().catch(() => undefined)
+            return {
+                id: j.id,
+                name: j.name,
+                attemptsMade: j.attemptsMade,
+                timestamp: j.timestamp,
+                processedOn: (j as any).processedOn,
+                finishedOn: (j as any).finishedOn,
+                failedReason: (j as any).failedReason,
+                state,
+                data: j.data,
+                opts: (j as any).opts,
+            }
+        } catch (error) {
+            logger.error(error, 'redis:error:job')
+            return null
+        }
+    }
+
     async failed() {
         return this.bull.getFailed()
     }
