@@ -37,6 +37,13 @@ export default function Organization({ filter }: OrganizationProps) {
             minRole: 'admin',
         },
         {
+            key: 'debug',
+            to: 'debug',
+            children: <Translation>{ t => t('debug') }</Translation>,
+            icon: <SettingsIcon />,
+            minRole: 'admin',
+        },
+        {
             key: 'settings',
             to: 'settings',
             children: <Translation>{ t => t('settings') }</Translation>,

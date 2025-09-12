@@ -25,6 +25,8 @@ import App from '../app'
 import { organizationMiddleware } from '../organizations/OrganizationMiddleware'
 import ResourceController from '../render/ResourceController'
 import MigrationController from '../organizations/MigrationController'
+import DebugController from '../debug/DebugController'
+import ProjectDebugController from '../debug/ProjectDebugController'
 
 export const register = (parent: Router, ...routers: Router[]) => {
     for (const router of routers) {
@@ -77,6 +79,7 @@ export const adminRouter = () => {
         ProfileController,
         AdminController,
         OrganizationController,
+        DebugController,
     )
 }
 
@@ -104,6 +107,7 @@ export const projectRouter = (prefix?: string) => {
         UserController,
         TagController,
         ResourceController,
+        ProjectDebugController,
     )
 }
 

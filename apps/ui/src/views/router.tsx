@@ -44,6 +44,8 @@ import Locales from './settings/Locales'
 import JourneyUserEntrances from './journey/JourneyUserEntrances'
 import UserDetailJourneys from './users/UserDetailJourneys'
 import EntranceDetails from './journey/EntranceDetails'
+import OrgDebug from './debug/OrgDebug'
+import ProjectDebug from './debug/ProjectDebug'
 import { Translation } from 'react-i18next'
 import Organization from './organization/Organization'
 import DataSchema from './settings/DataSchema'
@@ -137,6 +139,10 @@ export const createRouter = ({
                         element: <Performance />,
                     },
                     {
+                        path: 'debug',
+                        element: <OrgDebug />,
+                    },
+                    {
                         path: 'settings',
                         element: <OrganizationSettings />,
                     },
@@ -179,6 +185,13 @@ export const createRouter = ({
                                     children: <Translation>{ t => t('lists') }</Translation>,
                                     icon: <ListsIcon />,
                                     minRole: 'editor',
+                                },
+                                {
+                                    key: 'debug',
+                                    to: 'debug',
+                                    children: <Translation>{ t => t('debug') }</Translation>,
+                                    icon: <SettingsIcon />,
+                                    minRole: 'admin',
                                 },
                                 {
                                     key: 'settings',
@@ -294,6 +307,10 @@ export const createRouter = ({
                         apiPath: api.lists,
                         element: <Lists />,
                     }),
+                    {
+                        path: 'debug',
+                        element: <ProjectDebug />,
+                    },
                     createStatefulRoute({
                         path: 'lists/:entityId',
                         apiPath: api.lists,
