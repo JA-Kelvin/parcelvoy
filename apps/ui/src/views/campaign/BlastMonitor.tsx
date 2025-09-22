@@ -260,7 +260,7 @@ export default function BlastMonitor() {
         const percent = (campaign.progress?.total ?? 0) > 0
             ? (campaign.progress!.complete / campaign.progress!.total) * 100
             : 0
-        const refreshRate = percent < 5 ? 1000 : 5000
+        const refreshRate = percent < 5 ? 20000 : 50000
         const id = setInterval(() => { refresh().catch(() => {}) }, refreshRate)
         return () => clearInterval(id)
     }, [campaign.progress?.complete, campaign.progress?.total, refresh])
