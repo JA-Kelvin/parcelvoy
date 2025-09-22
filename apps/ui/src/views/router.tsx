@@ -49,6 +49,7 @@ import ProjectDebug from './debug/ProjectDebug'
 import { Translation } from 'react-i18next'
 import Organization from './organization/Organization'
 import DataSchema from './settings/DataSchema'
+import BlastMonitor from './campaign/BlastMonitor'
 
 const SHOW_DEBUG_MENU = false
 const debugOrg: RouteObject = { path: 'debug', element: <OrgDebug /> }
@@ -245,6 +246,10 @@ export const createRouter = ({
                             {
                                 path: 'preview',
                                 element: <CampaignPreview />,
+                            },
+                            {
+                                path: 'monitor',
+                                element: <BlastMonitor />,
                             },
                         ],
                     }),

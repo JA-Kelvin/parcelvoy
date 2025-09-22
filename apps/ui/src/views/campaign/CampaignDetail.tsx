@@ -60,6 +60,11 @@ export default function CampaignDetail() {
             to: 'delivery',
             children: t('delivery'),
         },
+        {
+            key: 'monitor',
+            to: 'monitor',
+            children: t('monitor'),
+        },
     ]
 
     const action = {
