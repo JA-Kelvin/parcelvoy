@@ -24,7 +24,15 @@ export const userPathForQuery = (path: string) => {
     return '$.data' + path.replace('$', '')
 }
 
-const formattedQueryValue = (value: any) => typeof value === 'string' ? `'${value}'` : value
+// Basic SQL string escaping for ClickHouse single-quoted literals
+// Escapes backslashes and single quotes to prevent query breakage
+const escapeSqlString = (value: string): string => {
+    return value
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+}
+
+const formattedQueryValue = (value: any) => typeof value === 'string' ? `'${escapeSqlString(value)}'` : value
 
 export const queryPath = (rule: RuleTree): string => {
     const column = rule.path.replace('$.', '')
@@ -48,10 +56,10 @@ export const whereQuery = <T extends AnyJson | undefined>(path: string, operator
         }
     }
 
-    if (operator === 'contains') return `${path} LIKE '%${value}%'`
-    if (operator === 'not contain') return `${path} NOT LIKE '%${value}%'`
-    if (operator === 'starts with') return `${path} LIKE '${value}%'`
-    if (operator === 'not start with') return `${path} NOT LIKE '${value}%'`
+    if (operator === 'contains') return `${path} LIKE '%${escapeSqlString(String(value))}%'`
+    if (operator === 'not contain') return `${path} NOT LIKE '%${escapeSqlString(String(value))}%'`
+    if (operator === 'starts with') return `${path} LIKE '${escapeSqlString(String(value))}%'`
+    if (operator === 'not start with') return `${path} NOT LIKE '${escapeSqlString(String(value))}%'`
 
     return `${path} ${operator} ${formattedQueryValue(value)}`
 }

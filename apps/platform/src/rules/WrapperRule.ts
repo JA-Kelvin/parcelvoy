@@ -40,6 +40,29 @@ const frequencyQuery = (frequency?: EventRuleFrequency) => {
     return whereQuery('count()', operator, count)
 }
 
+// Build a WHERE predicate string for event-scope children, flattening nested event-group wrappers
+const buildEventWhere = (child: RuleTree, registry: RuleQueryParams['registry'], projectId: number): string => {
+    // Nested event wrapper with its own name/frequency is not supported within another event wrapper
+    if (isEventWrapper(child)) {
+        throw new RuleEvalException(child, 'nested event wrappers with name/frequency are not supported inside another event wrapper')
+    }
+
+    if (child.type === 'wrapper') {
+        const op = child.operator
+        if (op !== 'and' && op !== 'or') {
+            throw new RuleEvalException(child, 'unknown operator: ' + child.operator)
+        }
+        const sub = (child.children ?? [])
+            .map(c => buildEventWhere(c, registry, projectId))
+            .filter(Boolean)
+            .join(` ${op} `)
+        return sub ? `(${sub})` : ''
+    }
+
+    // Leaf event rule → predicate fragment
+    return registry.get(child.type)?.query({ registry, rule: child, projectId })
+}
+
 const eventWrapperQuery = ({ rule, registry, projectId }: RuleQueryParams & { rule: EventRuleTree }) => {
     const children = rule.children ?? []
     const operator = rule.operator
@@ -48,10 +71,10 @@ const eventWrapperQuery = ({ rule, registry, projectId }: RuleQueryParams & { ru
     }
 
     const filters = children
-        .map(child => registry
-            .get(child.type)
-            ?.query({ registry, rule: child, projectId }),
-        ).join(` ${operator} `)
+        .map(child => buildEventWhere(child, registry, projectId))
+        .filter(Boolean)
+        .join(` ${operator} `)
+
     const where = [
         `project_id = ${projectId}`,
         whereQuery('name', '=', rule.value),
@@ -123,24 +146,39 @@ export default {
         const userRules = children.filter(child => child.group === 'user')
         const eventRules = children.filter(child => child.group === 'event')
 
-        const queries = []
-        if (userRules.length) {
-            const userQuery = `${baseQuery} PREWHERE `
-                + userRules
-                    .map(child => registry.get(child.type)?.query({ registry, rule: child, projectId }))
-                    .join(` ${operator} `)
-                + ` WHERE project_id = ${projectId}`
+        const queries: string[] = []
+
+        // Split user rules into predicate leaves and nested user wrappers
+        const userPredicateRules = userRules.filter(child => child.type !== 'wrapper')
+        const userWrapperRules = userRules.filter(child => child.type === 'wrapper')
+
+        if (userPredicateRules.length) {
+            const predicates = userPredicateRules
+                .map(child => registry.get(child.type)?.query({ registry, rule: child, projectId }))
+                .join(` ${operator} `)
+            const userQuery = `${baseQuery} PREWHERE ${predicates} WHERE project_id = ${projectId}`
             queries.push(userQuery)
         }
 
-        if (eventRules.length) {
-            const eventQuery = ''
-                + eventRules
-                    .map(child => registry.get(child.type)?.query({ registry, rule: child, projectId }))
-                    .join(` ${parentOperator} `)
-            queries.push(eventQuery)
+        // Compose nested user wrapper subqueries
+        for (const child of userWrapperRules) {
+            const sub = registry.get(child.type)?.query({ registry, rule: child, projectId })
+            if (sub) queries.push(sub)
         }
 
+        // Event rules must be wrappers at this level; primitives are not supported here
+        for (const child of eventRules) {
+            if (child.type !== 'wrapper') {
+                throw new RuleEvalException(child, 'event rules at parent level must be wrappers (event conditions)')
+            }
+            const sub = registry.get(child.type)?.query({ registry, rule: child, projectId })
+            if (sub) queries.push(sub)
+        }
+
+        if (!queries.length) {
+            return baseQuery + ' WHERE project_id = ' + projectId
+        }
+        if (queries.length === 1) return queries[0]
         return queries.join(` ${parentOperator} `)
     },
 } satisfies RuleCheck

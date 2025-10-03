@@ -30,6 +30,28 @@ export default function WrapperRuleEdit({
         })
     }
 
+    const handleAddGroupWrapper = () => {
+        const children = rule.children ?? []
+        const newWrapper: WrapperRule = {
+            uuid: createUuid(),
+            root_uuid: root.uuid,
+            parent_uuid: rule.uuid,
+            // For event-group nested wrappers, avoid path 'name' so it is not treated as an event-name wrapper
+            path: rule.group === 'event' ? '' : '$',
+            type: 'wrapper',
+            group: rule.group === 'event' ? 'event' : 'user',
+            operator: 'and',
+            children: [],
+        }
+        setRule({
+            ...rule,
+            children: [
+                ...children,
+                newWrapper,
+            ],
+        })
+    }
+
     let ruleSet = (
         <div className="rule-set">
             <div className="rule-set-header">
@@ -71,7 +93,7 @@ export default function WrapperRuleEdit({
                                 children: rule.children?.map((c, i) => i === index ? child : c),
                             })}
                             group={rule.group}
-                            eventName={rule.value}
+                            eventName={eventName || rule.value}
                             depth={depth + 1}
                             controls={
                                 <Button
@@ -113,8 +135,16 @@ export default function WrapperRuleEdit({
                             : t('rule_add_user_condition')
                     }
                 </Button>
+                <Button
+                    size="small"
+                    variant="secondary"
+                    icon={<PlusIcon />}
+                    onClick={() => handleAddGroupWrapper()}
+                >
+                    {t('rule_add_group')}
+                </Button>
                 {
-                    (depth === 0 && (rule.group === 'user' || rule.group === 'parent')) && (
+                    ((rule.group === 'user' || rule.group === 'parent')) && (
                         <Button
                             size="small"
                             variant="secondary"

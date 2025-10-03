@@ -15,7 +15,7 @@ export const isEventWrapper = (rule: Rule): rule is EventRule => {
 
 export const isWrapper = (rule: Rule | GroupedRule): rule is WrapperRule => {
     return rule.type === 'wrapper'
-        && (rule.group === 'parent' || rule.group === 'event')
+        && (rule.group === 'parent' || rule.group === 'event' || rule.group === 'user')
 }
 
 export const createWrapperRule = (): WrapperRule => ({

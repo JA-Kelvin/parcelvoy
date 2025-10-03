@@ -249,6 +249,7 @@
   "role_cant_change": "您不能更改自己的角色。",
   "rule_add_condition": "添加条件",
   "rule_add_event_condition": "添加事件条件",
+  "rule_add_group": "添加分组",
   "rule_add_user_condition": "添加用户条件",
   "rule_did": "执行了",
   "rule_include_users_matching": "包含匹配的用户 ",

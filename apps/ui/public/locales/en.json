@@ -299,6 +299,7 @@
     "role_cant_change": "You cannot change your own roles.",
     "rule_add_condition": "Add Condition",
     "rule_add_event_condition": "Add Event Condition",
+    "rule_add_group": "Add Group",
     "rule_add_user_condition": "Add User Condition",
     "rule_did": "Did",
     "rule_include_users_matching": "Include users matching ",
