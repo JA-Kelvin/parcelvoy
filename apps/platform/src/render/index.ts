@@ -99,14 +99,32 @@ export const Render = (template: string, { user, event, journey, context }: Vari
     })
 }
 
-export const RenderObject = (object: Record<string, any> | undefined, variables: Variables) => {
-    if (!object) return {}
-    return Object.keys(object).reduce((body, key) => {
-        body[key] = typeof object[key] === 'object'
-            ? RenderObject(object[key], variables)
-            : Render(object[key], variables)
-        return body
-    }, {} as Record<string, any>)
+// Recursively render an object graph, preserving arrays and non-string primitives.
+export const RenderObject = (input: any, variables: Variables): any => {
+    // Pass through null/undefined as-is
+    if (input == null) return input
+
+    // Preserve arrays – map each element through renderer
+    if (Array.isArray(input)) {
+        return input.map((v) => {
+            if (v != null && typeof v === 'object') return RenderObject(v, variables)
+            return typeof v === 'string' ? Render(v, variables) : v
+        })
+    }
+
+    // Render plain objects key-by-key
+    if (typeof input === 'object') {
+        return Object.keys(input).reduce((acc, key) => {
+            const val = (input as any)[key]
+            acc[key] = (val != null && typeof val === 'object')
+                ? RenderObject(val, variables)
+                : (typeof val === 'string' ? Render(val, variables) : val)
+            return acc
+        }, {} as Record<string, any>)
+    }
+
+    // Primitives: only render strings, keep others intact (number, boolean)
+    return typeof input === 'string' ? Render(input, variables) : input
 }
 
 export default Render
