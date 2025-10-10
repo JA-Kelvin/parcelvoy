@@ -120,15 +120,12 @@ const TemplatePreview = ({ template }: TemplatePreviewProps) => {
                 </Column>
                 <Column fullscreen={true}>
                     <Heading title="Preview" size="h4" actions={
-                        template.type === 'webhook'
-                            ? <Button
-                                size="small"
-                                variant="secondary"
-                                onClick={async () => await handleSendProof('')}>{t('test_webhook')}</Button>
-                            : <Button
-                                size="small"
-                                variant="secondary"
-                                onClick={() => setIsSendProofOpen(true)}>{t('send_proof')}</Button>
+                        <Button
+                            size="small"
+                            variant="secondary"
+                            onClick={() => setIsSendProofOpen(true)}>
+                            {template.type === 'webhook' ? t('test_webhook') : t('send_proof')}
+                        </Button>
                     } />
                     {templatePreviewError && <Alert
                         variant="warn"
