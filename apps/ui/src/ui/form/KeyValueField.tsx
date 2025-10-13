@@ -80,6 +80,7 @@ export default function KeyValueField<X extends FieldValues, P extends FieldPath
                         />
                         <button
                             type="button"
+                            className="ui-button"
                             onClick={() => {
                                 const next = rows.filter((_, i) => i !== idx)
                                 setRows(next.length ? next : [{ key: '', value: '' }])
