@@ -9,6 +9,7 @@ import { User } from '../users/User'
 import { UserEvent } from '../users/UserEvent'
 import { extractQueryParams } from '../utilities'
 import Template, { TemplateParams, TemplateUpdateParams } from './Template'
+import { getCampaign } from '../campaigns/CampaignService'
 import { createTemplate, deleteTemplate, getTemplate, pagedTemplates, sendProof, updateTemplate } from './TemplateService'
 
 const router = new Router<
@@ -249,13 +250,30 @@ router.post('/:templateId/preview', async ctx => {
     const template = ctx.state.template!.map()
 
     try {
-        ctx.body = template.compile({
+        // Base variables from payload
+        let variables: Variables = {
             user: User.fromJson({ ...payload.user, data: payload.user }),
             event: UserEvent.fromJson(payload.event || {}),
             journey: payload.journey || {},
             context: payload.context || {},
             project: ctx.state.project,
-        })
+        }
+
+        // For webhook previews, inject provider into context so {{context.provider...}} resolves
+        if (template.type === 'webhook') {
+            const campaign = await getCampaign(template.campaign_id, ctx.state.project.id)
+            if (campaign?.provider) {
+                variables = {
+                    ...variables,
+                    context: {
+                        ...variables.context,
+                        provider: campaign.provider,
+                    },
+                }
+            }
+        }
+
+        ctx.body = template.compile(variables)
     } catch (error: any) {
         throw new RequestError(error.message, 400)
     }

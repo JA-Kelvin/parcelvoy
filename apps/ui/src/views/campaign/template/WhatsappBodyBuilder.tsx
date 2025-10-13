@@ -97,6 +97,8 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     const headersValue: any = form.watch('data.headers')
 
     const isGraphMessages = useMemo(() => /graph\.facebook\.com\/.+\/messages$/.test(endpoint ?? ''), [endpoint])
+    const isEndpointEmpty = useMemo(() => ((endpoint ?? '').trim() === ''), [endpoint])
+    const isFacebookDomain = useMemo(() => /facebook\.com/i.test(endpoint ?? ''), [endpoint])
 
     const [to, setTo] = useState('')
     const [messagingProduct, setMessagingProduct] = useState('whatsapp')
@@ -369,7 +371,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         if (!String(businessId ?? '').trim()) setBusinessId('{{context.provider.data.business_id}}')
     }
 
-    const showBuilder = isGraphMessages || integrations.length > 0
+    const showBuilder = isEndpointEmpty || isFacebookDomain || isGraphMessages || integrations.length > 0
     if (!showBuilder) return null
 
     return (
