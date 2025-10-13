@@ -1,11 +1,11 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import TextInput from '../../../ui/form/TextInput'
 import Button from '../../../ui/Button'
 import { TemplateUpdateParams } from '../../../types'
 import { SingleSelect } from '../../../ui/form/SingleSelect'
 import api from '../../../api'
-import { ProjectContext } from '../../../contexts'
+import { ProjectContext, CampaignContext } from '../../../contexts'
 import type { Provider } from '../../../types'
 
 interface ParamRow {
@@ -27,6 +27,10 @@ interface TemplateMeta {
 }
 
 function parseBody(body: any) {
+    // Accept pre-stringified body from form fields
+    if (typeof body === 'string') {
+        try { body = JSON.parse(body) } catch { /* ignore */ }
+    }
     const to = body?.to ?? ''
     const messaging_product = body?.messaging_product ?? 'whatsapp'
     const type = body?.type ?? 'template'
@@ -87,6 +91,7 @@ function toHtmlWithBoldAndBreaks(s: string) {
 
 export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<TemplateUpdateParams, any> }) {
     const [project] = useContext(ProjectContext)
+    const [campaign] = useContext(CampaignContext)
     const endpoint: string = form.watch('data.endpoint')
     const bodyValue: any = form.watch('data.body')
     const headersValue: any = form.watch('data.headers')
@@ -119,6 +124,18 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             .catch(() => {})
     }, [project])
 
+    // Bind selected integration to campaign's provider (read-only UX)
+    useEffect(() => {
+        if (campaign?.provider && (campaign.provider.group === 'webhook')) {
+            setSelectedIntegration(campaign.provider)
+            const hasEndpoint = !!form.getValues('data.endpoint')
+            const hasHeaders = !!(headersValue && Object.keys(headersValue || {}).length)
+            if (!hasEndpoint && !hasHeaders) {
+                applyIntegrationDefaults(campaign.provider)
+            }
+        }
+    }, [campaign?.provider])
+
     useEffect(() => {
         try {
             const parsed = parseBody(bodyValue)
@@ -132,17 +149,70 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         }
     }, [JSON.stringify(bodyValue)])
 
+    // Helper: resolve Handlebars-like placeholders from selected integration provider
+    const providerData = useMemo(() => (selectedIntegration?.data ?? {}), [selectedIntegration])
+    function getNested(obj: any, path: string): any {
+        if (!obj || !path) return undefined
+        return path.split('.').reduce((acc: any, key: string) => (acc != null ? acc[key] : undefined), obj)
+    }
+    function resolveProviderVars(input?: string): string {
+        if (!input) return ''
+        let out = String(input)
+        if (!out.includes('{{')) return out
+        // handle lookup first: {{lookup context.provider.data.headers "Authorization"}}
+        out = out.replace(/\{\{\s*lookup\s+context\.provider\.data\.([a-zA-Z0-9_.]+)\s+"([^"]+)"\s*\}\}/g, (_m, base: string, key: string) => {
+            const baseObj = getNested(providerData, base)
+            const val = baseObj?.[key]
+            return val != null ? String(val) : ''
+        })
+        // simple path: {{context.provider.data.business_id}}
+        out = out.replace(/\{\{\s*context\.provider\.data\.([a-zA-Z0-9_.]+)\s*\}\}/g, (_m, path: string) => {
+            const val = getNested(providerData, path)
+            return val != null ? String(val) : ''
+        })
+        return out
+    }
+
+    const effectiveAuthToken = useMemo(() => {
+        const token = (authToken ?? '').toString()
+        return token.includes('{{') ? resolveProviderVars(token) : token
+    }, [authToken, providerData])
+
+    const effectiveWabaId = useMemo(() => {
+        const local = (wabaId ?? '').toString()
+        if (!local || local.includes('{{')) {
+            const fromProvider = providerData?.waba_id
+            return fromProvider ? String(fromProvider) : (local.includes('{{') ? '' : local)
+        }
+        return local
+    }, [wabaId, providerData])
+
+    const effectiveBusinessId = useMemo(() => {
+        let bid = (businessId ?? '').toString()
+        // use provider if local is empty or templated
+        if (!bid || bid.includes('{{')) {
+            if (providerData?.business_id) bid = String(providerData.business_id)
+        }
+        if (!bid && endpoint) {
+            const resolvedEndpoint = resolveProviderVars(endpoint)
+            const m = resolvedEndpoint.match(/graph\.facebook\.com\/v\d+\.\d+\/(\d+)\/messages$/)
+            if (m?.[1]) bid = m[1]
+        }
+        return bid
+    }, [businessId, endpoint, providerData])
+
     function getGraphVersion() {
-        const m = endpoint?.match(/graph\.facebook\.com\/(v\d+\.\d+)\//)
+        const resolved = resolveProviderVars(endpoint)
+        const m = resolved?.match(/graph\.facebook\.com\/(v\d+\.\d+)\//)
         return m?.[1] ?? 'v23.0'
     }
 
     async function fetchTemplates() {
         try {
-            if (!authToken) throw new Error('Authorization header (Bearer token) is required to fetch templates')
-            if (!wabaId) throw new Error('WABA ID is required')
-            const url = `https://graph.facebook.com/${getGraphVersion()}/${encodeURIComponent(wabaId)}/message_templates?limit=200`
-            const res = await fetch(url, { headers: { Authorization: authToken } })
+            if (!effectiveAuthToken) throw new Error('Authorization header (Bearer token) is required to fetch templates')
+            if (!effectiveWabaId) throw new Error('WABA ID is required')
+            const url = `https://graph.facebook.com/${getGraphVersion()}/${encodeURIComponent(effectiveWabaId)}/message_templates?limit=200`
+            const res = await fetch(url, { headers: { Authorization: effectiveAuthToken } })
             if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
             const json = await res.json()
             const list: TemplateMeta[] = (json?.data ?? []).map((t: any) => ({
@@ -159,36 +229,32 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         }
     }
 
-    async function fetchTemplateByName() {
-        try {
-            if (!authToken) throw new Error('Authorization header (Bearer token) is required to fetch templates')
-            if (!wabaId) throw new Error('WABA ID is required')
-            if (!templateName) throw new Error('Template Name is required')
-            const url = `https://graph.facebook.com/${getGraphVersion()}/${encodeURIComponent(wabaId)}/message_templates?name=${encodeURIComponent(templateName)}`
-            const res = await fetch(url, { headers: { Authorization: authToken } })
-            if (!res.ok) throw new Error(`Fetch by name failed: ${res.status}`)
-            const json = await res.json()
-            const list: TemplateMeta[] = (json?.data ?? []).map((t: any) => ({
-                id: String(t?.id ?? ''),
-                name: String(t?.name ?? ''),
-                language: String(t?.language ?? t?.language_code ?? ''),
-                parameter_format: t?.parameter_format,
-                components: t?.components,
-            }))
-            if (!list.length) throw new Error('Template not found by name')
-            setTemplates(list)
-            setSelectedTemplate(list[0])
-            populateFromTemplate(list[0])
-        } catch (e) {
-            console.error(e)
-            alert((e as Error).message)
+    const autoFetchRef = useRef(false)
+    useEffect(() => {
+        if (autoFetchRef.current) return
+        if (selectedIntegration && effectiveAuthToken && effectiveWabaId && templateName && templates.length === 0) {
+            autoFetchRef.current = true
+            void fetchTemplates()
         }
-    }
+    }, [selectedIntegration, effectiveAuthToken, effectiveWabaId, templateName, templates.length])
+
+    useEffect(() => {
+        if (!templates.length) return
+        if (selectedTemplate) return
+        if (!templateName) return
+        const langA = String(languageCode ?? '').toLowerCase().replace(/-/g, '_')
+        const pick = templates.find(t => t.name === templateName && String(t.language ?? '').toLowerCase().replace(/-/g, '_') === langA)
+            ?? templates.find(t => t.name === templateName)
+        if (pick) {
+            setSelectedTemplate(pick)
+            populateFromTemplate(pick)
+        }
+    }, [templates, selectedTemplate, templateName, languageCode])
 
     function populateFromTemplate(t?: TemplateMeta) {
         if (!t) return
-        setTemplateName(t.name || '')
-        setLanguageCode(t.language || 'en')
+        setTemplateName(t.name ?? '')
+        setLanguageCode(t.language ?? 'en')
         // derive params from components/body
         const body = t.components?.find(c => c?.type?.toUpperCase() === 'BODY')
         const nextParams: ParamRow[] = []
@@ -217,11 +283,12 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
 
     // If endpoint contains an ID, treat it as Business ID (messages path uses phone number or business/asset IDs), not WABA
     useEffect(() => {
-        const m = endpoint?.match(/graph\.facebook\.com\/v\d+\.\d+\/(\d+)\/messages$/)
+        const resolved = resolveProviderVars(endpoint)
+        const m = resolved?.match(/graph\.facebook\.com\/v\d+\.\d+\/(\d+)\/messages$/)
         if (m?.[1]) {
             setBusinessId(prev => prev || m[1])
         }
-    }, [endpoint])
+    }, [endpoint, providerData])
 
     const previewHtml = useMemo(() => {
         const isVariableLike = (v?: string) => /\{\{.*\}\}/.test(String(v ?? ''))
@@ -259,19 +326,47 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         const provider = p ?? selectedIntegration
         if (!provider) return
         const data = (provider as any)?.data || {}
-        const nextEndpoint = data.endpoint || data.url || ''
-        if (nextEndpoint) form.setValue('data.endpoint', nextEndpoint, { shouldDirty: true })
-        const headers = data.headers || {}
-        const nextHeaders = {
-            ...(headersValue || {}),
-            ...(headers || {}),
+
+        const hasEndpoint = !!form.getValues('data.endpoint')
+        const hasHeaders = !!(headersValue && Object.keys(headersValue || {}).length)
+        const providerEndpoint: string = data.endpoint || data.url || ''
+
+        // Endpoint: if first time (no endpoint), prefer dynamic Handlebars
+        if (!hasEndpoint) {
+            if (providerEndpoint && /graph\.facebook\.com\/.+\/messages/.test(providerEndpoint)) {
+                const verMatch = providerEndpoint.match(/graph\.facebook\.com\/(v\d+\.\d+)\//)
+                const ver = verMatch?.[1] ?? 'v24.0'
+                const dynamicEndpoint = `https://graph.facebook.com/${ver}/{{context.provider.data.business_id}}/messages`
+                form.setValue('data.endpoint', dynamicEndpoint, { shouldDirty: true })
+            } else if (providerEndpoint) {
+                form.setValue('data.endpoint', providerEndpoint, { shouldDirty: true })
+            }
+        } else if (providerEndpoint) {
+            // Respect user's existing endpoint; do not overwrite
+        }
+
+        // Headers: if first time (no headers), set dynamic placeholders then merge provider headers for missing keys
+        const nextHeaders: Record<string, string> = { ...(headersValue || {}) }
+        if (!hasHeaders) {
+            if (!nextHeaders.Authorization && !nextHeaders.authorization) {
+                nextHeaders.Authorization = '{{lookup context.provider.data.headers "Authorization"}}'
+            }
+            if (!nextHeaders['Content-Type'] && !nextHeaders['content-type']) {
+                nextHeaders['Content-Type'] = '{{lookup context.provider.data.headers "Content-Type"}}'
+            }
+        }
+        const providerHeaders = data.headers || {}
+        for (const [k, v] of Object.entries(providerHeaders)) {
+            if (!(k in nextHeaders)) nextHeaders[k] = String(v)
         }
         if (!nextHeaders['Content-Type'] && !nextHeaders['content-type']) {
             nextHeaders['Content-Type'] = 'application/json'
         }
         form.setValue('data.headers', nextHeaders, { shouldDirty: true })
-        if (data.waba_id) setWabaId(String(data.waba_id))
-        if (data.business_id) setBusinessId(String(data.business_id))
+
+        // Local helper fields for fetch/link (dynamic defaults on first-time apply)
+        if (!String(wabaId ?? '').trim()) setWabaId('{{context.provider.data.waba_id}}')
+        if (!String(businessId ?? '').trim()) setBusinessId('{{context.provider.data.business_id}}')
     }
 
     const showBuilder = isGraphMessages || integrations.length > 0
@@ -288,10 +383,13 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             </div>
 
             {/* Integration quick-load so users know values can come from Integrations */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'end', marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                    <span className="label-subtitle">Tip: Select an integration to auto-fill Endpoint and Headers.</span>
                     <SingleSelect
                         label="Integration (webhook)"
+                        subtitle={campaign?.provider && campaign.provider.group === 'webhook' ? 'Managed by campaign provider' : undefined}
+                        disabled={!!(campaign?.provider && campaign.provider.group === 'webhook')}
                         value={selectedIntegration}
                         onChange={(p?: Provider) => {
                             setSelectedIntegration(p)
@@ -308,7 +406,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                     />
                 </div>
                 <Button size="tiny" variant="secondary" onClick={() => applyIntegrationDefaults()}>Apply Integration Defaults</Button>
-                <span className="label-subtitle">Tip: Select an integration to auto-fill Endpoint and Headers.</span>
             </div>
 
             {isGraphMessages && (
@@ -328,27 +425,20 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                             onChange={(v) => setMessagingProduct(String(v))}
                             placeholder="whatsapp"
                         />
-                        <TextInput
-                            name="waba_id"
-                            label="WABA ID"
-                            value={wabaId}
-                            onChange={setWabaId}
-                            placeholder="e.g. 1748436919147739"
-                        />
-                        <TextInput
-                            name="business_id"
-                            label="Business ID (for quick link)"
-                            value={businessId}
-                            onChange={setBusinessId}
-                            placeholder="e.g. 842386909138669"
-                        />
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label className="ui-text-input">
+                                <span>Provider IDs</span>
+                                <span className="label-subtitle">Managed by campaign provider</span>
+                                <div className="label-subtitle">WABA ID: {effectiveWabaId || wabaId || '—'}</div>
+                                <div className="label-subtitle">Business ID: {effectiveBusinessId || businessId || '—'}</div>
+                            </label>
+                        </div>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'end' }}>
                             <Button size="tiny" variant="secondary" onClick={fetchTemplates}>Fetch Templates</Button>
-                            <Button size="tiny" variant="secondary" onClick={fetchTemplateByName}>Fetch By Name</Button>
-                            {selectedTemplate && businessId && wabaId && (
+                            {selectedTemplate && effectiveBusinessId && effectiveWabaId && (
                                 <a
                                     className="ui-button secondary tiny"
-                                    href={`https://business.facebook.com/latest/whatsapp_manager/message_templates/?business_id=${encodeURIComponent(businessId)}&tab=message-templates&childRoute=CAPI&id=${encodeURIComponent(selectedTemplate.id)}&nav_ref=whatsapp_manager&asset_id=${encodeURIComponent(wabaId)}`}
+                                    href={`https://business.facebook.com/latest/whatsapp_manager/message_templates/?business_id=${encodeURIComponent(effectiveBusinessId)}&tab=message-templates&childRoute=CAPI&id=${encodeURIComponent(selectedTemplate.id)}&nav_ref=whatsapp_manager&asset_id=${encodeURIComponent(effectiveWabaId)}`}
                                     target="_blank" rel="noreferrer"
                                 >
                                     Edit in WhatsApp Manager
@@ -393,7 +483,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                             <label className="ui-text-input">
                                 <span>Preview</span>
                             </label>
-                            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, maxWidth: 360 }}>
+                            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, maxWidth: 700 }}>
                                 <div style={{
                                     background: '#e1ffc7',
                                     borderRadius: 16,

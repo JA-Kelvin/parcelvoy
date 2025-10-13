@@ -32,12 +32,32 @@ export const WebhookForm = ({ form }: { form: UseFormReturn<TemplateUpdateParams
             form={form}
             name="data.endpoint"
             label={t('endpoint')}
+            placeholder="https://graph.facebook.com/v24.0/{{context.provider.data.business_id}}/messages"
+            subtitle={
+                <>
+                    Supports Handlebars variables. Provider values are available at <code>{'{{context.provider.data...}}'}</code>.
+                    Example:&nbsp;
+                    <code>{'https://graph.facebook.com/v24.0/{{context.provider.data.business_id}}/messages'}</code>
+                </>
+            }
             required />
         <WhatsappBodyBuilder form={form} />
         <KeyValueField
             form={form}
             name="data.headers"
-            label={t('headers')} />
+            label={t('headers')}
+            subtitle={
+                <>
+                    Supports Handlebars variables. Use <code>lookup</code> for dashed keys.
+                    <div className="label-subtitle">
+                        <code>Authorization</code>: <code>{'Bearer {{lookup context.provider.data.headers "Authorization"}}'}</code>
+                    </div>
+                    <div className="label-subtitle">
+                        <code>Content-Type</code>: <code>{'{{lookup context.provider.data.headers "Content-Type"}}'}</code>
+                    </div>
+                </>
+            }
+        />
         <JsonField
             form={form}
             name="data.body"
