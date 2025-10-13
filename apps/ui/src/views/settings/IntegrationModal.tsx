@@ -72,6 +72,37 @@ export function IntegrationForm({ project, provider: defaultProvider, onChange, 
 
                     <h4>Config</h4>
                     <TextInput.Field form={form} name="name" required />
+                    {meta.group === 'webhook' && (
+                        <>
+                            <h4>WhatsApp (Webhook)</h4>
+                            <TextInput.Field
+                                form={form}
+                                name="data.endpoint"
+                                label="Endpoint"
+                                subtitle="e.g. https://graph.facebook.com/v24.0/{business_id}/messages" />
+                            <TextInput.Field
+                                form={form}
+                                name="data.waba_id"
+                                label="WABA ID"
+                                subtitle="e.g. 1748436919147739" />
+                            <TextInput.Field
+                                form={form}
+                                name="data.business_id"
+                                label="Business ID"
+                                subtitle="e.g. 840538242476521" />
+                            <TextInput.Field
+                                form={form}
+                                name="data.headers.Authorization"
+                                label="Authorization"
+                                subtitle="Use Bearer token, e.g. Bearer EAA..." />
+                            <TextInput.Field
+                                form={form}
+                                name="data.headers.Content-Type"
+                                label="Content-Type"
+                                subtitle="Usually application/json"
+                                placeholder="application/json" />
+                        </>
+                    )}
                     <SchemaFields parent="data" schema={meta.schema.properties.data} form={form} />
                     <TextInput.Field
                         form={form}

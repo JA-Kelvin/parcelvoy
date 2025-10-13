@@ -16,8 +16,16 @@ export default class WebhookChannel {
     }
 
     async send(template: WebhookTemplate, variables: Variables): Promise<WebhookResponse> {
-
-        const message = template.compile(variables)
+        // Inject provider into context so templates can reference
+        // {{context.provider.data...}} and use lookup for dashed keys
+        const augmentedVariables: Variables = {
+            ...variables,
+            context: {
+                ...variables.context,
+                provider: this.provider,
+            },
+        }
+        const message = template.compile(augmentedVariables)
         const redis = App.main.redis
 
         // If we have a cache key, check cache first
