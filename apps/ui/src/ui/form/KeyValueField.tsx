@@ -94,6 +94,7 @@ export default function KeyValueField<X extends FieldValues, P extends FieldPath
                 ))}
                 <button
                     type="button"
+                    className="ui-button"
                     onClick={() => setRows(prev => [...prev, { key: '', value: '' }])}
                     style={{ padding: '6px 10px' }}
                 >

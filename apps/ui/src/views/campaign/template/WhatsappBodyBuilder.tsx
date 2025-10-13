@@ -155,8 +155,8 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                         }}>Remove</Button>
                     </div>
                 ))}
-                <Button size="tiny" variant="secondary" onClick={() => setParams(prev => [...prev, { parameter_name: '', text: '' }])}>+ Add Parameter</Button>
-                <Button size="tiny" style={{ marginLeft: 8 }} variant="secondary" onClick={() => {
+                <Button size="tiny" className="ui-button" variant="secondary" onClick={() => setParams(prev => [...prev, { parameter_name: '', text: '' }])}>+ Add Parameter</Button>
+                <Button size="tiny" className="ui-button" style={{ marginLeft: 8 }} variant="secondary" onClick={() => {
                     // import current JSON into builder
                     const parsed = parseBody(form.getValues('data.body'))
                     setTo(parsed.to ?? '')
