@@ -5,6 +5,8 @@ import { UseFormReturn } from 'react-hook-form'
 import { SingleSelect } from '../../../ui/form/SingleSelect'
 import JsonField from '../../../ui/form/JsonField'
 import TextInput from '../../../ui/form/TextInput'
+import KeyValueField from '../../../ui/form/KeyValueField'
+import WhatsappBodyBuilder from './WhatsappBodyBuilder'
 
 export const WebhookTable = ({ data }: { data: WebhookTemplateData }) => {
     const { t } = useTranslation()
@@ -31,11 +33,11 @@ export const WebhookForm = ({ form }: { form: UseFormReturn<TemplateUpdateParams
             name="data.endpoint"
             label={t('endpoint')}
             required />
-        <JsonField
+        <WhatsappBodyBuilder form={form} />
+        <KeyValueField
             form={form}
             name="data.headers"
-            label={t('headers')}
-            textarea />
+            label={t('headers')} />
         <JsonField
             form={form}
             name="data.body"

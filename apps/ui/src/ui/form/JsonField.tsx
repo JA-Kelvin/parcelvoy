@@ -1,7 +1,7 @@
 import TextInput, { TextInputProps } from './TextInput'
 import { FieldProps } from '../../types'
 import { FieldPath, FieldValues, useController } from 'react-hook-form'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function JsonField<X extends FieldValues, P extends FieldPath<X>>({
     form,
@@ -17,6 +17,9 @@ export default function JsonField<X extends FieldValues, P extends FieldPath<X>>
         },
     })
     const [jsonValue, setJsonValue] = useState(JSON.stringify(value))
+    useEffect(() => {
+        setJsonValue(JSON.stringify(value))
+    }, [value])
 
     return (
         <TextInput
