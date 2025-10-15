@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import TextInput from '../../../ui/form/TextInput'
+import SwitchField from '../../../ui/form/SwitchField'
 import Button from '../../../ui/Button'
 import { TemplateUpdateParams } from '../../../types'
 import { SingleSelect } from '../../../ui/form/SingleSelect'
@@ -33,7 +34,7 @@ function parseBody(body: any) {
     }
     const to = body?.to ?? ''
     const messaging_product = body?.messaging_product ?? 'whatsapp'
-    const type = body?.type ?? 'template'
+    const messageType = String(body?.type ?? 'template').toLowerCase()
     const templateName = body?.template?.name ?? ''
     const languageCode = body?.template?.language?.code ?? ''
 
@@ -60,19 +61,167 @@ function parseBody(body: any) {
         }
     }
 
-    return { to, messaging_product, type, templateName, languageCode, parameters, headerType, headerText, headerImageLink }
+    // Direct message fields
+    const textBody = body?.text?.body ?? ''
+    const textPreviewUrl = Boolean(body?.text?.preview_url ?? false)
+
+    const imageLink = body?.image?.link ?? ''
+    const imageCaption = body?.image?.caption ?? ''
+
+    const videoLink = body?.video?.link ?? ''
+    const videoCaption = body?.video?.caption ?? ''
+
+    const audioLink = body?.audio?.link ?? ''
+
+    const documentLink = body?.document?.link ?? ''
+    const documentCaption = body?.document?.caption ?? ''
+    const documentFilename = body?.document?.filename ?? ''
+
+    const locationLatitude = body?.location?.latitude ?? ''
+    const locationLongitude = body?.location?.longitude ?? ''
+    const locationName = body?.location?.name ?? ''
+    const locationAddress = body?.location?.address ?? ''
+
+    const interactiveType = body?.interactive?.type ?? 'button'
+    const interactiveHeaderText = body?.interactive?.header?.text ?? ''
+    const interactiveBodyText = body?.interactive?.body?.text ?? ''
+    const interactiveButtons = Array.isArray(body?.interactive?.action?.buttons)
+        ? body.interactive.action.buttons.map((b: any) => ({ id: b?.reply?.id ?? '', title: b?.reply?.title ?? '' }))
+        : []
+
+    return {
+        to,
+        messaging_product,
+        messageType,
+        templateName,
+        languageCode,
+        parameters,
+        headerType,
+        headerText,
+        headerImageLink,
+        textBody,
+        textPreviewUrl,
+        imageLink,
+        imageCaption,
+        videoLink,
+        videoCaption,
+        audioLink,
+        documentLink,
+        documentCaption,
+        documentFilename,
+        locationLatitude,
+        locationLongitude,
+        locationName,
+        locationAddress,
+        interactiveType,
+        interactiveHeaderText,
+        interactiveBodyText,
+        interactiveButtons,
+    }
 }
 
-function buildBody({ to, messaging_product, templateName, languageCode, parameters, headerType, headerText, headerImageLink }: {
+function buildBody({
+    to,
+    messaging_product,
+    messageType,
+    templateName,
+    languageCode,
+    parameters,
+    headerType,
+    headerText,
+    headerImageLink,
+    textBody,
+    textPreviewUrl,
+    imageLink,
+    imageCaption,
+    videoLink,
+    videoCaption,
+    audioLink,
+    documentLink,
+    documentCaption,
+    documentFilename,
+    locationLatitude,
+    locationLongitude,
+    locationName,
+    locationAddress,
+    interactiveHeaderText,
+    interactiveBodyText,
+    interactiveButtons,
+}: {
     to: string
     messaging_product: string
+    messageType: 'template' | 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'interactive'
     templateName: string
     languageCode: string
     parameters: ParamRow[]
     headerType: 'none' | 'text' | 'image'
     headerText: string
     headerImageLink: string
+    textBody?: string
+    textPreviewUrl?: boolean
+    imageLink?: string
+    imageCaption?: string
+    videoLink?: string
+    videoCaption?: string
+    audioLink?: string
+    documentLink?: string
+    documentCaption?: string
+    documentFilename?: string
+    locationLatitude?: any
+    locationLongitude?: any
+    locationName?: string
+    locationAddress?: string
+    interactiveHeaderText?: string
+    interactiveBodyText?: string
+    interactiveButtons?: Array<{ id: string, title: string }>
 }) {
+    if (messageType && messageType !== 'template') {
+        const base: any = { to, messaging_product, type: messageType }
+        base.recipient_type = 'individual'
+        switch (messageType) {
+            case 'text':
+                base.text = { body: String(textBody ?? ''), preview_url: Boolean(textPreviewUrl) }
+                break
+            case 'image':
+                base.image = { link: String(imageLink ?? '') }
+                if (imageCaption) base.image.caption = String(imageCaption)
+                break
+            case 'video':
+                base.video = { link: String(videoLink ?? '') }
+                if (videoCaption) base.video.caption = String(videoCaption)
+                break
+            case 'audio':
+                base.audio = { link: String(audioLink ?? '') }
+                break
+            case 'document':
+                base.document = { link: String(documentLink ?? '') }
+                if (documentCaption) base.document.caption = String(documentCaption)
+                if (documentFilename) base.document.filename = String(documentFilename)
+                break
+            case 'location': {
+                const latNum = Number(locationLatitude)
+                const lonNum = Number(locationLongitude)
+                base.location = {
+                    latitude: isNaN(latNum) ? locationLatitude : latNum,
+                    longitude: isNaN(lonNum) ? locationLongitude : lonNum,
+                }
+                if (locationName) base.location.name = String(locationName)
+                if (locationAddress) base.location.address = String(locationAddress)
+                break
+            }
+            case 'interactive':
+                base.interactive = {
+                    type: 'button',
+                    header: interactiveHeaderText ? { type: 'text', text: String(interactiveHeaderText) } : undefined,
+                    body: { text: String(interactiveBodyText ?? '') },
+                    action: {
+                        buttons: (interactiveButtons ?? []).map(b => ({ type: 'reply', reply: { id: String(b.id ?? ''), title: String(b.title ?? '') } })),
+                    },
+                }
+                break
+        }
+        return base
+    }
     const components: any[] = []
     const headerTextValue = String(headerText ?? '').trim()
     const headerImageLinkValue = String(headerImageLink ?? '').trim()
@@ -147,6 +296,25 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     const [headerText, setHeaderText] = useState('')
     const [headerImageLink, setHeaderImageLink] = useState('')
     const [autoSyncEnabled, setAutoSyncEnabled] = useState(true)
+    const [messageType, setMessageType] = useState<'template' | 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'interactive'>('template')
+    // Direct message states
+    const [textBody, setTextBody] = useState('')
+    const [textPreviewUrl, setTextPreviewUrl] = useState(false)
+    const [imageLink, setImageLink] = useState('')
+    const [imageCaption, setImageCaption] = useState('')
+    const [videoLink, setVideoLink] = useState('')
+    const [videoCaption, setVideoCaption] = useState('')
+    const [audioLink, setAudioLink] = useState('')
+    const [documentLink, setDocumentLink] = useState('')
+    const [documentCaption, setDocumentCaption] = useState('')
+    const [documentFilename, setDocumentFilename] = useState('')
+    const [locationLatitude, setLocationLatitude] = useState<string>('')
+    const [locationLongitude, setLocationLongitude] = useState<string>('')
+    const [locationName, setLocationName] = useState('')
+    const [locationAddress, setLocationAddress] = useState('')
+    const [interactiveHeaderText, setInteractiveHeaderText] = useState('')
+    const [interactiveBodyText, setInteractiveBodyText] = useState('')
+    const [interactiveButtons, setInteractiveButtons] = useState<Array<{ id: string, title: string }>>([])
 
     // Template fetch state
     const [wabaId, setWabaId] = useState('')
@@ -174,6 +342,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     const autoSyncTimerRef = useRef<number | undefined>(undefined)
     const seedBodyParamsRef = useRef<ParamRow[] | null>(null)
     const paramsKey = useMemo(() => JSON.stringify(params), [params])
+    const interactiveButtonsKey = useMemo(() => JSON.stringify(interactiveButtons), [interactiveButtons])
 
     // Bind selected integration to campaign's provider (read-only UX)
     useEffect(() => {
@@ -215,6 +384,27 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             if (nextHeaderText !== headerText) setHeaderText(nextHeaderText)
             const nextHeaderImage = parsed.headerImageLink ?? ''
             if (nextHeaderImage !== headerImageLink) setHeaderImageLink(nextHeaderImage)
+            // Direct fields
+            const nextType = (parsed.messageType as any) ?? 'template'
+            if (nextType !== messageType) setMessageType(nextType)
+            if ((parsed.textBody ?? '') !== textBody) setTextBody(parsed.textBody ?? '')
+            if (Boolean(parsed.textPreviewUrl ?? false) !== textPreviewUrl) setTextPreviewUrl(Boolean(parsed.textPreviewUrl ?? false))
+            if ((parsed.imageLink ?? '') !== imageLink) setImageLink(parsed.imageLink ?? '')
+            if ((parsed.imageCaption ?? '') !== imageCaption) setImageCaption(parsed.imageCaption ?? '')
+            if ((parsed.videoLink ?? '') !== videoLink) setVideoLink(parsed.videoLink ?? '')
+            if ((parsed.videoCaption ?? '') !== videoCaption) setVideoCaption(parsed.videoCaption ?? '')
+            if ((parsed.audioLink ?? '') !== audioLink) setAudioLink(parsed.audioLink ?? '')
+            if ((parsed.documentLink ?? '') !== documentLink) setDocumentLink(parsed.documentLink ?? '')
+            if ((parsed.documentCaption ?? '') !== documentCaption) setDocumentCaption(parsed.documentCaption ?? '')
+            if ((parsed.documentFilename ?? '') !== documentFilename) setDocumentFilename(parsed.documentFilename ?? '')
+            if (String(parsed.locationLatitude ?? '') !== String(locationLatitude)) setLocationLatitude(String(parsed.locationLatitude ?? ''))
+            if (String(parsed.locationLongitude ?? '') !== String(locationLongitude)) setLocationLongitude(String(parsed.locationLongitude ?? ''))
+            if ((parsed.locationName ?? '') !== locationName) setLocationName(parsed.locationName ?? '')
+            if ((parsed.locationAddress ?? '') !== locationAddress) setLocationAddress(parsed.locationAddress ?? '')
+            if ((parsed.interactiveHeaderText ?? '') !== interactiveHeaderText) setInteractiveHeaderText(parsed.interactiveHeaderText ?? '')
+            if ((parsed.interactiveBodyText ?? '') !== interactiveBodyText) setInteractiveBodyText(parsed.interactiveBodyText ?? '')
+            const nextButtons = Array.isArray(parsed.interactiveButtons) ? parsed.interactiveButtons : []
+            if (JSON.stringify(nextButtons) !== JSON.stringify(interactiveButtons)) setInteractiveButtons(nextButtons)
         } catch {
             // ignore parse errors and keep local state
         }
@@ -222,15 +412,33 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     }, [JSON.stringify(bodyValue)])
 
     function commitBody() {
-        let built = buildBody({
+        const built = buildBody({
             to,
             messaging_product: messagingProduct,
+            messageType,
             templateName,
             languageCode,
             parameters: params,
             headerType,
             headerText,
             headerImageLink,
+            textBody,
+            textPreviewUrl,
+            imageLink,
+            imageCaption,
+            videoLink,
+            videoCaption,
+            audioLink,
+            documentLink,
+            documentCaption,
+            documentFilename,
+            locationLatitude,
+            locationLongitude,
+            locationName,
+            locationAddress,
+            interactiveHeaderText,
+            interactiveBodyText,
+            interactiveButtons,
         })
         // Fallback: preserve existing non-empty body params if new ones are all empty
         try {
@@ -240,16 +448,21 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             let fallbackParams: Array<{ text: string }> | null = null
             if (existingHas) {
                 fallbackParams = existing.parameters.map((p: any) => ({ text: p?.text ?? '' }))
-            } else if (seedBodyParamsRef.current && seedBodyParamsRef.current.some(p => String(p?.text ?? '').trim())) {
-                fallbackParams = seedBodyParamsRef.current.map(p => ({ text: p?.text ?? '' }))
-                existingHas = true
+            } else {
+                const seeds = seedBodyParamsRef.current
+                if (seeds?.some(p => String(p?.text ?? '').trim())) {
+                    fallbackParams = seeds.map(p => ({ text: p?.text ?? '' }))
+                    existingHas = true
+                }
             }
             if (newAllEmpty && existingHas && fallbackParams) {
-                const comps = (built as any)?.template?.components || []
+                const comps = built?.template?.components || []
                 const i = comps.findIndex((c: any) => String(c?.type ?? '').toUpperCase() === 'BODY')
-                if (i >= 0) comps[i] = {
-                    type: 'body',
-                    parameters: fallbackParams.map((p: any) => ({ type: 'text', text: p?.text ?? '' })),
+                if (i >= 0) {
+                    comps[i] = {
+                        type: 'body',
+                        parameters: fallbackParams.map((p: any) => ({ type: 'text', text: p?.text ?? '' })),
+                    }
                 }
             }
         } catch {}
@@ -264,15 +477,33 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         // debounce to reduce layout thrash
         if (autoSyncTimerRef.current) window.clearTimeout(autoSyncTimerRef.current)
         autoSyncTimerRef.current = window.setTimeout(() => {
-            let built = buildBody({
+            const built = buildBody({
                 to,
                 messaging_product: messagingProduct,
+                messageType,
                 templateName,
                 languageCode,
                 parameters: params,
                 headerType,
                 headerText,
                 headerImageLink,
+                textBody,
+                textPreviewUrl,
+                imageLink,
+                imageCaption,
+                videoLink,
+                videoCaption,
+                audioLink,
+                documentLink,
+                documentCaption,
+                documentFilename,
+                locationLatitude,
+                locationLongitude,
+                locationName,
+                locationAddress,
+                interactiveHeaderText,
+                interactiveBodyText,
+                interactiveButtons,
             })
             // Fallback: preserve existing non-empty body params if new ones are all empty
             try {
@@ -282,16 +513,21 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                 let fallbackParams: Array<{ text: string }> | null = null
                 if (existingHas) {
                     fallbackParams = existing.parameters.map((p: any) => ({ text: p?.text ?? '' }))
-                } else if (seedBodyParamsRef.current && seedBodyParamsRef.current.some(p => String(p?.text ?? '').trim())) {
-                    fallbackParams = seedBodyParamsRef.current.map(p => ({ text: p?.text ?? '' }))
-                    existingHas = true
+                } else {
+                    const seeds = seedBodyParamsRef.current
+                    if (seeds?.some(p => String(p?.text ?? '').trim())) {
+                        fallbackParams = seeds.map(p => ({ text: p?.text ?? '' }))
+                        existingHas = true
+                    }
                 }
                 if (newAllEmpty && existingHas && fallbackParams) {
-                    const comps = (built as any)?.template?.components || []
+                    const comps = built?.template?.components || []
                     const i = comps.findIndex((c: any) => String(c?.type ?? '').toUpperCase() === 'BODY')
-                    if (i >= 0) comps[i] = {
-                        type: 'body',
-                        parameters: fallbackParams.map((p: any) => ({ type: 'text', text: p?.text ?? '' })),
+                    if (i >= 0) {
+                        comps[i] = {
+                            type: 'body',
+                            parameters: fallbackParams.map((p: any) => ({ type: 'text', text: p?.text ?? '' })),
+                        }
                     }
                 }
             } catch {}
@@ -313,7 +549,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             if (autoSyncTimerRef.current) window.clearTimeout(autoSyncTimerRef.current)
         }
         // eslint-disable-next-line
-    }, [to, messagingProduct, templateName, languageCode, paramsKey, headerType, headerText, headerImageLink, isFacebookDomain, autoSyncEnabled])
+    }, [to, messagingProduct, messageType, templateName, languageCode, paramsKey, headerType, headerText, headerImageLink, textBody, textPreviewUrl, imageLink, imageCaption, videoLink, videoCaption, audioLink, documentLink, documentCaption, documentFilename, locationLatitude, locationLongitude, locationName, locationAddress, interactiveHeaderText, interactiveBodyText, interactiveButtonsKey, isFacebookDomain, autoSyncEnabled])
 
     // Helper: resolve Handlebars-like placeholders from selected integration provider
     const providerData = useMemo(() => (selectedIntegration?.data ?? {}), [selectedIntegration])
@@ -404,6 +640,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     }, [selectedIntegration, effectiveAuthToken, effectiveWabaId, templateName, templates.length])
 
     useEffect(() => {
+        if (messageType !== 'template') return
         if (!templates.length) return
         if (selectedTemplate) return
         if (!templateName) return
@@ -414,7 +651,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             setSelectedTemplate(pick)
             populateFromTemplate(pick, { preserveExisting: true })
         }
-    }, [templates, selectedTemplate, templateName, languageCode])
+    }, [messageType, templates, selectedTemplate, templateName, languageCode])
 
     function populateFromTemplate(t?: TemplateMeta, opts?: { preserveExisting?: boolean }) {
         if (!t) return
@@ -533,6 +770,16 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         { id: 'text', label: 'Text' },
         { id: 'image', label: 'Image' },
     ]), [])
+    const messageTypeOptions = useMemo(() => ([
+        { id: 'template', label: 'Template' },
+        { id: 'text', label: 'Text' },
+        { id: 'image', label: 'Image' },
+        { id: 'video', label: 'Video' },
+        { id: 'audio', label: 'Audio' },
+        { id: 'document', label: 'Document' },
+        { id: 'location', label: 'Location' },
+        { id: 'interactive', label: 'Interactive (Buttons)' },
+    ]), [])
 
     function applyIntegrationDefaults(p?: Provider) {
         const provider = p ?? selectedIntegration
@@ -587,21 +834,20 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     return (
         <div style={{ border: '1px solid var(--border-color, #e5e7eb)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <strong>WhatsApp Template Builder</strong>
+                <strong>WhatsApp Message Builder</strong>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label className="ui-text-input" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <input
-                            type="checkbox"
-                            checked={autoSyncEnabled}
-                            onChange={(e) => setAutoSyncEnabled(e.currentTarget.checked)}
-                            style={{ margin: 0 }}
-                        />
-                        <span className="label-subtitle">Auto-sync (1000ms)</span>
-                    </label>
-                    <Button size="tiny" variant="secondary" onClick={async () => {
-                        commitBody()
-                        if (form.trigger) await form.trigger('data.body')
-                    }}>Apply to Body</Button>
+                    <SwitchField
+                        name="auto_sync"
+                        label="Auto-sync (1000ms)"
+                        checked={autoSyncEnabled}
+                        onChange={(checked) => setAutoSyncEnabled(checked)}
+                    />
+                    {!autoSyncEnabled && (
+                        <Button size="tiny" variant="secondary" onClick={async () => {
+                            commitBody()
+                            if (form.trigger) await form.trigger('data.body')
+                        }}>Apply to Body</Button>
+                    )}
                 </div>
             </div>
 
@@ -633,63 +879,196 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
 
             {isGraphMessages && (
                 <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div style={{ gridColumn: '1 / -1' }}>
-                            <label className="ui-text-input">
-                                <span>Provider IDs</span>
-                                <span className="label-subtitle">Managed by campaign provider</span>
-                                <div className="label-subtitle">WABA ID: {effectiveWabaId || wabaId || '—'}</div>
-                                <div className="label-subtitle">Business ID: {effectiveBusinessId || businessId || '—'}</div>
-                            </label>
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'end' }}>
-                            <Button size="tiny" variant="secondary" onClick={fetchTemplates}>Fetch Templates</Button>
-                            {selectedTemplate && effectiveBusinessId && effectiveWabaId && (
-                                <a
-                                    className="ui-button secondary tiny"
-                                    href={`https://business.facebook.com/latest/whatsapp_manager/message_templates/?business_id=${encodeURIComponent(effectiveBusinessId)}&tab=message-templates&childRoute=CAPI&id=${encodeURIComponent(selectedTemplate.id)}&nav_ref=whatsapp_manager&asset_id=${encodeURIComponent(effectiveWabaId)}`}
-                                    target="_blank" rel="noreferrer"
-                                >
-                                    Edit in WhatsApp Manager
-                                </a>
-                            )}
-                        </div>
-                        {/* Integration select moved to top; keep only template dropdown here */}
+                    {/* Basic settings */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
+                        <TextInput
+                            name="to"
+                            label="To"
+                            value={to}
+                            onChange={setTo}
+                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                            placeholder="{{user.phone}}"
+                        />
+                        <TextInput
+                            name="messaging_product"
+                            label="Messaging Product"
+                            value={messagingProduct}
+                            onChange={(v) => setMessagingProduct(String(v))}
+                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                            placeholder="whatsapp"
+                        />
                         <div style={{ gridColumn: '1 / -1' }}>
                             <SingleSelect
-                                label="Template"
-                                value={selectedTemplate}
-                                onChange={(t?: TemplateMeta) => {
-                                    setSelectedTemplate(t)
-                                    if (t) populateFromTemplate(t)
-                                }}
-                                options={templates}
-                                toValue={t => t}
-                                getValueKey={(t: any) => t?.id ?? ''}
-                                getOptionDisplay={(t: TemplateMeta) => `${t.name} (${t.language}${t.parameter_format ? ` • ${t.parameter_format}` : ''})`}
+                                label="Message Type"
+                                value={messageTypeOptions.find(o => o.id === messageType)}
+                                onChange={(o?: any) => setMessageType((o?.id ?? 'template'))}
+                                options={messageTypeOptions}
+                                toValue={(o: any) => o}
+                                getValueKey={(o: any) => o.id}
+                                getOptionDisplay={(o: any) => o.label}
                                 size="regular"
                                 variant="plain"
                             />
                         </div>
-                        <TextInput
-                            name="template_name"
-                            label="Template Name"
-                            value={templateName}
-                            onChange={setTemplateName}
-                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
-                            placeholder="welcome_message"
-                        />
-                        <TextInput
-                            name="language_code"
-                            label="Language Code"
-                            value={languageCode}
-                            onChange={setLanguageCode}
-                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
-                            placeholder="en"
-                        />
                     </div>
 
-                    {selectedTemplate && (
+                    {/* Direct message editor */}
+                    {messageType !== 'template' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                            {messageType === 'text' && (
+                                <>
+                                    <TextInput
+                                        textarea
+                                        name="text_body"
+                                        label="Text Body"
+                                        value={textBody}
+                                        onChange={setTextBody}
+                                        onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                        placeholder="Check out our latest product: https://..."
+                                    />
+                                    <SwitchField
+                                        name="text_preview_url"
+                                        label="Preview URL"
+                                        checked={textPreviewUrl}
+                                        onChange={(checked) => { setTextPreviewUrl(checked); if (!autoSyncEnabled) commitBody() }}
+                                    />
+                                </>
+                            )}
+                            {messageType === 'image' && (
+                                <>
+                                    <TextInput name="image_link" label="Image Link" value={imageLink} onChange={setImageLink} onBlur={() => { if (!autoSyncEnabled) commitBody() }} placeholder="https://..." />
+                                    <TextInput name="image_caption" label="Caption" value={imageCaption} onChange={setImageCaption} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                </>
+                            )}
+                            {messageType === 'video' && (
+                                <>
+                                    <TextInput name="video_link" label="Video Link" value={videoLink} onChange={setVideoLink} onBlur={() => { if (!autoSyncEnabled) commitBody() }} placeholder="https://...mp4" />
+                                    <TextInput name="video_caption" label="Caption" value={videoCaption} onChange={setVideoCaption} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                </>
+                            )}
+                            {messageType === 'audio' && (
+                                <TextInput name="audio_link" label="Audio Link" value={audioLink} onChange={setAudioLink} onBlur={() => { if (!autoSyncEnabled) commitBody() }} placeholder="https://...mp3" />
+                            )}
+                            {messageType === 'document' && (
+                                <>
+                                    <TextInput name="document_link" label="Document Link" value={documentLink} onChange={setDocumentLink} onBlur={() => { if (!autoSyncEnabled) commitBody() }} placeholder="https://...pdf" />
+                                    <TextInput name="document_caption" label="Caption" value={documentCaption} onChange={setDocumentCaption} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                    <TextInput name="document_filename" label="Filename" value={documentFilename} onChange={setDocumentFilename} onBlur={() => { if (!autoSyncEnabled) commitBody() }} placeholder="Monthly Report.pdf" />
+                                </>
+                            )}
+                            {messageType === 'location' && (
+                                <>
+                                    <TextInput name="location_latitude" label="Latitude" value={locationLatitude} onChange={(v) => setLocationLatitude(String(v ?? ''))} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                    <TextInput name="location_longitude" label="Longitude" value={locationLongitude} onChange={(v) => setLocationLongitude(String(v ?? ''))} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                    <TextInput name="location_name" label="Name" value={locationName} onChange={setLocationName} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                    <TextInput name="location_address" label="Address" value={locationAddress} onChange={setLocationAddress} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                </>
+                            )}
+                            {messageType === 'interactive' && (
+                                <>
+                                    <TextInput name="interactive_header_text" label="Header Text" value={interactiveHeaderText} onChange={setInteractiveHeaderText} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                    <TextInput textarea name="interactive_body_text" label="Body Text" value={interactiveBodyText} onChange={setInteractiveBodyText} onBlur={() => { if (!autoSyncEnabled) commitBody() }} />
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <label className="ui-text-input">
+                                            <span>Buttons</span>
+                                        </label>
+                                        {interactiveButtons.map((b, idx) => (
+                                            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                                                <input
+                                                    placeholder="id"
+                                                    value={b.id}
+                                                    onChange={(e) => {
+                                                        const next = [...interactiveButtons]
+                                                        next[idx] = { ...next[idx], id: e.target.value }
+                                                        setInteractiveButtons(next)
+                                                    }}
+                                                    onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                                    style={{ flex: 1 }}
+                                                />
+                                                <input
+                                                    placeholder="title"
+                                                    value={b.title}
+                                                    onChange={(e) => {
+                                                        const next = [...interactiveButtons]
+                                                        next[idx] = { ...next[idx], title: e.target.value }
+                                                        setInteractiveButtons(next)
+                                                    }}
+                                                    onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                                    style={{ flex: 1 }}
+                                                />
+                                                <Button size="tiny" variant="secondary" onClick={() => {
+                                                    const next = interactiveButtons.filter((_, i) => i !== idx)
+                                                    setInteractiveButtons(next)
+                                                }}>Remove</Button>
+                                            </div>
+                                        ))}
+                                        <Button size="tiny" className="ui-button" variant="secondary" onClick={() => setInteractiveButtons(prev => [...prev, { id: '', title: '' }])}>+ Add Button</Button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Template editor */}
+                    {messageType === 'template' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <label className="ui-text-input">
+                                    <span>Provider IDs</span>
+                                    <span className="label-subtitle">Managed by campaign provider</span>
+                                    <div className="label-subtitle">WABA ID: {effectiveWabaId || wabaId || '—'}</div>
+                                    <div className="label-subtitle">Business ID: {effectiveBusinessId || businessId || '—'}</div>
+                                </label>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'end' }}>
+                                <Button size="tiny" variant="secondary" onClick={async () => { await fetchTemplates() }}>Fetch Templates</Button>
+                                {selectedTemplate && effectiveBusinessId && effectiveWabaId && (
+                                    <a
+                                        className="ui-button secondary tiny"
+                                        href={`https://business.facebook.com/latest/whatsapp_manager/message_templates/?business_id=${encodeURIComponent(effectiveBusinessId)}&tab=message-templates&childRoute=CAPI&id=${encodeURIComponent(selectedTemplate.id)}&nav_ref=whatsapp_manager&asset_id=${encodeURIComponent(effectiveWabaId)}`}
+                                        target="_blank" rel="noreferrer"
+                                    >
+                                        Edit in WhatsApp Manager
+                                    </a>
+                                )}
+                            </div>
+                            {/* Integration select moved to top; keep only template dropdown here */}
+                            <div style={{ gridColumn: '1 / -1' }}>
+                                <SingleSelect
+                                    label="Template"
+                                    value={selectedTemplate}
+                                    onChange={(t?: TemplateMeta) => {
+                                        setSelectedTemplate(t)
+                                        if (t) populateFromTemplate(t)
+                                    }}
+                                    options={templates}
+                                    toValue={t => t}
+                                    getValueKey={(t: any) => t?.id ?? ''}
+                                    getOptionDisplay={(t: TemplateMeta) => `${t.name} (${t.language}${t.parameter_format ? ` • ${t.parameter_format}` : ''})`}
+                                    size="regular"
+                                    variant="plain"
+                                />
+                            </div>
+                            <TextInput
+                                name="template_name"
+                                label="Template Name"
+                                value={templateName}
+                                onChange={setTemplateName}
+                                onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                placeholder="welcome_message"
+                            />
+                            <TextInput
+                                name="language_code"
+                                label="Language Code"
+                                value={languageCode}
+                                onChange={setLanguageCode}
+                                onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                placeholder="en"
+                            />
+                        </div>
+                    )}
+
+                    {messageType === 'template' && selectedTemplate && (
                         <div style={{ marginTop: 12 }}>
                             <label className="ui-text-input">
                                 <span>Preview</span>
@@ -717,60 +1096,46 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                             </div>
                         </div>
                     )}
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <TextInput
-                            name="to"
-                            label="To"
-                            value={to}
-                            onChange={setTo}
-                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
-                            placeholder="{{user.phone}}"
-                        />
-                        <TextInput
-                            name="messaging_product"
-                            label="Messaging Product"
-                            value={messagingProduct}
-                            onChange={(v) => setMessagingProduct(String(v))}
-                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
-                            placeholder="whatsapp"
-                        />
-                        <SingleSelect
-                            label="Header Type"
-                            value={headerTypeOptions.find(o => o.id === headerType)}
-                            onChange={(o?: any) => setHeaderType((o?.id ?? 'none'))}
-                            options={headerTypeOptions}
-                            toValue={(o: any) => o}
-                            getValueKey={(o: any) => o.id}
-                            getOptionDisplay={(o: any) => o.label}
-                            size="regular"
-                            variant="plain"
-                        />
-                        {headerType === 'text' && (
-                            <TextInput
-                                name="header_text"
-                                label="Header Text"
-                                value={headerText}
-                                onChange={setHeaderText}
-                                onBlur={() => { if (!autoSyncEnabled) commitBody() }}
-                                placeholder="Welcome"
+                    {messageType === 'template' && (
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <SingleSelect
+                                label="Header Type"
+                                value={headerTypeOptions.find(o => o.id === headerType)}
+                                onChange={(o?: any) => setHeaderType((o?.id ?? 'none'))}
+                                options={headerTypeOptions}
+                                toValue={(o: any) => o}
+                                getValueKey={(o: any) => o.id}
+                                getOptionDisplay={(o: any) => o.label}
+                                size="regular"
+                                variant="plain"
                             />
-                        )}
-                        {headerType === 'image' && (
-                            <TextInput
-                                name="header_image_link"
-                                label="Header Image Link"
-                                value={headerImageLink}
-                                onChange={setHeaderImageLink}
-                                onBlur={() => { if (!autoSyncEnabled) commitBody() }}
-                                placeholder="https://..."
-                            />
-                        )}
-                    </div>
+                            {headerType === 'text' && (
+                                <TextInput
+                                    name="header_text"
+                                    label="Header Text"
+                                    value={headerText}
+                                    onChange={setHeaderText}
+                                    onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                    placeholder="Welcome"
+                                />
+                            )}
+                            {headerType === 'image' && (
+                                <TextInput
+                                    name="header_image_link"
+                                    label="Header Image Link"
+                                    value={headerImageLink}
+                                    onChange={setHeaderImageLink}
+                                    onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                    placeholder="https://..."
+                                />
+                            )}
+                        </div>
+                    )}
                     <div style={{ marginTop: 12 }}>
                         <label className="ui-text-input">
                             <span>Parameters</span>
                         </label>
-                        {params.map((p, idx) => (
+                        {messageType === 'template' && params.map((p, idx) => (
                             <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
                                 <input
                                     placeholder="parameter_name"
@@ -800,18 +1165,14 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                                 }}>Remove</Button>
                             </div>
                         ))}
-                        <Button size="tiny" className="ui-button" variant="secondary" onClick={() => setParams(prev => [...prev, { parameter_name: '', text: '' }])}>+ Add Parameter</Button>
+                        {messageType === 'template' && (
+                            <Button size="tiny" className="ui-button" variant="secondary" onClick={() => setParams(prev => [...prev, { parameter_name: '', text: '' }])}>+ Add Parameter</Button>
+                        )}
                         <Button size="tiny" className="ui-button" style={{ marginLeft: 8 }} variant="secondary" onClick={() => {
                             const parsed = parseBody(form.getValues('data.body'))
-                            setTo(parsed.to ?? '')
-                            setMessagingProduct(parsed.messaging_product ?? 'whatsapp')
-                            setTemplateName(parsed.templateName ?? '')
-                            setLanguageCode(parsed.languageCode ?? 'en')
-                            setParams(parsed.parameters?.length ? parsed.parameters : [{ parameter_name: '', text: '' }])
-                            if (parsed.headerType) setHeaderType(parsed.headerType as any)
-                            setHeaderText(parsed.headerText ?? '')
-                            setHeaderImageLink(parsed.headerImageLink ?? '')
-                        }}>Import from Body</Button>
+                            if (parsed.messageType === 'template') populateFromTemplate(selectedTemplate)
+                            else commitBody()
+                        }}>Refresh from Body</Button>
                     </div>
                 </>
             )}
