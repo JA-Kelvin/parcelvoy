@@ -259,6 +259,10 @@ function buildBody({
         }),
     })
 
+    if (templateButtonsRaw) {
+        components.push(templateButtonsRaw)
+    }
+
     const body = {
         to,
         type: 'template',
