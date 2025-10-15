@@ -38,38 +38,77 @@ function parseBody(body: any) {
     const languageCode = body?.template?.language?.code ?? ''
 
     const parameters: ParamRow[] = (body?.template?.components ?? [])
-        .find((c: any) => c?.type === 'body')?.parameters?.map((p: any) => ({
+        .find((c: any) => String(c?.type ?? '').toLowerCase() === 'body')?.parameters?.map((p: any) => ({
             parameter_name: p?.parameter_name ?? '',
             text: p?.text ?? '',
         })) ?? []
 
-    return { to, messaging_product, type, templateName, languageCode, parameters }
+    const headerComp = (body?.template?.components ?? [])
+        .find((c: any) => String(c?.type ?? '').toUpperCase() === 'HEADER')
+    let headerType: 'none' | 'text' | 'image' = 'none'
+    let headerText = ''
+    let headerImageLink = ''
+    const hp = headerComp?.parameters?.[0]
+    if (hp) {
+        const htype = String(hp?.type ?? '').toLowerCase()
+        if (htype === 'text' && hp?.text != null) {
+            headerType = 'text'
+            headerText = String(hp.text)
+        } else if (htype === 'image' && hp?.image?.link) {
+            headerType = 'image'
+            headerImageLink = String(hp.image.link)
+        }
+    }
+
+    return { to, messaging_product, type, templateName, languageCode, parameters, headerType, headerText, headerImageLink }
 }
 
-function buildBody({ to, messaging_product, templateName, languageCode, parameters }: {
+function buildBody({ to, messaging_product, templateName, languageCode, parameters, headerType, headerText, headerImageLink }: {
     to: string
     messaging_product: string
     templateName: string
     languageCode: string
     parameters: ParamRow[]
+    headerType: 'none' | 'text' | 'image'
+    headerText: string
+    headerImageLink: string
 }) {
+    const components: any[] = []
+    const headerTextValue = String(headerText ?? '').trim()
+    const headerImageLinkValue = String(headerImageLink ?? '').trim()
+    if (headerType === 'text' && headerTextValue) {
+        components.push({
+            type: 'header',
+            parameters: [
+                { type: 'text', text: headerTextValue },
+            ],
+        })
+    } else if (headerType === 'image' && headerImageLinkValue) {
+        components.push({
+            type: 'header',
+            parameters: [
+                { type: 'image', image: { link: headerImageLinkValue } },
+            ],
+        })
+    }
+
+    components.push({
+        type: 'body',
+        parameters: parameters.map(p => {
+            const param: any = { type: 'text', text: p.text }
+            const name = (p.parameter_name ?? '').trim()
+            if (name) param.parameter_name = name
+            return param
+        }),
+    })
+
     const body = {
         to,
         type: 'template',
         template: {
             name: templateName,
             language: { code: languageCode },
-            components: [
-                {
-                    type: 'body',
-                    parameters: parameters.map(p => {
-                        const param: any = { type: 'text', text: p.text }
-                        const name = (p.parameter_name ?? '').trim()
-                        if (name) param.parameter_name = name
-                        return param
-                    }),
-                },
-            ],
+            components,
         },
         messaging_product,
     }
@@ -97,7 +136,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     const headersValue: any = form.watch('data.headers')
 
     const isGraphMessages = useMemo(() => /graph\.facebook\.com\/.+\/messages$/.test(endpoint ?? ''), [endpoint])
-    const isEndpointEmpty = useMemo(() => ((endpoint ?? '').trim() === ''), [endpoint])
     const isFacebookDomain = useMemo(() => /facebook\.com/i.test(endpoint ?? ''), [endpoint])
 
     const [to, setTo] = useState('')
@@ -105,6 +143,10 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     const [templateName, setTemplateName] = useState('')
     const [languageCode, setLanguageCode] = useState('en')
     const [params, setParams] = useState<ParamRow[]>([{ parameter_name: '', text: '' }])
+    const [headerType, setHeaderType] = useState<'none' | 'text' | 'image'>('none')
+    const [headerText, setHeaderText] = useState('')
+    const [headerImageLink, setHeaderImageLink] = useState('')
+    const [autoSyncEnabled, setAutoSyncEnabled] = useState(true)
 
     // Template fetch state
     const [wabaId, setWabaId] = useState('')
@@ -126,6 +168,13 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             .catch(() => {})
     }, [project])
 
+    // Refs/keys used by effects below (declare before use)
+    const autoFetchRef = useRef(false)
+    const lastSyncedBodyStrRef = useRef<string>('')
+    const autoSyncTimerRef = useRef<number | undefined>(undefined)
+    const seedBodyParamsRef = useRef<ParamRow[] | null>(null)
+    const paramsKey = useMemo(() => JSON.stringify(params), [params])
+
     // Bind selected integration to campaign's provider (read-only UX)
     useEffect(() => {
         if (campaign?.provider && (campaign.provider.group === 'webhook')) {
@@ -140,16 +189,131 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
 
     useEffect(() => {
         try {
+            const bodyStr = JSON.stringify(bodyValue ?? {})
+            if (lastSyncedBodyStrRef.current && bodyStr === lastSyncedBodyStrRef.current) return
             const parsed = parseBody(bodyValue)
-            setTo(parsed.to ?? '')
-            setMessagingProduct(parsed.messaging_product ?? 'whatsapp')
-            setTemplateName(parsed.templateName ?? '')
-            setLanguageCode(parsed.languageCode ?? 'en')
-            setParams(parsed.parameters?.length ? parsed.parameters : [{ parameter_name: '', text: '' }])
+            const nextTo = parsed.to ?? ''
+            if (nextTo !== to) setTo(nextTo)
+            const nextMsg = parsed.messaging_product ?? 'whatsapp'
+            if (nextMsg !== messagingProduct) setMessagingProduct(nextMsg)
+            const nextName = parsed.templateName ?? ''
+            if (nextName !== templateName) setTemplateName(nextName)
+            const nextLang = parsed.languageCode ?? 'en'
+            if (nextLang !== languageCode) setLanguageCode(nextLang)
+            const nextParams = parsed.parameters?.length ? parsed.parameters : [{ parameter_name: '', text: '' }]
+            if (JSON.stringify(nextParams) !== JSON.stringify(params)) setParams(nextParams)
+            // Seed original non-empty params for fallback preservation
+            try {
+                if (!seedBodyParamsRef.current) {
+                    const hasNonEmpty = Array.isArray(nextParams) && nextParams.some(p => String(p?.text ?? '').trim())
+                    if (hasNonEmpty) seedBodyParamsRef.current = JSON.parse(JSON.stringify(nextParams))
+                }
+            } catch {}
+            const nextHeaderType = (parsed.headerType as any) ?? 'none'
+            if (nextHeaderType !== headerType) setHeaderType(nextHeaderType)
+            const nextHeaderText = parsed.headerText ?? ''
+            if (nextHeaderText !== headerText) setHeaderText(nextHeaderText)
+            const nextHeaderImage = parsed.headerImageLink ?? ''
+            if (nextHeaderImage !== headerImageLink) setHeaderImageLink(nextHeaderImage)
         } catch {
             // ignore parse errors and keep local state
         }
+        // eslint-disable-next-line
     }, [JSON.stringify(bodyValue)])
+
+    function commitBody() {
+        let built = buildBody({
+            to,
+            messaging_product: messagingProduct,
+            templateName,
+            languageCode,
+            parameters: params,
+            headerType,
+            headerText,
+            headerImageLink,
+        })
+        // Fallback: preserve existing non-empty body params if new ones are all empty
+        try {
+            const existing = parseBody(form.getValues('data.body'))
+            const newAllEmpty = !params.some(p => String(p?.text ?? '').trim())
+            let existingHas = Array.isArray(existing.parameters) && existing.parameters.some((p: any) => String(p?.text ?? '').trim())
+            let fallbackParams: Array<{ text: string }> | null = null
+            if (existingHas) {
+                fallbackParams = existing.parameters.map((p: any) => ({ text: p?.text ?? '' }))
+            } else if (seedBodyParamsRef.current && seedBodyParamsRef.current.some(p => String(p?.text ?? '').trim())) {
+                fallbackParams = seedBodyParamsRef.current.map(p => ({ text: p?.text ?? '' }))
+                existingHas = true
+            }
+            if (newAllEmpty && existingHas && fallbackParams) {
+                const comps = (built as any)?.template?.components || []
+                const i = comps.findIndex((c: any) => String(c?.type ?? '').toUpperCase() === 'BODY')
+                if (i >= 0) comps[i] = {
+                    type: 'body',
+                    parameters: fallbackParams.map((p: any) => ({ type: 'text', text: p?.text ?? '' })),
+                }
+            }
+        } catch {}
+        const builtStr = JSON.stringify(built)
+        if (lastSyncedBodyStrRef.current === builtStr) return
+        lastSyncedBodyStrRef.current = builtStr
+        form.setValue('data.body', built, { shouldDirty: true })
+    }
+
+    useEffect(() => {
+        if (!isFacebookDomain || !autoSyncEnabled) return
+        // debounce to reduce layout thrash
+        if (autoSyncTimerRef.current) window.clearTimeout(autoSyncTimerRef.current)
+        autoSyncTimerRef.current = window.setTimeout(() => {
+            let built = buildBody({
+                to,
+                messaging_product: messagingProduct,
+                templateName,
+                languageCode,
+                parameters: params,
+                headerType,
+                headerText,
+                headerImageLink,
+            })
+            // Fallback: preserve existing non-empty body params if new ones are all empty
+            try {
+                const existing = parseBody(form.getValues('data.body'))
+                const newAllEmpty = !params.some(p => String(p?.text ?? '').trim())
+                let existingHas = Array.isArray(existing.parameters) && existing.parameters.some((p: any) => String(p?.text ?? '').trim())
+                let fallbackParams: Array<{ text: string }> | null = null
+                if (existingHas) {
+                    fallbackParams = existing.parameters.map((p: any) => ({ text: p?.text ?? '' }))
+                } else if (seedBodyParamsRef.current && seedBodyParamsRef.current.some(p => String(p?.text ?? '').trim())) {
+                    fallbackParams = seedBodyParamsRef.current.map(p => ({ text: p?.text ?? '' }))
+                    existingHas = true
+                }
+                if (newAllEmpty && existingHas && fallbackParams) {
+                    const comps = (built as any)?.template?.components || []
+                    const i = comps.findIndex((c: any) => String(c?.type ?? '').toUpperCase() === 'BODY')
+                    if (i >= 0) comps[i] = {
+                        type: 'body',
+                        parameters: fallbackParams.map((p: any) => ({ type: 'text', text: p?.text ?? '' })),
+                    }
+                }
+            } catch {}
+            try {
+                const current = form.getValues('data.body')
+                const currStr = JSON.stringify(current ?? {})
+                const builtStr = JSON.stringify(built)
+                if (currStr !== builtStr) {
+                    lastSyncedBodyStrRef.current = builtStr
+                    form.setValue('data.body', built, { shouldDirty: true })
+                }
+            } catch {
+                const builtStr = JSON.stringify(built)
+                lastSyncedBodyStrRef.current = builtStr
+                form.setValue('data.body', built, { shouldDirty: true })
+            }
+        }, 1000)
+        return () => {
+            if (autoSyncTimerRef.current) window.clearTimeout(autoSyncTimerRef.current)
+        }
+        // eslint-disable-next-line
+    }, [to, messagingProduct, templateName, languageCode, paramsKey, headerType, headerText, headerImageLink, isFacebookDomain, autoSyncEnabled])
 
     // Helper: resolve Handlebars-like placeholders from selected integration provider
     const providerData = useMemo(() => (selectedIntegration?.data ?? {}), [selectedIntegration])
@@ -231,7 +395,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         }
     }
 
-    const autoFetchRef = useRef(false)
     useEffect(() => {
         if (autoFetchRef.current) return
         if (selectedIntegration && effectiveAuthToken && effectiveWabaId && templateName && templates.length === 0) {
@@ -249,38 +412,79 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             ?? templates.find(t => t.name === templateName)
         if (pick) {
             setSelectedTemplate(pick)
-            populateFromTemplate(pick)
+            populateFromTemplate(pick, { preserveExisting: true })
         }
     }, [templates, selectedTemplate, templateName, languageCode])
 
-    function populateFromTemplate(t?: TemplateMeta) {
+    function populateFromTemplate(t?: TemplateMeta, opts?: { preserveExisting?: boolean }) {
         if (!t) return
+        const preserveExisting = opts?.preserveExisting ?? false
         setTemplateName(t.name ?? '')
         setLanguageCode(t.language ?? 'en')
-        // derive params from components/body
-        const body = t.components?.find(c => c?.type?.toUpperCase() === 'BODY')
-        const nextParams: ParamRow[] = []
-        if (t.parameter_format === 'NAMED') {
-            const namedList = body?.example?.body_text_named_params as Array<{ param_name: string, example?: string }>
-            if (Array.isArray(namedList) && namedList.length) {
-                namedList.forEach(n => nextParams.push({ parameter_name: n.param_name, text: `{{user.${n.param_name}}}` }))
-            } else if (body?.text) {
-                // fallback parsing from {{param}}
-                const names = Array.from(body.text.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)).map(m => m[1])
-                names.forEach(n => nextParams.push({ parameter_name: n, text: `{{user.${n}}}` }))
+
+        // Existing values detection (source of truth: current form body to avoid race with state hydration)
+        let hasExistingHeader = false
+        let hasExistingParams = false
+        try {
+            const existing = parseBody(form.getValues('data.body'))
+            hasExistingHeader = (existing.headerType && existing.headerType !== 'none')
+                || Boolean(String(existing.headerText ?? '').trim())
+                || Boolean(String(existing.headerImageLink ?? '').trim())
+            hasExistingParams = Array.isArray(existing.parameters) && existing.parameters.some((p: any) => Boolean(String(p?.text ?? '').trim()))
+        } catch {}
+
+        // Header
+        if (!(preserveExisting && hasExistingHeader)) {
+            const headerC = t.components?.find(c => c?.type?.toUpperCase() === 'HEADER')
+            if (headerC) {
+                const fmt = String((headerC as any)?.format ?? '').toUpperCase()
+                if (fmt === 'IMAGE') {
+                    setHeaderType('image')
+                    // do not overwrite link; user provides actual link at send-time
+                    setHeaderText('')
+                    if (!preserveExisting) setHeaderImageLink('')
+                } else if (fmt === 'TEXT') {
+                    setHeaderType('text')
+                    setHeaderText(String((headerC as any)?.text ?? ''))
+                    setHeaderImageLink('')
+                } else {
+                    setHeaderType('none')
+                    setHeaderText('')
+                    setHeaderImageLink('')
+                }
+            } else {
+                setHeaderType('none')
+                setHeaderText('')
+                setHeaderImageLink('')
             }
-        } else {
-            // POSITIONAL
-            let count = 0
-            if (body?.example?.body_text?.[0]) {
-                count = Array.isArray(body.example.body_text[0]) ? body.example.body_text[0].length : 0
-            }
-            if (!count && body?.text) {
-                count = (body.text.match(/\{\{\s*\d+\s*\}\}/g) ?? []).length
-            }
-            for (let i = 0; i < count; i++) nextParams.push({ parameter_name: '', text: '' })
         }
-        setParams(nextParams.length ? nextParams : [{ parameter_name: '', text: '' }])
+
+        // Body params
+        if (!(preserveExisting && hasExistingParams)) {
+            const body = t.components?.find(c => c?.type?.toUpperCase() === 'BODY')
+            const nextParams: ParamRow[] = []
+            if (t.parameter_format === 'NAMED') {
+                const namedList = body?.example?.body_text_named_params as Array<{ param_name: string, example?: string }>
+                if (Array.isArray(namedList) && namedList.length) {
+                    namedList.forEach(n => nextParams.push({ parameter_name: n.param_name, text: `{{user.${n.param_name}}}` }))
+                } else if (body?.text) {
+                    // fallback parsing from {{param}}
+                    const names = Array.from(body.text.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)).map(m => m[1])
+                    names.forEach(n => nextParams.push({ parameter_name: n, text: `{{user.${n}}}` }))
+                }
+            } else {
+                // POSITIONAL
+                let count = 0
+                if (body?.example?.body_text?.[0]) {
+                    count = Array.isArray(body.example.body_text[0]) ? body.example.body_text[0].length : 0
+                }
+                if (!count && body?.text) {
+                    count = (body.text.match(/\{\{\s*\d+\s*\}\}/g) ?? []).length
+                }
+                for (let i = 0; i < count; i++) nextParams.push({ parameter_name: '', text: '' })
+            }
+            setParams(nextParams.length ? nextParams : [{ parameter_name: '', text: '' }])
+        }
     }
 
     // If endpoint contains an ID, treat it as Business ID (messages path uses phone number or business/asset IDs), not WABA
@@ -323,6 +527,12 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         }
         return toHtmlWithBoldAndBreaks(out)
     }, [selectedTemplate, params])
+
+    const headerTypeOptions = useMemo(() => ([
+        { id: 'none', label: 'None' },
+        { id: 'text', label: 'Text' },
+        { id: 'image', label: 'Image' },
+    ]), [])
 
     function applyIntegrationDefaults(p?: Provider) {
         const provider = p ?? selectedIntegration
@@ -371,23 +581,33 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
         if (!String(businessId ?? '').trim()) setBusinessId('{{context.provider.data.business_id}}')
     }
 
-    const showBuilder = isEndpointEmpty || isFacebookDomain || isGraphMessages || integrations.length > 0
+    const showBuilder = isFacebookDomain
     if (!showBuilder) return null
 
     return (
         <div style={{ border: '1px solid var(--border-color, #e5e7eb)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <strong>WhatsApp Template Builder</strong>
-                <Button size="tiny" variant="secondary" onClick={() => {
-                    const built = buildBody({ to, messaging_product: messagingProduct, templateName, languageCode, parameters: params })
-                    form.setValue('data.body', built, { shouldDirty: true, shouldValidate: true })
-                }}>Apply to Body</Button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <label className="ui-text-input" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input
+                            type="checkbox"
+                            checked={autoSyncEnabled}
+                            onChange={(e) => setAutoSyncEnabled(e.currentTarget.checked)}
+                            style={{ margin: 0 }}
+                        />
+                        <span className="label-subtitle">Auto-sync (1000ms)</span>
+                    </label>
+                    <Button size="tiny" variant="secondary" onClick={async () => {
+                        commitBody()
+                        if (form.trigger) await form.trigger('data.body')
+                    }}>Apply to Body</Button>
+                </div>
             </div>
 
             {/* Integration quick-load so users know values can come from Integrations */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ gridColumn: '1 / -1' }}>
-                    <span className="label-subtitle">Tip: Select an integration to auto-fill Endpoint and Headers.</span>
                     <SingleSelect
                         label="Integration (webhook)"
                         subtitle={campaign?.provider && campaign.provider.group === 'webhook' ? 'Managed by campaign provider' : undefined}
@@ -408,25 +628,12 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                     />
                 </div>
                 <Button size="tiny" variant="secondary" onClick={() => applyIntegrationDefaults()}>Apply Integration Defaults</Button>
+                <span className="label-subtitle">Tip: Select an integration to auto-fill Endpoint and Headers.</span>
             </div>
 
             {isGraphMessages && (
                 <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <TextInput
-                            name="to"
-                            label="To"
-                            value={to}
-                            onChange={setTo}
-                            placeholder="{{user.phone}}"
-                        />
-                        <TextInput
-                            name="messaging_product"
-                            label="Messaging Product"
-                            value={messagingProduct}
-                            onChange={(v) => setMessagingProduct(String(v))}
-                            placeholder="whatsapp"
-                        />
                         <div style={{ gridColumn: '1 / -1' }}>
                             <label className="ui-text-input">
                                 <span>Provider IDs</span>
@@ -469,6 +676,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                             label="Template Name"
                             value={templateName}
                             onChange={setTemplateName}
+                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
                             placeholder="welcome_message"
                         />
                         <TextInput
@@ -476,6 +684,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                             label="Language Code"
                             value={languageCode}
                             onChange={setLanguageCode}
+                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
                             placeholder="en"
                         />
                     </div>
@@ -486,6 +695,14 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                                 <span>Preview</span>
                             </label>
                             <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, maxWidth: 700 }}>
+                                {headerType === 'text' && headerText && (
+                                    <div style={{ marginBottom: 8, fontWeight: 600 }}>{headerText}</div>
+                                )}
+                                {headerType === 'image' && headerImageLink && (
+                                    <div style={{ marginBottom: 8 }}>
+                                        <img src={headerImageLink} alt="" style={{ maxWidth: 240, borderRadius: 8 }} />
+                                    </div>
+                                )}
                                 <div style={{
                                     background: '#e1ffc7',
                                     borderRadius: 16,
@@ -500,7 +717,55 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                             </div>
                         </div>
                     )}
-
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <TextInput
+                            name="to"
+                            label="To"
+                            value={to}
+                            onChange={setTo}
+                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                            placeholder="{{user.phone}}"
+                        />
+                        <TextInput
+                            name="messaging_product"
+                            label="Messaging Product"
+                            value={messagingProduct}
+                            onChange={(v) => setMessagingProduct(String(v))}
+                            onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                            placeholder="whatsapp"
+                        />
+                        <SingleSelect
+                            label="Header Type"
+                            value={headerTypeOptions.find(o => o.id === headerType)}
+                            onChange={(o?: any) => setHeaderType((o?.id ?? 'none'))}
+                            options={headerTypeOptions}
+                            toValue={(o: any) => o}
+                            getValueKey={(o: any) => o.id}
+                            getOptionDisplay={(o: any) => o.label}
+                            size="regular"
+                            variant="plain"
+                        />
+                        {headerType === 'text' && (
+                            <TextInput
+                                name="header_text"
+                                label="Header Text"
+                                value={headerText}
+                                onChange={setHeaderText}
+                                onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                placeholder="Welcome"
+                            />
+                        )}
+                        {headerType === 'image' && (
+                            <TextInput
+                                name="header_image_link"
+                                label="Header Image Link"
+                                value={headerImageLink}
+                                onChange={setHeaderImageLink}
+                                onBlur={() => { if (!autoSyncEnabled) commitBody() }}
+                                placeholder="https://..."
+                            />
+                        )}
+                    </div>
                     <div style={{ marginTop: 12 }}>
                         <label className="ui-text-input">
                             <span>Parameters</span>
@@ -515,6 +780,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                                         next[idx] = { ...next[idx], parameter_name: e.target.value }
                                         setParams(next)
                                     }}
+                                    onBlur={() => { if (!autoSyncEnabled) commitBody() }}
                                     style={{ flex: 1 }}
                                 />
                                 <input
@@ -525,6 +791,7 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                                         next[idx] = { ...next[idx], text: e.target.value }
                                         setParams(next)
                                     }}
+                                    onBlur={() => { if (!autoSyncEnabled) commitBody() }}
                                     style={{ flex: 1 }}
                                 />
                                 <Button size="tiny" variant="secondary" onClick={() => {
@@ -535,13 +802,15 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                         ))}
                         <Button size="tiny" className="ui-button" variant="secondary" onClick={() => setParams(prev => [...prev, { parameter_name: '', text: '' }])}>+ Add Parameter</Button>
                         <Button size="tiny" className="ui-button" style={{ marginLeft: 8 }} variant="secondary" onClick={() => {
-                            // import current JSON into builder
                             const parsed = parseBody(form.getValues('data.body'))
                             setTo(parsed.to ?? '')
                             setMessagingProduct(parsed.messaging_product ?? 'whatsapp')
                             setTemplateName(parsed.templateName ?? '')
                             setLanguageCode(parsed.languageCode ?? 'en')
                             setParams(parsed.parameters?.length ? parsed.parameters : [{ parameter_name: '', text: '' }])
+                            if (parsed.headerType) setHeaderType(parsed.headerType as any)
+                            setHeaderText(parsed.headerText ?? '')
+                            setHeaderImageLink(parsed.headerImageLink ?? '')
                         }}>Import from Body</Button>
                     </div>
                 </>
