@@ -61,11 +61,6 @@ function parseBody(body: any) {
         }
     }
 
-    // BUTTONS component pass-through (if present on body)
-    const buttonsComp = (body?.template?.components ?? [])
-        .find((c: any) => String(c?.type ?? '').toUpperCase() === 'BUTTONS')
-    const templateButtonsRaw = buttonsComp ? JSON.parse(JSON.stringify(buttonsComp)) : undefined
-
     // Direct message fields
     const textBody = body?.text?.body ?? ''
     const textPreviewUrl = Boolean(body?.text?.preview_url ?? false)
@@ -104,7 +99,6 @@ function parseBody(body: any) {
         headerType,
         headerText,
         headerImageLink,
-        templateButtonsRaw,
         textBody,
         textPreviewUrl,
         imageLink,
@@ -136,7 +130,6 @@ function buildBody({
     headerType,
     headerText,
     headerImageLink,
-    templateButtonsRaw,
     textBody,
     textPreviewUrl,
     imageLink,
@@ -164,7 +157,6 @@ function buildBody({
     headerType: 'none' | 'text' | 'image'
     headerText: string
     headerImageLink: string
-    templateButtonsRaw?: any
     textBody?: string
     textPreviewUrl?: boolean
     imageLink?: string
@@ -259,10 +251,6 @@ function buildBody({
         }),
     })
 
-    if (templateButtonsRaw) {
-        components.push(templateButtonsRaw)
-    }
-
     const body = {
         to,
         type: 'template',
@@ -353,7 +341,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
     const lastSyncedBodyStrRef = useRef<string>('')
     const autoSyncTimerRef = useRef<number | undefined>(undefined)
     const seedBodyParamsRef = useRef<ParamRow[] | null>(null)
-    const templateButtonsRef = useRef<any | null>(null)
     const paramsKey = useMemo(() => JSON.stringify(params), [params])
     const interactiveButtonsKey = useMemo(() => JSON.stringify(interactiveButtons), [interactiveButtons])
 
@@ -397,8 +384,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             if (nextHeaderText !== headerText) setHeaderText(nextHeaderText)
             const nextHeaderImage = parsed.headerImageLink ?? ''
             if (nextHeaderImage !== headerImageLink) setHeaderImageLink(nextHeaderImage)
-            // Preserve template BUTTONS if present in current body
-            if (parsed.templateButtonsRaw) templateButtonsRef.current = parsed.templateButtonsRaw
             // Direct fields
             const nextType = (parsed.messageType as any) ?? 'template'
             if (nextType !== messageType) setMessageType(nextType)
@@ -437,7 +422,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             headerType,
             headerText,
             headerImageLink,
-            templateButtonsRaw: templateButtonsRef.current ?? undefined,
             textBody,
             textPreviewUrl,
             imageLink,
@@ -503,7 +487,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
                 headerType,
                 headerText,
                 headerImageLink,
-                templateButtonsRaw: templateButtonsRef.current ?? undefined,
                 textBody,
                 textPreviewUrl,
                 imageLink,
@@ -739,10 +722,6 @@ export default function WhatsappBodyBuilder({ form }: { form: UseFormReturn<Temp
             }
             setParams(nextParams.length ? nextParams : [{ parameter_name: '', text: '' }])
         }
-
-        // Preserve BUTTONS from selected template if present
-        const buttonsC = t.components?.find(c => c?.type?.toUpperCase() === 'BUTTONS')
-        if (buttonsC) templateButtonsRef.current = JSON.parse(JSON.stringify(buttonsC))
     }
 
     // If endpoint contains an ID, treat it as Business ID (messages path uses phone number or business/asset IDs), not WABA
