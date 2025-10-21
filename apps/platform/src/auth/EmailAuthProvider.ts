@@ -87,7 +87,7 @@ export default class EmailAuthProvider extends AuthProvider {
                             border-radius: 25px;
                             background: #FF8C42;
                             padding: 12px 30px;
-                            color: #FFF;
+                            color: #FFF !important;
                             display: inline-block;
                             text-decoration: none;
                             font-weight: 600;
