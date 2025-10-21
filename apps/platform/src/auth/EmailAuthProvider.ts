@@ -84,12 +84,13 @@ export default class EmailAuthProvider extends AuthProvider {
                             margin-bottom: 0;
                         }
                         .button {
-                            border-radius: 10px;
-                            background: #000;
-                            padding: 10px 20px;
+                            border-radius: 25px;
+                            background: #FF8C42;
+                            padding: 12px 30px;
                             color: #FFF;
                             display: inline-block;
                             text-decoration: none;
+                            font-weight: 600;
                         }
                     </style>
                 </head>
