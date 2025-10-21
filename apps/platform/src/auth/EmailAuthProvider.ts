@@ -100,7 +100,7 @@ export default class EmailAuthProvider extends AuthProvider {
                                 <tr>
                                     <td align="center" valign="top" style="padding: 20px 0px">
                                         <a href="https://www.juicysuite.com">
-                                            <img src="https://insight-internal-s3.s3.ap-east-1.amazonaws.com/assets/juicysuite_logo.svg" alt="Logo">
+                                            <img src="https://insight-internal-s3.s3.ap-east-1.amazonaws.com/assets/juicysuite_logo.png" alt="Logo">
                                         </a>
                                     </td>
                                 </tr>
