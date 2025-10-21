@@ -65,9 +65,9 @@ export default class EmailAuthProvider extends AuthProvider {
         await this.provider.send({
             to: email,
             from: this.config.from,
-            subject: 'Login to Parcelvoy',
+            subject: 'Login to JuicySuite CDP',
             html: this.generateMessage(link),
-            text: `Click the link below to login to Parcelvoy: ${link}`,
+            text: `Click the link below to login to JuicySuite CDP: ${link}`,
         })
     }
 
