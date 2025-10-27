@@ -75,6 +75,8 @@ const CONFIG = {
   batchSize: Number(args.batchSize || process.env.PV_BATCH_SIZE || 25),
   members: Number(args.members || process.env.PV_MEMBERS || 0),
   onlyMembers: (String(args.onlyMembers || process.env.PV_ONLY_MEMBERS || 'false').toLowerCase() === 'true' || String(args.onlyMembers || process.env.PV_ONLY_MEMBERS || '0') === '1'),
+  scenario: args.scenario || process.env.PV_SCENARIO || '',
+  clientPath: args.clientPath || process.env.PV_CLIENT_PATH || '/api/client',
   eventsPerMember: (args.eventsPerMember || process.env.PV_EVENTS_PER_MEMBER) ? Number(args.eventsPerMember || process.env.PV_EVENTS_PER_MEMBER) : undefined,
 }
 
@@ -112,6 +114,234 @@ function iso(d) {
 }
 function ymd(d) {
   return new Date(d).toISOString().slice(0, 10)
+}
+
+function dateDaysAgo(days) {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return d
+}
+function randomDateBetweenDays(minDaysAgo, maxDaysAgo) {
+  const start = plusDays(new Date(), -maxDaysAgo)
+  const end = plusDays(new Date(), -minDaysAgo)
+  const t = randInt(start.getTime(), end.getTime())
+  return new Date(t)
+}
+
+function joinUrl(a, b) {
+  return `${String(a).replace(/\/+$/,'')}/${String(b).replace(/^\/+/, '')}`
+}
+
+const productCatalog = {
+  knitwear: [
+    { sku: 'KNIT-CARDIGAN', name: 'Knit Cardigan', season: 'winter', price_hkd: 980 },
+    { sku: 'WOOL-SWEATER', name: 'Wool Sweater', season: 'autumn', price_hkd: 850 },
+    { sku: 'CASHMERE-PULLOVER', name: 'Cashmere Pullover', season: 'winter', price_hkd: 1280 },
+  ],
+  accessories: [
+    { sku: 'WOOL-SCARF', name: 'Wool Scarf', season: 'winter', price_hkd: 220 },
+    { sku: 'BEANIE', name: 'Knit Beanie', season: 'winter', price_hkd: 180 },
+    { sku: 'LEATHER-BELT', name: 'Leather Belt', season: 'autumn', price_hkd: 390 },
+  ],
+  outerwear: [
+    { sku: 'DOWN-JACKET', name: 'Down Jacket', season: 'winter', price_hkd: 1680 },
+    { sku: 'TRENCH-COAT', name: 'Trench Coat', season: 'autumn', price_hkd: 1380 },
+  ],
+}
+
+function buildOrderEvent(membershipId, date, items) {
+  const total = items.reduce((s, it) => s + (it.price_hkd * (it.qty || 1)), 0)
+  const orderId = rid('ordr')
+  return {
+    name: 'order_placed',
+    anonymous_id: membershipId,
+    external_id: membershipId,
+    data: {
+      order_id: orderId,
+      membership_id: membershipId,
+      order_date: iso(date),
+      currency: 'HKD',
+      total_amount_hkd: Math.round(total * 100) / 100,
+      items: items.map((it) => ({
+        sku: it.sku,
+        name: it.name,
+        category: it.category,
+        season: it.season,
+        price_hkd: it.price_hkd,
+        qty: it.qty || 1,
+      })),
+    },
+  }
+}
+
+function mkMessageId() { return rid('msg') }
+function channelEvent(membershipId, date, channel, type, payload = {}) {
+  return {
+    name: `${channel}_${type}`,
+    anonymous_id: membershipId,
+    external_id: membershipId,
+    data: { ...payload, occurred_at: iso(date), channel },
+  }
+}
+
+function memberSignedUpEvent(membershipId, registrationDate) {
+  return {
+    name: 'member_signed_up',
+    anonymous_id: membershipId,
+    external_id: membershipId,
+    data: { membership_id: membershipId, registered_at: iso(registrationDate) },
+  }
+}
+
+function generateMemberPayloadForSegment(segment) {
+  const base = generateRandomMemberPayload()
+  const now = new Date()
+  if (segment === 'new_joiners') {
+    base.data.registration_date = ymd(randomDateBetweenDays(0, 30))
+  } else if (segment === 'repeat_buyers') {
+    base.data.registration_date = ymd(randomDateBetweenDays(120, 360))
+  } else if (segment === 'lapsed_members') {
+    base.data.registration_date = ymd(randomDateBetweenDays(180, 540))
+    base.data.lifetime_spend_hkd = randInt(500, 8000)
+  } else if (segment === 'high_spenders_seasonal') {
+    base.data.registration_date = ymd(randomDateBetweenDays(60, 360))
+    base.data.favorite_season = randChoice(['autumn', 'winter'])
+  } else if (segment === 'promo_sensitive') {
+    base.data.registration_date = ymd(randomDateBetweenDays(60, 240))
+  }
+  return base
+}
+
+function generateWelcomeJourneyEvents(memberId, registrationDate) {
+  const events = []
+  events.push(memberSignedUpEvent(memberId, registrationDate))
+  const msgId1 = mkMessageId()
+  events.push(channelEvent(memberId, registrationDate, 'email', 'sent', {
+    message_id: msgId1,
+    campaign_name: 'Welcome to Knit Cardigan Loyalty Program',
+    automation_name: 'Welcome Journey',
+  }))
+  events.push(channelEvent(memberId, plusDays(registrationDate, 0), 'whatsapp', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: 'Welcome via WhatsApp',
+    automation_name: 'Welcome Journey',
+  }))
+  events.push(channelEvent(memberId, plusDays(registrationDate, 3), 'email', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: 'Welcome Coupon Reminder',
+    automation_name: 'Welcome Journey',
+  }))
+  return events
+}
+
+function generateRepeatBuyerEvents(memberId) {
+  const events = []
+  const firstDate = randomDateBetweenDays(45, 180)
+  const secondDate = randomDateBetweenDays(0, 59)
+  const knit = { ...randChoice(productCatalog.knitwear), category: 'knitwear', qty: 1 }
+  const other = { ...randChoice(productCatalog.accessories), category: 'accessories', qty: randInt(1, 2) }
+  events.push(buildOrderEvent(memberId, firstDate, [other]))
+  events.push(buildOrderEvent(memberId, secondDate, [knit, other]))
+  events.push(channelEvent(memberId, plusDays(secondDate, 1), 'email', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: 'Thank You + Accessory Upsell',
+    automation_name: 'Thank You + Upsell',
+    trigger: 'knit_purchase',
+  }))
+  return events
+}
+
+function generateLapsedMemberEvents(memberId) {
+  const events = []
+  const oldPurchase1 = randomDateBetweenDays(120, 240)
+  const oldPurchase2 = randomDateBetweenDays(200, 300)
+  const winterItem = { ...productCatalog.knitwear[0], category: 'knitwear', qty: 1 }
+  const coat = { ...randChoice(productCatalog.outerwear), category: 'outerwear', qty: 1 }
+  events.push(buildOrderEvent(memberId, oldPurchase2, [winterItem]))
+  events.push(buildOrderEvent(memberId, oldPurchase1, [coat]))
+  const variant = Math.random() < 0.5 ? 'A' : 'B'
+  const winbackName = variant === 'A' ? 'Win-Back: 20% Off Coupon' : 'Win-Back: We Miss You'
+  const winbackDate = randomDateBetweenDays(0, 7)
+  events.push(channelEvent(memberId, winbackDate, 'email', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: winbackName,
+    automation_name: 'Win-Back Sequence',
+    experiment_id: 'winback_v1',
+    variant,
+  }))
+  events.push(channelEvent(memberId, plusDays(winbackDate, 0), 'sms', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: winbackName,
+    automation_name: 'Win-Back Sequence',
+    experiment_id: 'winback_v1',
+    variant,
+  }))
+  const seasonalVariant = Math.random() < 0.5 ? 'A' : 'B'
+  const seasonalName = seasonalVariant === 'A' ? 'Seasonal Launch: Early Access' : 'Seasonal Launch: Free Gift'
+  const seasonalDate = randomDateBetweenDays(0, 7)
+  events.push(channelEvent(memberId, seasonalDate, 'email', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: seasonalName,
+    automation_name: 'Seasonal Launch Engagement Test',
+    experiment_id: 'seasonal_launch_v1',
+    variant: seasonalVariant,
+    trigger: 'last_winter_purchase_>=200d',
+  }))
+  events.push(channelEvent(memberId, plusDays(seasonalDate, 0), 'push', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: seasonalName,
+    automation_name: 'Seasonal Launch Engagement Test',
+    experiment_id: 'seasonal_launch_v1',
+    variant: seasonalVariant,
+  }))
+  return events
+}
+
+function generateHighSpenderSeasonalEvents(memberId) {
+  const events = []
+  const d1 = randomDateBetweenDays(30, 60)
+  const d2 = randomDateBetweenDays(0, 29)
+  const big1 = { ...randChoice(productCatalog.knitwear), category: 'knitwear', qty: 1 }
+  const big2 = { ...randChoice(productCatalog.outerwear), category: 'outerwear', qty: 1 }
+  big1.price_hkd = Math.max(big1.price_hkd, 900)
+  big2.price_hkd = Math.max(big2.price_hkd, 900)
+  events.push(buildOrderEvent(memberId, d1, [big1]))
+  events.push(buildOrderEvent(memberId, d2, [big2]))
+  events.push(channelEvent(memberId, plusDays(d2, 2), 'email', 'sent', {
+    message_id: mkMessageId(),
+    campaign_name: 'New Knitwear Collection',
+    automation_name: 'Seasonal Promotion',
+    audience: 'High Spenders with Seasonal Interest',
+  }))
+  return events
+}
+
+function generatePromotionSensitiveEvents(memberId) {
+  const events = []
+  const baseDates = [randomDateBetweenDays(40, 45), randomDateBetweenDays(20, 25), randomDateBetweenDays(5, 10)]
+  let openedCount = 0
+  for (let i = 0; i < 3; i++) {
+    const sentId = mkMessageId()
+    events.push(channelEvent(memberId, baseDates[i], 'email', 'sent', {
+      message_id: sentId,
+      campaign_name: `Promo ${i + 1}`,
+      campaign_type: 'promotion',
+    }))
+    if (Math.random() < 0.8 || openedCount < 2) {
+      openedCount++
+      events.push(channelEvent(memberId, plusDays(baseDates[i], 0), 'email', 'opened', {
+        message_id: sentId,
+        campaign_name: `Promo ${i + 1}`,
+      }))
+    }
+  }
+  if (Math.random() < 0.1) {
+    const promoIdx = randInt(0, 2)
+    const purchaseDate = plusDays(baseDates[promoIdx], randInt(1, 7))
+    const acc = { ...randChoice(productCatalog.accessories), category: 'accessories', qty: 1 }
+    events.push(buildOrderEvent(memberId, purchaseDate, [acc]))
+  }
+  return events
 }
 
 const stores = Array.from({ length: 10 }, (_, i) => `STR-${String(i + 1).padStart(3, '0')}`)
@@ -183,7 +413,7 @@ function generateRandomMemberPayload() {
 }
 
 async function httpPost(path, body) {
-  const url = `${CONFIG.baseUrl}${path}`
+  const url = joinUrl(CONFIG.baseUrl, path)
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -237,7 +467,7 @@ async function identifyUser(payloadOverride) {
   }
 
   console.log('Identifying user...', { external_id: payload.external_id })
-  const res = await httpPost('/api/client/identify', payload)
+  const res = await httpPost(joinUrl(CONFIG.clientPath, 'identify'), payload)
   console.log('Identify result:', res)
   return payload
 }
@@ -342,7 +572,7 @@ function chunk(arr, size) {
 
 async function postEventsWithRetry(events, attempt = 1) {
   try {
-    return await httpPost('/api/client/events', events)
+    return await httpPost(joinUrl(CONFIG.clientPath, 'events'), events)
   } catch (e) {
     if (attempt >= 3) throw e
     const backoff = 500 * attempt
@@ -358,6 +588,66 @@ async function main() {
   console.log('Single-member ID:', CONFIG.membershipId)
   console.log('Members to create:', CONFIG.members)
   console.log('Count:', CONFIG.count, 'Batch Size:', CONFIG.batchSize)
+
+  if (CONFIG.members > 0 && CONFIG.scenario === 'cardigan') {
+    const segments = ['new_joiners', 'repeat_buyers', 'lapsed_members', 'high_spenders_seasonal', 'promo_sensitive']
+    const counts = {}
+    const base = Math.floor(CONFIG.members / segments.length)
+    let rem = CONFIG.members % segments.length
+    for (const s of segments) { counts[s] = base }
+    for (let i = 0; i < segments.length && rem > 0; i++) { counts[segments[i]] += 1; rem -= 1 }
+    console.log(`\nCreating ${CONFIG.members} members for Knit Cardigan Loyalty Program scenario...`)
+    const created = []
+    for (const s of segments) {
+      for (let i = 0; i < counts[s]; i++) {
+        const p = generateMemberPayloadForSegment(s)
+        try {
+          await identifyUser(p)
+          created.push({ segment: s, payload: p })
+        } catch (e) {
+          console.warn('Identify failed for', p.external_id, String(e))
+        }
+        await sleep(50)
+      }
+    }
+    console.log(`Members created: ${created.length}`)
+
+    if (CONFIG.onlyMembers) {
+      console.log('\nOnly members creation requested. Skipping events.')
+      return
+    }
+
+    console.log(`\nGenerating automation and purchase events for scenario...`)
+    const allEvents = []
+    for (const m of created) {
+      const mid = m.payload.external_id
+      const regDate = m.payload.data.registration_date ? new Date(m.payload.data.registration_date) : new Date()
+      if (m.segment === 'new_joiners') {
+        allEvents.push(...generateWelcomeJourneyEvents(mid, regDate))
+      } else if (m.segment === 'repeat_buyers') {
+        allEvents.push(...generateRepeatBuyerEvents(mid))
+      } else if (m.segment === 'lapsed_members') {
+        allEvents.push(...generateLapsedMemberEvents(mid))
+      } else if (m.segment === 'high_spenders_seasonal') {
+        allEvents.push(...generateHighSpenderSeasonalEvents(mid))
+      } else if (m.segment === 'promo_sensitive') {
+        allEvents.push(...generatePromotionSensitiveEvents(mid))
+      }
+    }
+
+    const batches = chunk(allEvents, CONFIG.batchSize)
+    let sent = 0
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i]
+      console.log(`Posting batch ${i + 1}/${batches.length} (size=${batch.length})...`)
+      const res = await postEventsWithRetry(batch)
+      sent += batch.length
+      console.log('Batch result:', res)
+      await sleep(200)
+    }
+    console.log(`\nDone. Members: ${created.length}, Events sent: ${sent}`)
+    return
+  }
 
   if (CONFIG.members > 0) {
     console.log(`\nCreating ${CONFIG.members} random members...`)
