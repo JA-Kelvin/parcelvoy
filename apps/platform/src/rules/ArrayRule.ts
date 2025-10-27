@@ -17,6 +17,10 @@ export default {
             return values.every(x => !Array.isArray(x) || x.length === 0)
         }
 
+        if (rule.operator === 'not empty') {
+            return values.some(x => Array.isArray(x) && x.length > 0)
+        }
+
         throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)
     },
     query({ rule }) {
@@ -32,6 +36,10 @@ export default {
 
         if (rule.operator === 'empty') {
             return whereQuery(path, '=', [])
+        }
+
+        if (rule.operator === 'not empty') {
+            return whereQuery(path, '!=', [])
         }
 
         throw new RuleEvalException(rule, 'unknown operator: ' + rule.operator)

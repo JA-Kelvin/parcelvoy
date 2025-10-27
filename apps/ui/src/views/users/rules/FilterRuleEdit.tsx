@@ -8,6 +8,9 @@ import { ChevronUpDownIcon } from '../../../ui/icons'
 import clsx from 'clsx'
 import TextInput from '../../../ui/form/TextInput'
 import { RulePath } from '../../../types'
+import { ProjectContext } from '../../../contexts'
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
+import { format } from 'date-fns'
 
 export default function FilterRuleEdit({
     rule,
@@ -16,6 +19,7 @@ export default function FilterRuleEdit({
     eventName = '',
     controls,
 }: Omit<RuleEditProps, 'root' | 'headerPrefix' | 'depth'>) {
+    const [project] = useContext(ProjectContext)
     const {
         setReferenceElement,
         setPopperElement,
@@ -24,7 +28,50 @@ export default function FilterRuleEdit({
     } = usePopperSelectDropdown()
     const { suggestions } = useContext(VariablesContext)
     const { path } = rule
-    const hasValue = rule?.operator && !['is set', 'is not set', 'empty'].includes(rule?.operator)
+    const hasValue = rule?.operator && !['is set', 'is not set', 'empty', 'not empty'].includes(rule?.operator)
+    const isDateRule = rule.type === 'date'
+    const isSameDay = rule.operator === 'is same day'
+
+    const getDateInputValue = (): string => {
+        if (!rule.value) return ''
+        try {
+            if (isDateRule && isSameDay) {
+                // Accept stored 'YYYY-MM-DD' directly; otherwise format to date in project TZ
+                const s = String(rule.value)
+                const m = s.match(/^\d{4}-\d{2}-\d{2}/)
+                if (m) return m[0]
+                const d = new Date(s)
+                const zoned = utcToZonedTime(d, project.timezone)
+                return format(zoned, 'yyyy-MM-dd')
+            }
+            // datetime-local expects 'yyyy-MM-ddTHH:mm' in project TZ
+            const d = new Date(String(rule.value))
+            const zoned = utcToZonedTime(d, project.timezone)
+            return format(zoned, "yyyy-MM-dd'T'HH:mm")
+        } catch {
+            return ''
+        }
+    }
+
+    const handleDateChange = (value: string) => {
+        if (!value) {
+            setRule({ ...rule, value: undefined })
+            return
+        }
+        if (isSameDay) {
+            // Store as plain 'YYYY-MM-DD' string for day-level comparison
+            setRule({ ...rule, value })
+            return
+        }
+        // Interpret naive local value in project timezone and convert to UTC ISO
+        try {
+            const local = new Date(value)
+            const utc = zonedTimeToUtc(local, project.timezone)
+            setRule({ ...rule, value: utc.toISOString() })
+        } catch {
+            setRule({ ...rule, value })
+        }
+    }
     const pathSuggestions = useMemo<Array<RulePath | string>>(() => {
         const raw: unknown = group === 'event'
             ? (eventName ? suggestions.eventPaths[eventName] ?? [] : [])
@@ -108,16 +155,32 @@ export default function FilterRuleEdit({
                     size="small"
                     toValue={x => x.key}
                 />
-                { hasValue && <TextInput
-                    size="small"
-                    type="text"
-                    name="value"
-                    placeholder="Value"
-                    disabled={rule.type === 'boolean'}
-                    hideLabel={true}
-                    value={rule.type === 'boolean' ? 'true' : rule?.value?.toString()}
-                    onChange={value => setRule({ ...rule, value })}
-                />}
+                { hasValue && (
+                    isDateRule
+                        ? (
+                            <TextInput<string>
+                                size="small"
+                                type={isSameDay ? 'date' : 'datetime-local'}
+                                name="value"
+                                placeholder={isSameDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'}
+                                hideLabel={true}
+                                value={getDateInputValue()}
+                                onChange={handleDateChange}
+                            />
+                        )
+                        : (
+                            <TextInput
+                                size="small"
+                                type="text"
+                                name="value"
+                                placeholder="Value"
+                                disabled={rule.type === 'boolean'}
+                                hideLabel={true}
+                                value={rule.type === 'boolean' ? 'true' : rule?.value?.toString()}
+                                onChange={value => setRule({ ...rule, value })}
+                            />
+                        )
+                )}
                 {controls}
             </ButtonGroup>
         </div>

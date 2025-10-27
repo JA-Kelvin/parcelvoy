@@ -100,7 +100,7 @@ export default function Sidebar({ children, links, prepend, append }: PropsWithC
                             <span className="profile-name">
                                 {
                                     profile.first_name
-                                        ? `${profile.first_name} ${profile.last_name}`
+                                        ? `${profile.first_name} ${(profile.last_name ? profile.last_name : '')}`
                                         : 'User'
                                 }
                             </span>

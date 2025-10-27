@@ -73,7 +73,7 @@ export function ruleDescription(preferences: Preferences, rule: Rule | GroupedRu
 
         nodes.push(' ' + (operatorTypes[rule.type]?.find(ot => ot.key === rule.operator)?.label ?? rule.operator))
 
-        if (rule.operator !== 'empty' && rule.operator !== 'is set' && rule.operator !== 'is not set') {
+        if (rule.operator !== 'empty' && rule.operator !== 'not empty' && rule.operator !== 'is set' && rule.operator !== 'is not set') {
             nodes.push(' ')
             const values = Array.isArray(rule.value) ? rule.value : [rule.value ?? '']
             values.forEach((value, i, a) => {

@@ -94,6 +94,7 @@ export const operatorTypes: Record<RuleType, OperatorOption[]> = {
     string: [
         ...baseOperators,
         { key: 'empty', label: 'is empty' },
+        { key: 'not empty', label: 'is not empty' },
         { key: 'contains', label: 'contains' },
         { key: 'not contain', label: 'does not contain' },
         { key: 'starts with', label: 'starts with' },
@@ -121,6 +122,7 @@ export const operatorTypes: Record<RuleType, OperatorOption[]> = {
     array: [
         ...baseOperators,
         { key: 'empty', label: 'is empty' },
+        { key: 'not empty', label: 'is not empty' },
         { key: 'contains', label: 'contains' },
     ],
     wrapper: [

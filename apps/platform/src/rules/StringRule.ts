@@ -23,6 +23,10 @@ export default {
             return values.every(x => !x)
         }
 
+        if (rule.operator === 'not empty') {
+            return values.some(x => !!x)
+        }
+
         const ruleValue = compile(rule, item => String(item))
 
         return values.some(v => {
@@ -59,6 +63,10 @@ export default {
 
         if (rule.operator === 'empty') {
             return whereQuery(path, '=', '')
+        }
+
+        if (rule.operator === 'not empty') {
+            return whereQuery(path, '!=', '')
         }
 
         const ruleValue = compile(rule, item => String(item))
