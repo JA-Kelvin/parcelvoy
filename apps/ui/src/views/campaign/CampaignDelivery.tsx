@@ -120,7 +120,7 @@ export default function CampaignDelivery() {
         const resume = async () => {
             const existCsv = sessionStorage.getItem(storageKey('csv'))
             const existNd = sessionStorage.getItem(storageKey('ndjson'))
-            const eid = existCsv || existNd
+            const eid = existCsv ?? existNd
             if (!eid) return
             exportIdRef.current = eid
             fmtRef.current = existCsv ? 'csv' : 'ndjson'
@@ -180,13 +180,13 @@ export default function CampaignDelivery() {
                             size="small"
                             variant="secondary"
                             disabled={exporting}
-                            onClick={() => startExport('csv')}
+                            onClick={async () => { await startExport('csv') }}
                         >{exporting ? `${exportPercent}%` : t('export_delivered_csv')}</Button>
                         <Button
                             size="small"
                             variant="secondary"
                             disabled={exporting}
-                            onClick={() => startExport('ndjson')}
+                            onClick={async () => { await startExport('ndjson') }}
                         >NDJSON</Button>
                     </div>
                 }
