@@ -20,6 +20,7 @@ import { TagPicker } from '../settings/TagPicker'
 import { useTranslation } from 'react-i18next'
 import { Alert, Menu, MenuItem } from '../../ui'
 import { useBlocker } from 'react-router'
+import { toast } from 'react-hot-toast/headless'
 
 interface RuleSectionProps {
     list: DynamicList
@@ -56,6 +57,7 @@ export default function ListDetail() {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | undefined>()
+    const [isUploading, setIsUploading] = useState(false)
 
     const state = useSearchTableState(useCallback(async params => await api.lists.users(project.id, list.id, params), [list, project]))
     const route = useRoute()
@@ -110,9 +112,50 @@ export default function ListDetail() {
     }
 
     const uploadUsers = async (file: FileList) => {
-        await api.lists.upload(project.id, list.id, file[0])
-        refreshList()
-        setIsUploadOpen(false)
+        setIsUploading(true)
+        try {
+            await api.lists.upload(project.id, list.id, file[0])
+            refreshList()
+            setIsUploadOpen(false)
+            toast.success(t('import_started') ?? 'Import started. We are processing your file and will update the list shortly.')
+        } catch (err: any) {
+            const message = err?.response?.data?.error ?? err?.message ?? 'Upload failed'
+            toast.error(`${t('import_failed') ?? 'Import failed'}: ${message}`)
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
+    const generateCsvTemplate = () => {
+        const header = [
+            'external_id',
+            'email',
+            'phone',
+            'timezone',
+            'locale',
+            'created_at',
+            'first_name',
+            'last_name',
+        ]
+        const rows = [
+            ['u-0001', 'alice@example.com', '+85291234567', 'Asia/Hong_Kong', 'en', '2024-01-02T03:04:05Z', 'Alice', 'Cheung'],
+            ['u-0002', 'bob@example.com', '+14155552671', 'America/Los_Angeles', 'en', '2024-02-10T09:30:00Z', 'Bob', 'Chan'],
+        ]
+        const csv = [header.join(','), ...rows.map(r => r.map(v => `${v}`.includes(',') ? `"${v}"` : v).join(','))].join('\n')
+        return csv
+    }
+
+    const downloadCsvTemplate = () => {
+        const csv = generateCsvTemplate()
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'parcelvoy-user-import-template.csv'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
     }
 
     const handleRecountList = async () => {
@@ -224,7 +267,16 @@ export default function ListDetail() {
                 >
                     {form => <>
                         <p>{t('upload_instructions')}</p>
-                        <UploadField form={form} name="file" label={t('file')} required />
+                        <div className="label-subtitle" style={{ margin: '6px 0 12px 0' }}>
+                            <div><strong>CSV requirements</strong></div>
+                            <div>Required column: <code>external_id</code>.</div>
+                            <div>Optional columns: <code>email</code>, <code>phone</code>, <code>timezone</code>, <code>locale</code>, <code>created_at</code>.</div>
+                            <div>Any other columns will be saved under user data. Columns ending with <code>_at</code> are parsed as dates; phone numbers are sanitized.</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <Button variant="secondary" onClick={downloadCsvTemplate}>{t('download_csv_template') ?? 'Download CSV Template'}</Button>
+                        </div>
+                        <UploadField form={form} name="file" label={t('file')} required isUploading={isUploading} accept="text/csv,.csv" />
                     </>}
                 </FormWrapper>
             </Modal>
