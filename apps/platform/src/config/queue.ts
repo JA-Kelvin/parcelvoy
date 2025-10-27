@@ -27,11 +27,13 @@ import CampaignAbortJob from '../campaigns/CampaignAbortJob'
 import MigrateJob from '../organizations/MigrateJob'
 import UnsubscribeJob from '../subscriptions/UnsubscribeJob'
 import InAppJob from '../providers/inapp/InAppJob'
+import CampaignExportJob from '../campaigns/CampaignExportJob'
 
 export const jobs = [
     CampaignAbortJob,
     CampaignGenerateListJob,
     CampaignEnqueueSendJob,
+    CampaignExportJob,
     CampaignInteractJob,
     CampaignStateJob,
     EmailJob,

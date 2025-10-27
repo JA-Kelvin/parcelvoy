@@ -1,4 +1,5 @@
 import fs from 'fs/promises'
+import fscore from 'fs'
 import path from 'path'
 import { StorageTypeConfig } from './Storage'
 import { ImageUploadTask, StorageProvider } from './StorageProvider'
@@ -14,10 +15,15 @@ export class LocalStorageProvider implements StorageProvider {
     }
 
     async upload(task: ImageUploadTask) {
-        await fs.writeFile(
-            task.url,
-            task.stream,
-        )
+        const filepath = task.url
+        const dir = path.dirname(filepath)
+        await fs.mkdir(dir, { recursive: true })
+        await new Promise<void>((resolve, reject) => {
+            const out = fscore.createWriteStream(filepath)
+            task.stream.pipe(out)
+            out.on('finish', () => resolve())
+            out.on('error', reject)
+        })
     }
 
     async delete(filename: string): Promise<void> {

@@ -8,6 +8,9 @@ import { ProjectState } from '../auth/AuthMiddleware'
 import { projectRoleMiddleware } from '../projects/ProjectService'
 import { Context, Next } from 'koa'
 import { PassThrough } from 'stream'
+import CampaignExportJob, { exportStatusKey, CampaignExportStatus } from './CampaignExportJob'
+import App from '../app'
+import { cacheGet } from '../config/redis'
 
 const router = new Router<ProjectState & { campaign?: Campaign }>({
     prefix: '/campaigns',
@@ -161,6 +164,52 @@ router.patch('/:campaignId', async ctx => {
 router.get('/:campaignId/users', async ctx => {
     const params = extractQueryParams(ctx.query, searchParamsSchema)
     ctx.body = await getCampaignUsers(ctx.state.campaign!.id, params, ctx.state.project.id)
+})
+
+// Create async export job
+router.post('/:campaignId/exports', async ctx => {
+    const campaign = ctx.state.campaign!
+    const body = (ctx.request.body ?? {}) as { format?: string, state?: string }
+    const format = (body.format ?? 'csv').toLowerCase() as 'csv' | 'ndjson'
+    const requestedState = (body.state ?? 'sent').toLowerCase()
+    const state = requestedState === 'delivered' ? 'sent' : requestedState
+
+    const job = CampaignExportJob.from({
+        project_id: ctx.state.project.id,
+        campaign_id: campaign.id,
+        format,
+        state,
+    })
+    const export_id = (job as any).data.export_id as string
+    await job.queue()
+
+    ctx.body = { export_id, state: 'queued' }
+})
+
+// Check export status
+router.get('/:campaignId/exports/:exportId/status', async ctx => {
+    const { project } = ctx.state
+    const campaign = ctx.state.campaign!
+    const exportId = ctx.params.exportId
+    const key = exportStatusKey(project.id, campaign.id, exportId)
+    const status = await cacheGet<CampaignExportStatus>(App.main.redis, key)
+    ctx.body = status ?? { state: 'queued', processed: 0, total: 0, percent: 0 }
+})
+
+// Download exported file (redirect)
+router.get('/:campaignId/exports/:exportId/download', async ctx => {
+    const { project } = ctx.state
+    const campaign = ctx.state.campaign!
+    const exportId = ctx.params.exportId
+    const key = exportStatusKey(project.id, campaign.id, exportId)
+    const status = await cacheGet<CampaignExportStatus>(App.main.redis, key)
+    if (status?.state === 'completed' && status.url) {
+        ctx.redirect(status.url)
+    } else if (status?.state === 'failed') {
+        ctx.throw(500, status.error ?? 'Export failed')
+    } else {
+        ctx.throw(425, 'Export not ready')
+    }
 })
 
 router.get('/:campaignId/export', async ctx => {
