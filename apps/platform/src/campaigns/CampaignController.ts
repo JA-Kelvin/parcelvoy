@@ -186,7 +186,6 @@ router.post('/:campaignId/exports', async ctx => {
     ctx.body = { export_id, state: 'queued' }
 })
 
-// Check export status
 router.get('/:campaignId/exports/:exportId/status', async ctx => {
     const { project } = ctx.state
     const campaign = ctx.state.campaign!
@@ -196,7 +195,6 @@ router.get('/:campaignId/exports/:exportId/status', async ctx => {
     ctx.body = status ?? { state: 'queued', processed: 0, total: 0, percent: 0 }
 })
 
-// Download exported file (redirect)
 router.get('/:campaignId/exports/:exportId/download', async ctx => {
     const { project } = ctx.state
     const campaign = ctx.state.campaign!

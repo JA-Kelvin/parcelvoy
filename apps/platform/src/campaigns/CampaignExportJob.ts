@@ -49,7 +49,7 @@ export default class CampaignExportJob extends Job {
     static async handler({ project_id, campaign_id, export_id, format, state, path, file_name }: CampaignExportJobParams) {
         const redis = App.main.redis
         const storage = App.main.storage
-        const ttl = 60 * 60 * 24 // 24h
+        const ttl = 60 * 60 * 24
 
         const key = exportStatusKey(project_id, campaign_id, export_id)
         const startStatus: CampaignExportStatus = {
@@ -87,7 +87,8 @@ export default class CampaignExportJob extends Job {
         await cacheSet(redis, key, { ...startStatus, total }, ttl)
 
         const content = new PassThrough()
-        const uploadPromise = storage.upload({ stream: content, url: path })
+        const resolved = storage.provider.path(path)
+        const uploadPromise = storage.upload({ stream: content, url: resolved })
 
         if (format === 'csv') {
             content.write('\uFEFFuser_id,external_id,email,phone,state,send_at,opened_at,clicks\n')

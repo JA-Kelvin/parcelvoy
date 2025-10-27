@@ -182,6 +182,16 @@ const api = {
         duplicate: async (projectId: number | string, campaignId: number | string) => await client
             .post<Campaign>(`${projectUrl(projectId)}/campaigns/${campaignId}/duplicate`)
             .then(r => r.data),
+        exports: {
+            create: async (projectId: number | string, campaignId: number | string, params: { format?: 'csv' | 'ndjson', state?: string }) => await client
+                .post<{ export_id: string }>(`${projectUrl(projectId)}/campaigns/${campaignId}/exports`, params)
+                .then(r => r.data),
+            status: async (projectId: number | string, campaignId: number | string, exportId: string) => await client
+                .get<{ state: string, processed?: number, total?: number, percent?: number, url?: string }>(`${projectUrl(projectId)}/campaigns/${campaignId}/exports/${exportId}/status`)
+                .then(r => r.data),
+            downloadUrl: (projectId: number | string, campaignId: number | string, exportId: string) =>
+                apiUrl(projectId, `campaigns/${campaignId}/exports/${exportId}/download`),
+        },
     },
 
     journeys: {
