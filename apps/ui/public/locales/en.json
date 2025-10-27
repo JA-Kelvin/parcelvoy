@@ -389,7 +389,7 @@
     "update_tag": "Update Tag",
     "updated_at": "Updated At",
     "upload": "Upload",
-    "upload_instructions": "Please select a CSV of users to upload. The provided file must have the external ID you wish to use for each user.",
+    "upload_instructions": "Please select a CSV of users to upload. The provided file must have the external ID you wish to use for each user. Note: if external_id is same, will update existing users on list",
     "upload_list": "Upload List",
     "usage": "Usage",
     "user_lookup": "User Lookup",
