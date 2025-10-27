@@ -174,6 +174,10 @@ router.get('/:campaignId/export', async ctx => {
     ctx.set('Cache-Control', 'no-store')
     ctx.set('Content-Disposition', `attachment; filename="${filename}"`)
     ctx.type = format === 'ndjson' ? 'application/x-ndjson' : 'text/csv; charset=utf-8'
+    ctx.set('X-Accel-Buffering', 'no')
+    ctx.set('Connection', 'keep-alive')
+    ctx.compress = false
+    ctx.res.setTimeout?.(0)
 
     const pass = new PassThrough()
     ctx.body = pass
@@ -183,14 +187,9 @@ router.get('/:campaignId/export', async ctx => {
         else resolve()
     })
 
-    if (format !== 'ndjson') {
-        await write('user_id,external_id,email,phone,state,send_at,opened_at,clicks\n')
-    }
-
     const qb = CampaignSend.query()
         .join('users', 'users.id', 'campaign_sends.user_id')
         .where('campaign_sends.campaign_id', campaign.id)
-        .where('users.project_id', ctx.state.project.id)
         .select(
             'users.id as user_id',
             'users.external_id',
@@ -204,6 +203,18 @@ router.get('/:campaignId/export', async ctx => {
 
     if (state) {
         qb.where('campaign_sends.state', state as any)
+    }
+
+    // Enforce tenant filter and expose total count for client-side progress
+    qb.where('users.project_id', ctx.state.project.id)
+    const totalRow = await qb.clone().clearSelect().count<{ c: number }[]>({ c: '*' }).first()
+    const totalCount = Number((totalRow as any)?.c ?? 0)
+    ctx.set('X-Export-Total', String(totalCount))
+    ;(ctx.res as any).flushHeaders?.()
+
+    if (format !== 'ndjson') {
+        // Write UTF-8 BOM to help Excel and immediately send first bytes to keep proxies happy
+        await write('\uFEFFuser_id,external_id,email,phone,state,send_at,opened_at,clicks\n')
     }
 
     let aborted = false
