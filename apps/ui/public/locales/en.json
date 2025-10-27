@@ -156,6 +156,7 @@
     "experiment_edit_desc": "Connect this step to others and configure ratios to control what proportion of users will be sent down each path.",
     "experiment_ratio": "Ratio",
     "experiment_ratio_desc": "{{percentage}}% of users will go down this path.",
+    "export_delivered_csv": "Export Delivered (CSV)",
     "external_id": "External ID",
     "failed": "Failed",
     "file": "File",

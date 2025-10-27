@@ -234,6 +234,7 @@ export interface User {
     data: Record<string, any>
     devices?: Device[]
     created_at?: Date
+    tags?: string[]
 }
 
 export interface Device {

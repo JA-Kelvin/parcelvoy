@@ -14,6 +14,7 @@ import { Device, DeviceParams } from './Device'
 import { getDeviceFromIdOrToken, markDevicesAsPushDisabled, userHasPushDevice } from './DeviceRepository'
 import Project from '../projects/Project'
 import { acquireLock, LockError, releaseLock } from '../core/Lock'
+import { createTagSubquery, getTags } from '../tags/TagService'
 
 const CacheKeys = {
     userPatch: (id: number) => `lock:u:${id}`,
@@ -90,14 +91,27 @@ export const getUserFromEmail = async (projectId: number, email: string): Promis
 }
 
 export const pagedUsers = async (params: PageParams, projectId: number) => {
-    return await User.search(
+    const result = await User.search(
         {
             ...params,
             fields: ['external_id', 'email', 'phone'],
             mode: 'exact',
         },
-        b => b.where('project_id', projectId),
+        qb => {
+            qb.where('project_id', projectId)
+            if (params.tag?.length) qb.whereIn('id', createTagSubquery(User, projectId, params.tag))
+            return qb
+        },
     )
+
+    if (result.results?.length) {
+        const tags = await getTags(User.tableName, result.results.map(u => u.id))
+        for (const user of result.results) {
+            ;(user as any).tags = tags.get(user.id) ?? []
+        }
+    }
+
+    return result
 }
 
 export const aliasUser = async (projectId: number, {

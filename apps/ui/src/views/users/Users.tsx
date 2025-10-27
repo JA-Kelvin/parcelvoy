@@ -5,10 +5,11 @@ import PageContent from '../../ui/PageContent'
 import { SearchTable, useSearchTableQueryState } from '../../ui/SearchTable'
 import { useRoute } from '../router'
 import { useTranslation } from 'react-i18next'
-import { Button, Modal } from '../../ui'
+import { Button, Modal, TagGroup } from '../../ui'
 import FormWrapper from '../../ui/form/FormWrapper'
 import UploadField from '../../ui/form/UploadField'
 import { TrashIcon } from '../../ui/icons'
+import Tag from '../../ui/Tag'
 
 export default function UserTabs() {
     const { projectId = '' } = useParams()
@@ -38,11 +39,25 @@ export default function UserTabs() {
                 { key: 'email', title: t('email') },
                 { key: 'phone', title: t('phone') },
                 { key: 'locale', title: t('locale') },
+                {
+                    key: 'tags',
+                    title: t('tags'),
+                    cell: ({ item }) => (item as any).tags?.length
+                        ? (
+                            <TagGroup>
+                                {(item as any).tags.map((tag: string) => (
+                                    <Tag key={tag} variant="plain" size="tiny">{tag}</Tag>
+                                ))}
+                            </TagGroup>
+                        )
+                        : null,
+                },
                 { key: 'created_at', title: t('created_at'), sortable: true },
             ]}
             onSelectRow={({ id }) => route(`users/${id}`)}
             enableSearch
             searchPlaceholder={t('search_users')}
+            tagEntity="users"
         />
 
         <Modal

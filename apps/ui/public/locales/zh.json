@@ -134,6 +134,7 @@
   "experiment_edit_desc": "将此步骤连接到其他步骤，并配置比例以控制每个路径上用户的比例。",
   "experiment_ratio": "比例",
   "experiment_ratio_desc": "{{percentage}}%的用户将走这条路径。",
+  "export_delivered_csv": "匯出已交付文件 (CSV)",
   "external_id": "外部ID",
   "failed": "失败",
   "file": "文件",

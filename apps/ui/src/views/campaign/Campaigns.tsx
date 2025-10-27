@@ -8,7 +8,7 @@ import Menu, { MenuItem } from '../../ui/Menu'
 import Modal from '../../ui/Modal'
 import PageContent from '../../ui/PageContent'
 import { SearchTable, useSearchTableQueryState } from '../../ui/SearchTable'
-import Tag, { TagVariant } from '../../ui/Tag'
+import Tag, { TagVariant, TagGroup } from '../../ui/Tag'
 import { formatDate, snakeToTitle } from '../../utils'
 import { CampaignForm } from './CampaignForm'
 import { ChannelIcon } from './ChannelTag'
@@ -148,6 +148,19 @@ export default function Campaigns() {
                                     </div>
                                 </div>
                             ),
+                        },
+                        {
+                            key: 'tags',
+                            title: t('tags'),
+                            cell: ({ item: { tags } }) => tags?.length
+                                ? (
+                                    <TagGroup>
+                                        {tags.map(tag => (
+                                            <Tag key={tag} variant="plain" size="tiny">{tag}</Tag>
+                                        ))}
+                                    </TagGroup>
+                                )
+                                : null,
                         },
                         {
                             key: 'state',

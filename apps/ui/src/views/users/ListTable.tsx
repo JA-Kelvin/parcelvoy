@@ -2,6 +2,7 @@ import { Key } from 'react'
 import { List, ListState, SearchParams, SearchResult } from '../../types'
 import { SearchTable, useSearchTableState } from '../../ui/SearchTable'
 import Tag, { TagVariant } from '../../ui/Tag'
+import { TagGroup } from '../../ui'
 import { snakeToTitle } from '../../utils'
 import { useRoute } from '../router'
 import Menu, { MenuItem } from '../../ui/Menu'
@@ -74,6 +75,19 @@ export default function ListTable({ search, selectedRow, onSelectRow, title }: L
                     title: t('type'),
                     cell: ({ item: { type } }) => snakeToTitle(type),
                     sortable: true,
+                },
+                {
+                    key: 'tags',
+                    title: t('tags'),
+                    cell: ({ item }) => item.tags?.length
+                        ? (
+                            <TagGroup>
+                                {item.tags.map(tag => (
+                                    <Tag key={tag} variant="plain" size="tiny">{tag}</Tag>
+                                ))}
+                            </TagGroup>
+                        )
+                        : null,
                 },
                 {
                     key: 'state',

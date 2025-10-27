@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect } from 'react'
-import api from '../../api'
+import api, { apiUrl } from '../../api'
 import { CampaignContext, ProjectContext } from '../../contexts'
 import { CampaignSendState, Campaign } from '../../types'
 import Alert from '../../ui/Alert'
@@ -11,6 +11,7 @@ import Tile, { TileGrid } from '../../ui/Tile'
 import { formatDate } from '../../utils'
 import { useRoute } from '../router'
 import { Translation, useTranslation } from 'react-i18next'
+import Button from '../../ui/Button'
 
 const CampaignSendTag = ({ state }: { state: CampaignSendState }) => {
     const variant: Record<CampaignSendState, TagVariant | undefined> = {
@@ -59,6 +60,8 @@ export default function CampaignDelivery() {
     const searchState = useSearchTableState(useCallback(async params => await api.campaigns.users(project.id, id, params), [id, project]))
     const route = useRoute()
 
+    const csvUrl = apiUrl(project.id, `campaigns/${id}/export?state=delivered&format=csv`)
+
     useEffect(() => {
         const refresh = () => {
             api.campaigns.get(project.id, campaign.id)
@@ -80,7 +83,17 @@ export default function CampaignDelivery() {
 
     return (
         <>
-            <Heading title={t('delivery')} size="h3" />
+            <Heading
+                title={t('delivery')}
+                size="h3"
+                actions={
+                    <Button
+                        size="small"
+                        variant="secondary"
+                        onClick={() => window.open(csvUrl, '_blank')}
+                    >{t('export_delivered_csv')}</Button>
+                }
+            />
             {state !== 'draft'
                 ? <>
                     {state === 'scheduled'

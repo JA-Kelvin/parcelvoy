@@ -7,7 +7,7 @@ import PageContent from '../../ui/PageContent'
 import { SearchTable, useSearchTableQueryState } from '../../ui/SearchTable'
 import { ArchiveIcon, DuplicateIcon, EditIcon, PlusIcon } from '../../ui/icons'
 import { JourneyForm } from './JourneyForm'
-import { Menu, MenuItem, Tag } from '../../ui'
+import { Menu, MenuItem, Tag, TagGroup } from '../../ui'
 import { ProjectContext } from '../../contexts'
 import { useTranslation } from 'react-i18next'
 import { Journey } from '../../types'
@@ -54,6 +54,19 @@ export default function Journeys() {
                         key: 'name',
                         title: t('name'),
                         minWidth: '150px',
+                    },
+                    {
+                        key: 'tags',
+                        title: t('tags'),
+                        cell: ({ item }) => item.tags?.length
+                            ? (
+                                <TagGroup>
+                                    {item.tags.map(tag => (
+                                        <Tag key={tag} variant="plain" size="tiny">{tag}</Tag>
+                                    ))}
+                                </TagGroup>
+                            )
+                            : null,
                     },
                     {
                         key: 'status',

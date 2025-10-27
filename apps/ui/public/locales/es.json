@@ -139,6 +139,7 @@
     "experiment_edit_desc": "Conecte este paso a otros y configure las proporciones para controlar qué proporción de usuarios se enviarán por cada ruta.",
     "experiment_ratio": "Proporción",
     "experiment_ratio_desc": "{{percentage}}% de los usuarios seguirán esta ruta.",
+    "export_delivered_csv": "Exportar Entregados (CSV)",
     "external_id": "ID externo",
     "failed": "Fracasado",
     "file": "Archivo",
