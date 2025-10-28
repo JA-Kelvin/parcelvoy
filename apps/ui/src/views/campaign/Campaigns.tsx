@@ -90,9 +90,7 @@ export default function Campaigns() {
     const [isCreateOpen, setIsCreateOpen] = useState(false)
 
     const campaignTypeOptions = useMemo(() => (
-        project?.role === 'editor'
-            ? baseCampaignTypes.filter(o => o.key !== 'trigger')
-            : baseCampaignTypes
+        baseCampaignTypes
     ), [project])
 
     useEffect(() => {
