@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import api, { apiUrl } from '../../api'
 import { Campaign, CampaignDelivery, CampaignState } from '../../types'
@@ -70,7 +70,7 @@ export const ClickRate = ({ delivery }: { delivery: CampaignDelivery }) => {
     return `${clicksStr} (${ratioStr})`
 }
 
-const campaignTypes = [
+const baseCampaignTypes = [
     { key: 'blast', label: 'Blast' },
     { key: 'trigger', label: 'Journey' },
 ]
@@ -88,6 +88,25 @@ export default function Campaigns() {
             },
         })
     const [isCreateOpen, setIsCreateOpen] = useState(false)
+
+    const campaignTypeOptions = useMemo(() => (
+        project?.role === 'editor'
+            ? baseCampaignTypes.filter(o => o.key !== 'trigger')
+            : baseCampaignTypes
+    ), [project])
+
+    useEffect(() => {
+        if (project?.role === 'editor' && state.params.filter?.type === 'trigger') {
+            state.setParams({
+                ...state.params,
+                filter: {
+                    ...state.params.filter,
+                    type: 'blast',
+                },
+            })
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [project, state.params.filter?.type])
 
     const handleCreateCampaign = async (campaign: Campaign) => {
         setIsCreateOpen(false)
@@ -238,7 +257,7 @@ export default function Campaigns() {
                     filters={[
                         <SingleSelect
                             key="type"
-                            options={campaignTypes}
+                            options={campaignTypeOptions}
                             prefix={t('type')}
                             value={state.params.filter?.type}
                             onChange={value => state.setParams({

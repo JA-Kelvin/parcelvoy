@@ -202,17 +202,25 @@ const ProviderSelection = ({ providers, form }: { providers: Provider[], form: U
 
 const TypeSelection = ({ campaign, showType, form }: { campaign?: Campaign, showType: boolean, form: UseFormReturn<CampaignCreateParams> }) => {
     const { t } = useTranslation()
+    const [project] = useContext(ProjectContext)
     const type = useWatch({
         control: form.control,
         name: 'type',
     })
-    const options = [{
+    const baseOptions = [{
         key: 'blast',
         label: t('blast'),
     }, {
         key: 'trigger',
         label: t('trigger'),
     }]
+    const options = baseOptions
+
+    useEffect(() => {
+        if (project?.role === 'editor' && type === 'trigger') {
+            form.setValue('type', 'blast')
+        }
+    }, [project, type, form])
 
     return <>
         {showType && <RadioInput.Field
