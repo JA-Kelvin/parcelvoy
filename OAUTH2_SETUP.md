@@ -39,6 +39,7 @@ AUTH_OAUTH2_USERINFO_URL=https://juicysuite.com/api/v1/user
 AUTH_OAUTH2_CLIENT_ID=abcd1234028fc3d8ca6e219575e91666
 AUTH_OAUTH2_CLIENT_SECRET=your_secret_here
 AUTH_OAUTH2_SCOPES=openid,email,profile
+AUTH_OAUTH2_EMAIL_FIELD=email
 
 # Make sure these are set correctly
 BASE_URL=https://your-parcelvoy-domain.com

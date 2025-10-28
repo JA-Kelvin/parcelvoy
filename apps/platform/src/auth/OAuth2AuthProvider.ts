@@ -15,6 +15,7 @@ export interface OAuth2Config extends AuthTypeConfig {
     clientSecret: string
     redirectUri: string
     scopes: string[]
+    emailField?: string
 }
 
 interface TokenResponse {
@@ -107,17 +108,23 @@ export default class OAuth2AuthProvider extends AuthProvider {
 
             // Fetch user info
             const userinfo = await this.fetchUserinfo(tokenResponse.access_token)
-
-            if (!userinfo.email) {
+            console.log(JSON.stringify(userinfo))
+            const emailFromPath = this.config.emailField ? this.getByPath(userinfo as any, this.config.emailField) : undefined
+            const email = (userinfo as any).email ?? emailFromPath
+            if (!email || typeof email !== 'string' || email.trim() === '') {
+                console.error('[OAuth2] Missing email in userinfo', {
+                    emailField: this.config.emailField,
+                    fields: Object.keys(userinfo),
+                })
                 throw new RequestError(AuthError.InvalidEmail)
             }
 
             // Create admin params
             const admin = {
-                email: userinfo.email,
-                first_name: userinfo.given_name || userinfo.name,
-                last_name: userinfo.family_name,
-                image_url: userinfo.picture,
+                email,
+                first_name: (userinfo as any).given_name || (userinfo as any).name,
+                last_name: (userinfo as any).family_name,
+                image_url: (userinfo as any).picture,
             }
 
             await this.login(admin, ctx, relayState)
@@ -214,6 +221,9 @@ export default class OAuth2AuthProvider extends AuthProvider {
                 fields: Object.keys(userinfo),
                 userinfo,
             })
+            try {
+                console.log('[OAuth2] Userinfo JSON:', JSON.stringify(userinfo))
+            } catch {}
 
             return userinfo
         } catch (error: any) {
@@ -229,5 +239,13 @@ export default class OAuth2AuthProvider extends AuthProvider {
             result += chars.charAt(Math.floor(Math.random() * chars.length))
         }
         return result
+    }
+
+    private getByPath(obj: any, path: string): any {
+        try {
+            return path.split('.').reduce((o: any, k: string) => (o != null ? o[k] : undefined), obj)
+        } catch {
+            return undefined
+        }
     }
 }

@@ -179,6 +179,7 @@ export default (type?: EnvType): Env => {
                 clientSecret: process.env.AUTH_OAUTH2_CLIENT_SECRET!,
                 redirectUri: `${apiBaseUrl}/auth/login/oauth2/callback`,
                 scopes: process.env.AUTH_OAUTH2_SCOPES?.split(',') ?? ['openid', 'email', 'profile'],
+                emailField: process.env.AUTH_OAUTH2_EMAIL_FIELD,
             },
             multi: {
                 driver: 'multi',
