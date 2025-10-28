@@ -34,6 +34,12 @@ export default function UserTabs() {
         <SearchTable
             {...state}
             columns={[
+                {
+                    key: 'id',
+                    title: t('id'),
+                    sortable: true,
+                    minWidth: '80px',
+                },
                 { key: 'full_name', title: t('name') },
                 { key: 'external_id', title: t('external_id') },
                 { key: 'email', title: t('email') },

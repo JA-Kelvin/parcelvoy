@@ -65,6 +65,12 @@ export default function ListTable({ search, selectedRow, onSelectRow, title }: L
             itemKey={({ item }) => item.id}
             columns={[
                 {
+                    key: 'id',
+                    title: t('id'),
+                    sortable: true,
+                    minWidth: '80px',
+                },
+                {
                     key: 'name',
                     title: t('name'),
                     sortable: true,

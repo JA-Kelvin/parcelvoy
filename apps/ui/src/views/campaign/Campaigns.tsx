@@ -125,6 +125,12 @@ export default function Campaigns() {
                     {...state}
                     columns={[
                         {
+                            key: 'id',
+                            title: t('id'),
+                            sortable: true,
+                            minWidth: '80px',
+                        },
+                        {
                             key: 'name',
                             title: t('name'),
                             sortable: true,
