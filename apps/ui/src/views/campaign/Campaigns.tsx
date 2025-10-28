@@ -93,19 +93,6 @@ export default function Campaigns() {
         baseCampaignTypes
     ), [project])
 
-    useEffect(() => {
-        if (project?.role === 'editor' && state.params.filter?.type === 'trigger') {
-            state.setParams({
-                ...state.params,
-                filter: {
-                    ...state.params.filter,
-                    type: 'blast',
-                },
-            })
-        }
-        // eslint-disable-next-line
-    }, [project, state.params.filter?.type])
-
     const handleCreateCampaign = async (campaign: Campaign) => {
         setIsCreateOpen(false)
         await navigate(`${campaign.id}/design`)
