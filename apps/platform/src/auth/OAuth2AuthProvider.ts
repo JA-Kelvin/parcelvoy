@@ -146,6 +146,15 @@ export default class OAuth2AuthProvider extends AuthProvider {
                 client_secret: this.config.clientSecret,
             })
 
+            // Debug logging
+            console.log('[OAuth2] Token Exchange Request:', {
+                url: this.config.tokenUrl,
+                client_id: this.config.clientId,
+                has_secret: !!this.config.clientSecret,
+                secret_length: this.config.clientSecret?.length || 0,
+                redirect_uri: this.config.redirectUri,
+            })
+
             const response = await fetch(this.config.tokenUrl, {
                 method: 'POST',
                 headers: {
@@ -155,10 +164,21 @@ export default class OAuth2AuthProvider extends AuthProvider {
             })
 
             if (!response.ok) {
-                throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
+                const errorBody = await response.text()
+                console.error('[OAuth2] Token Exchange Failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorBody,
+                })
+                throw new Error(`Token exchange failed: ${response.status} ${response.statusText} - ${errorBody}`)
             }
 
-            return await response.json() as TokenResponse
+            const tokenData = await response.json() as TokenResponse
+            console.log('[OAuth2] Token Exchange Success:', {
+                has_access_token: !!tokenData.access_token,
+            })
+
+            return tokenData
         } catch (error: any) {
             App.main.error.notify(error)
             throw new RequestError(AuthError.TokenExchangeFailed)
@@ -167,6 +187,10 @@ export default class OAuth2AuthProvider extends AuthProvider {
 
     private async fetchUserinfo(accessToken: string): Promise<UserinfoResponse> {
         try {
+            console.log('[OAuth2] Userinfo Request:', {
+                url: this.config.userinfoUrl,
+            })
+
             const response = await fetch(this.config.userinfoUrl, {
                 method: 'GET',
                 headers: {
@@ -175,10 +199,23 @@ export default class OAuth2AuthProvider extends AuthProvider {
             })
 
             if (!response.ok) {
-                throw new Error(`Userinfo fetch failed: ${response.status} ${response.statusText}`)
+                const errorBody = await response.text()
+                console.error('[OAuth2] Userinfo Fetch Failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorBody,
+                })
+                throw new Error(`Userinfo fetch failed: ${response.status} ${response.statusText} - ${errorBody}`)
             }
 
-            return await response.json() as UserinfoResponse
+            const userinfo = await response.json() as UserinfoResponse
+            console.log('[OAuth2] Userinfo Response:', {
+                has_email: !!userinfo.email,
+                fields: Object.keys(userinfo),
+                userinfo,
+            })
+
+            return userinfo
         } catch (error: any) {
             App.main.error.notify(error)
             throw new RequestError(AuthError.UserinfoFetchFailed)
