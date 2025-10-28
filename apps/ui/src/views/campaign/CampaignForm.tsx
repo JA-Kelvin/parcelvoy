@@ -216,12 +216,6 @@ const TypeSelection = ({ campaign, showType, form }: { campaign?: Campaign, show
     }]
     const options = (project?.role === 'editor' ? baseOptions.filter(o => o.key !== 'trigger') : baseOptions)
 
-    useEffect(() => {
-        if (project?.role === 'editor' && type === 'trigger') {
-            form.setValue('type', 'blast')
-        }
-    }, [project, type, form])
-
     return <>
         {showType && <RadioInput.Field
             form={form}
