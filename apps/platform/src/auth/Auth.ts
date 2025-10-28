@@ -3,6 +3,7 @@ import AuthProvider from './AuthProvider'
 import OpenIDProvider, { OpenIDConfig } from './OpenIDAuthProvider'
 import GoogleProvider, { GoogleConfig } from './GoogleAuthProvider'
 import SAMLProvider, { SAMLConfig } from './SAMLAuthProvider'
+import OAuth2Provider, { OAuth2Config } from './OAuth2AuthProvider'
 import { DriverConfig } from '../config/env'
 import BasicAuthProvider, { BasicAuthConfig } from './BasicAuthProvider'
 import Organization from '../organizations/Organization'
@@ -10,9 +11,9 @@ import App from '../app'
 import MultiAuthProvider, { MultiAuthConfig } from './MultiAuthProvider'
 import EmailAuthProvider, { EmailAuthConfig } from './EmailAuthProvider'
 
-export type AuthProviderName = 'basic' | 'email' | 'saml' | 'openid' | 'google' | 'multi'
+export type AuthProviderName = 'basic' | 'email' | 'saml' | 'openid' | 'google' | 'oauth2' | 'multi'
 
-export type AuthProviderConfig = BasicAuthConfig | EmailAuthConfig | SAMLConfig | OpenIDConfig | GoogleConfig | MultiAuthConfig
+export type AuthProviderConfig = BasicAuthConfig | EmailAuthConfig | SAMLConfig | OpenIDConfig | GoogleConfig | OAuth2Config | MultiAuthConfig
 
 export interface AuthConfig {
     driver: AuthProviderName[]
@@ -22,10 +23,11 @@ export interface AuthConfig {
     saml: SAMLConfig
     openid: OpenIDConfig
     google: GoogleConfig
+    oauth2: OAuth2Config
     multi: MultiAuthConfig
 }
 
-export { BasicAuthConfig, SAMLConfig, OpenIDConfig }
+export { BasicAuthConfig, SAMLConfig, OpenIDConfig, OAuth2Config }
 
 export interface AuthTypeConfig extends DriverConfig {
     driver: AuthProviderName
@@ -48,6 +50,8 @@ export const initProvider = (config?: AuthProviderConfig): AuthProvider => {
         return new OpenIDProvider(config)
     } else if (config?.driver === 'google') {
         return new GoogleProvider(config)
+    } else if (config?.driver === 'oauth2') {
+        return new OAuth2Provider(config)
     } else if (config?.driver === 'multi') {
         return new MultiAuthProvider()
     } else {

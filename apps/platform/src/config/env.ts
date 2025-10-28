@@ -169,6 +169,17 @@ export default (type?: EnvType): Env => {
                 clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET!,
                 redirectUri: `${apiBaseUrl}/auth/login/google/callback`,
             },
+            oauth2: {
+                driver: 'oauth2',
+                name: process.env.AUTH_OAUTH2_NAME!,
+                authorizationUrl: process.env.AUTH_OAUTH2_AUTHORIZATION_URL!,
+                tokenUrl: process.env.AUTH_OAUTH2_TOKEN_URL!,
+                userinfoUrl: process.env.AUTH_OAUTH2_USERINFO_URL!,
+                clientId: process.env.AUTH_OAUTH2_CLIENT_ID!,
+                clientSecret: process.env.AUTH_OAUTH2_CLIENT_SECRET!,
+                redirectUri: `${apiBaseUrl}/auth/login/oauth2/callback`,
+                scopes: process.env.AUTH_OAUTH2_SCOPES?.split(',') ?? ['openid', 'email', 'profile'],
+            },
             multi: {
                 driver: 'multi',
                 name: process.env.AUTH_MULTI_NAME!,

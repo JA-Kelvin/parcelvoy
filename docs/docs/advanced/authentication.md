@@ -4,6 +4,7 @@ Parcelvoy comes with a few different types of authentication out of the box:
 - SAML
 - OpenID
 - Google
+- OAuth2 (Generic)
 
 Whereas a lot of platforms will gate SSO as a luxury feature and charge extra for it (this is known as the **SSO Tax**) we opted to go the opposite direction and lean in completely to SSO to make sure you understand that Parcelvoy takes your security seriously. SSO is not something that only Enterprise companies should have, but should be available at every level.
 
@@ -75,3 +76,54 @@ AUTH_SAML_IS_AUTHN_SIGNED=false
 ```
 10. Restart your instance to make sure the latest changes are propogated. It can take up to an hour for a new Google SAML app to go live, check back in if it doesn't work immediately.
 
+## OAuth2 (Generic)
+
+For OAuth2 providers that don't support OpenID Connect (OIDC) discovery, you can use the generic OAuth2 authentication driver. This allows you to configure custom authorization, token, and userinfo endpoints.
+
+### Config
+| key | type | required | description |
+|--|--|--|--|
+| AUTH_DRIVER | 'oauth2' | true | Set to 'oauth2' to enable OAuth2 authentication |
+| AUTH_OAUTH2_NAME | string | false | Display name for the OAuth2 provider |
+| AUTH_OAUTH2_AUTHORIZATION_URL | string | true | The authorization endpoint URL |
+| AUTH_OAUTH2_TOKEN_URL | string | true | The token exchange endpoint URL |
+| AUTH_OAUTH2_USERINFO_URL | string | true | The userinfo endpoint URL (must return email) |
+| AUTH_OAUTH2_CLIENT_ID | string | true | OAuth2 client ID |
+| AUTH_OAUTH2_CLIENT_SECRET | string | true | OAuth2 client secret |
+| AUTH_OAUTH2_SCOPES | string | false | Comma-separated list of scopes (default: 'openid,email,profile') |
+
+### Endpoints
+- Login: `GET/POST /api/auth/login/oauth2`
+- Callback: `GET/POST /api/auth/login/oauth2/callback`
+
+### Example Configuration
+```bash
+AUTH_DRIVER=oauth2
+AUTH_OAUTH2_NAME=JuicySuite
+AUTH_OAUTH2_AUTHORIZATION_URL=https://juicysuite.app/merchant/authorize
+AUTH_OAUTH2_TOKEN_URL=https://juicysuite.app/oauth2/token
+AUTH_OAUTH2_USERINFO_URL=https://juicysuite.app/api/v1/merchant
+AUTH_OAUTH2_CLIENT_ID=your_client_id
+AUTH_OAUTH2_CLIENT_SECRET=your_client_secret
+AUTH_OAUTH2_SCOPES=openid,email,profile
+```
+
+### Requirements
+1. **Redirect URI**: Register the callback URL in your OAuth2 provider:
+   - Format: `${API_BASE_URL}/auth/login/oauth2/callback`
+   - Example: `https://your-domain.com/api/auth/login/oauth2/callback`
+
+2. **Userinfo Response**: The userinfo endpoint must return at least an `email` field. Optional fields include:
+   - `name` or `given_name` - First name
+   - `family_name` - Last name
+   - `picture` - Profile image URL
+
+3. **Authorization Code Flow**: The OAuth2 provider must support the standard authorization code flow with:
+   - Authorization endpoint that accepts: `response_type=code`, `client_id`, `redirect_uri`, `state`, `scope`
+   - Token endpoint that accepts: `grant_type=authorization_code`, `code`, `redirect_uri`, `client_id`, `client_secret`
+   - Bearer token authentication for userinfo endpoint
+
+### Security
+- State parameter is used for CSRF protection
+- Secure cookies are used for state and relay state storage
+- All tokens are exchanged server-side (never exposed to the client)

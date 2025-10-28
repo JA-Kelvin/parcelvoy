@@ -45,4 +45,29 @@ export default {
         code: 1008,
         statusCode: 400,
     },
+    InvalidState: {
+        message: 'Invalid state parameter - possible CSRF attack.',
+        code: 1009,
+        statusCode: 400,
+    },
+    InvalidCode: {
+        message: 'Authorization code is missing or invalid.',
+        code: 1010,
+        statusCode: 400,
+    },
+    OAuth2ValidationError: {
+        message: 'Unable to validate OAuth2 response.',
+        code: 1011,
+        statusCode: 400,
+    },
+    TokenExchangeFailed: {
+        message: 'Failed to exchange authorization code for access token.',
+        code: 1012,
+        statusCode: 400,
+    },
+    UserinfoFetchFailed: {
+        message: 'Failed to fetch user information from OAuth2 provider.',
+        code: 1013,
+        statusCode: 400,
+    },
 } as Record<string, ErrorType>
