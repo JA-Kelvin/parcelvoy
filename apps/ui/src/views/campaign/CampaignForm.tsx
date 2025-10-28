@@ -214,7 +214,7 @@ const TypeSelection = ({ campaign, showType, form }: { campaign?: Campaign, show
         key: 'trigger',
         label: t('trigger'),
     }]
-    const options = baseOptions
+    const options = (project?.role === 'editor' ? baseOptions.filter(o => o.key !== 'trigger') : baseOptions)
 
     useEffect(() => {
         if (project?.role === 'editor' && type === 'trigger') {
