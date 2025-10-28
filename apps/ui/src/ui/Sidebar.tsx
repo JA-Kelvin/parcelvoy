@@ -112,7 +112,7 @@ export default function Sidebar({ children, links, prepend, append }: PropsWithC
                     }>
                         <MenuItem onClick={async () => {
                             await navigate('/organization')
-                        }}>{t('settings')}</MenuItem>
+                        }}>{t('projects')}</MenuItem>
                         <MenuItem onClick={() => setIsLanguageOpen(true)}>{t('language')}</MenuItem>
                         <MenuItem onClick={() => setPreferences({ ...preferences, mode: preferences.mode === 'dark' ? 'light' : 'dark' })}>{preferences.mode === 'dark' ? t('light_mode') : t('dark_mode')}</MenuItem>
                         <MenuItem onClick={async () => await api.auth.logout()}>{t('sign_out')}</MenuItem>

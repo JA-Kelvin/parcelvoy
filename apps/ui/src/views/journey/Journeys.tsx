@@ -51,6 +51,12 @@ export default function Journeys() {
                 {...state}
                 columns={[
                     {
+                        key: 'id',
+                        title: t('id'),
+                        sortable: true,
+                        minWidth: '80px',
+                    },
+                    {
                         key: 'name',
                         title: t('name'),
                         minWidth: '150px',
