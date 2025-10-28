@@ -105,7 +105,7 @@ export default function Campaigns() {
                 },
             })
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line
     }, [project, state.params.filter?.type])
 
     const handleCreateCampaign = async (campaign: Campaign) => {
