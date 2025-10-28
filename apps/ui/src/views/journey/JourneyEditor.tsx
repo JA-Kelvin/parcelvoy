@@ -435,6 +435,7 @@ export default function JourneyEditor() {
     const isDraft = journey.status === 'draft' && !isDeleted
     const draftId = journey.draft_id
     const parentId = journey.parent_id
+    const canModify = checkProjectRole('publisher', project.role)
 
     const loadSteps = useCallback(async () => {
         const steps = await api.journeys.steps.get(project.id, journeyId)
@@ -544,7 +545,7 @@ export default function JourneyEditor() {
     const onDrop = useCallback<DragEventHandler>(async event => {
 
         event.preventDefault()
-        if (!wrapper.current || !flowInstance) return
+        if (!wrapper.current || !flowInstance || !canModify) return
 
         const bounds = wrapper.current.getBoundingClientRect()
         const payload: {
@@ -576,7 +577,7 @@ export default function JourneyEditor() {
 
         handleSetNodes(nds => nds.concat(newStep))
 
-    }, [setNodes, flowInstance, project, journey])
+    }, [setNodes, flowInstance, project, journey, canModify])
 
     const [editOpen, setEditOpen] = useState(false)
     const selected = nodes.filter(n => n.selected)
@@ -703,7 +704,7 @@ export default function JourneyEditor() {
                     </Tag>
                     : isDraft
                         ? <>
-                            {!parentId && <Button
+                            {!parentId && canModify && <Button
                                 variant="secondary"
                                 onClick={() => setEditOpen(true)}
                             >
@@ -718,13 +719,15 @@ export default function JourneyEditor() {
                                     {t('publish')}
                                 </Button>
                             )}
-                            <Button
-                                onClick={saveSteps}
-                                isLoading={saving}
-                                variant="primary"
-                            >
-                                {t('journey_draft_save')}
-                            </Button>
+                            {canModify && (
+                                <Button
+                                    onClick={saveSteps}
+                                    isLoading={saving}
+                                    variant="primary"
+                                >
+                                    {t('journey_draft_save')}
+                                </Button>
+                            )}
                         </>
                         : <>
                             <Tag
@@ -732,28 +735,31 @@ export default function JourneyEditor() {
                                 size="large">
                                 {t(journey.status)}
                             </Tag>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setEditOpen(true)}
-                            >
-                                {t('edit_details')}
-                            </Button>
-                            {draftId
-                                ? <Button
-                                    onClick={() => editDraft(draftId)}
-                                    isLoading={saving}
-                                    variant="primary"
+                            {canModify && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setEditOpen(true)}
                                 >
-                                    {t('journey_draft_edit')}
+                                    {t('edit_details')}
                                 </Button>
-                                : <Button
-                                    onClick={createDraft}
-                                    isLoading={saving}
-                                    variant="primary"
-                                >
-                                    {t('journey_draft_create')}
-                                </Button>
-                            }
+                            )}
+                            {canModify && (
+                                draftId
+                                    ? <Button
+                                        onClick={() => editDraft(draftId)}
+                                        isLoading={saving}
+                                        variant="primary"
+                                    >
+                                        {t('journey_draft_edit')}
+                                    </Button>
+                                    : <Button
+                                        onClick={createDraft}
+                                        isLoading={saving}
+                                        variant="primary"
+                                    >
+                                        {t('journey_draft_create')}
+                                    </Button>
+                            )}
                         </>
             }
         >
@@ -775,8 +781,8 @@ export default function JourneyEditor() {
                                 setNodes(nds => nds.map(n => n.data.editing ? { ...n, data: { ...n.data, editing: false } } : n))
                             }
                         }}
-                        nodesDraggable={isDraft}
-                        nodesConnectable={isDraft}
+                        nodesDraggable={isDraft && canModify}
+                        nodesConnectable={isDraft && canModify}
                         onDragOver={onDragOver}
                         onDrop={onDrop}
                         panOnScroll
@@ -790,11 +796,11 @@ export default function JourneyEditor() {
                         {
                             !editNode && (
                                 <>
-                                    <Controls showInteractive={isDraft} />
+                                    <Controls showInteractive={isDraft && canModify} />
                                     <MiniMap
                                         nodeClassName={({ data }: Node<JourneyStep>) => `journey-minimap ${getStepType(data.type)?.category ?? 'unknown'}`}
                                     />
-                                    {isDraft && <Panel position="top-left">
+                                    {isDraft && canModify && <Panel position="top-left">
                                         {
                                             selected.length
                                                 ? (

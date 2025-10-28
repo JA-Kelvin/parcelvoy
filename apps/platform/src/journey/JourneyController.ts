@@ -54,7 +54,7 @@ const journeyParams: JSONSchemaType<JourneyParams> = {
     additionalProperties: false,
 }
 
-router.post('/', async ctx => {
+router.post('/', projectRoleMiddleware('publisher'), async ctx => {
     const payload = validate(journeyParams, ctx.request.body)
     ctx.body = await createJourney(ctx.state.project.id, payload)
 })
@@ -91,7 +91,7 @@ router.get('/:journeyId', async ctx => {
     ctx.body = ctx.state.journey
 })
 
-router.patch('/:journeyId', async ctx => {
+router.patch('/:journeyId', projectRoleMiddleware('publisher'), async ctx => {
     ctx.body = await updateJourney(ctx.state.journey!.id, validate(journeyParams, ctx.request.body))
 })
 
@@ -168,7 +168,7 @@ router.get('/:journeyId/steps', async ctx => {
     ctx.body = await getJourneyStepMapForUI(ctx.state.journey!)
 })
 
-router.put('/:journeyId/steps', async ctx => {
+router.put('/:journeyId/steps', projectRoleMiddleware('publisher'), async ctx => {
     await setJourneyStepMap(ctx.state.journey!, validate(journeyStepsParamsSchema, ctx.request.body))
     ctx.body = await getJourneyStepMapForUI(ctx.state.journey!)
 })

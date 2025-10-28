@@ -25,6 +25,7 @@ export default function Journeys() {
     const navigate = useNavigate()
     const [open, setOpen] = useState<null | 'create'>(null)
     const state = useSearchTableQueryState(useCallback(async params => await api.journeys.search(project.id, params), [project.id]))
+    const isEditor = project.role === 'editor'
 
     const handleEditJourney = async (id: number) => {
         await navigate(id.toString())
@@ -44,7 +45,11 @@ export default function Journeys() {
         <PageContent
             title={t('journeys')}
             actions={
-                <Button icon={<PlusIcon />} onClick={() => setOpen('create')}>{t('create_journey')}</Button>
+                !isEditor
+                    ? (
+                        <Button icon={<PlusIcon />} onClick={() => setOpen('create')}>{t('create_journey')}</Button>
+                    )
+                    : null
             }
         >
             <SearchTable
@@ -91,17 +96,21 @@ export default function Journeys() {
                         key: 'options',
                         title: t('options'),
                         cell: ({ item: { id } }) => (
-                            <Menu size="small">
-                                <MenuItem onClick={async () => await handleEditJourney(id)}>
-                                    <EditIcon />{t('edit')}
-                                </MenuItem>
-                                <MenuItem onClick={async () => await handleDuplicateJourney(id)}>
-                                    <DuplicateIcon />{t('duplicate')}
-                                </MenuItem>
-                                <MenuItem onClick={async () => await handleArchiveJourney(id)}>
-                                    <ArchiveIcon />{t('archive')}
-                                </MenuItem>
-                            </Menu>
+                            isEditor
+                                ? null
+                                : (
+                                    <Menu size="small">
+                                        <MenuItem onClick={async () => await handleEditJourney(id)}>
+                                            <EditIcon />{t('edit')}
+                                        </MenuItem>
+                                        <MenuItem onClick={async () => await handleDuplicateJourney(id)}>
+                                            <DuplicateIcon />{t('duplicate')}
+                                        </MenuItem>
+                                        <MenuItem onClick={async () => await handleArchiveJourney(id)}>
+                                            <ArchiveIcon />{t('archive')}
+                                        </MenuItem>
+                                    </Menu>
+                                )
                         ),
                     },
                 ]}
