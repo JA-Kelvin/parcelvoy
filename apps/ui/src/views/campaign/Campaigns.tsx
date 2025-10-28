@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import api, { apiUrl } from '../../api'
 import { Campaign, CampaignDelivery, CampaignState } from '../../types'
