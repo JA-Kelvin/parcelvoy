@@ -32,7 +32,7 @@ import Login from './auth/Login'
 import OnboardingStart from './auth/OnboardingStart'
 import Onboarding from './auth/Onboarding'
 import OnboardingProject from './auth/OnboardingProject'
-import { CampaignsIcon, JourneysIcon, ListsIcon, SettingsIcon, UsersIcon } from '../ui/icons'
+import { CampaignsIcon, JourneysIcon, ListsIcon, SettingsIcon, UsersIcon, PerformanceIcon } from '../ui/icons'
 import { Projects } from './project/Projects'
 import { getRecentProjects, pushRecentProject } from '../utils'
 import Performance from './organization/Performance'
@@ -50,6 +50,7 @@ import { Translation } from 'react-i18next'
 import Organization from './organization/Organization'
 import DataSchema from './settings/DataSchema'
 import BlastMonitor from './campaign/BlastMonitor'
+import BlastPerformance from './campaign/BlastPerformance'
 
 const SHOW_DEBUG_MENU = false
 const debugOrg: RouteObject = { path: 'debug', element: <OrgDebug /> }
@@ -176,6 +177,13 @@ export const createRouter = ({
                                     minRole: 'editor',
                                 },
                                 {
+                                    key: 'blast-performance',
+                                    to: 'campaigns/performance',
+                                    children: 'Blasting Performance',
+                                    icon: <PerformanceIcon />,
+                                    minRole: 'editor',
+                                },
+                                {
                                     key: 'journeys',
                                     to: 'journeys',
                                     children: <Translation>{ t => t('journeys') }</Translation>,
@@ -225,6 +233,10 @@ export const createRouter = ({
                         apiPath: api.campaigns,
                         element: <Campaigns />,
                     }),
+                    {
+                        path: 'campaigns/performance',
+                        element: <BlastPerformance />,
+                    },
                     createStatefulRoute({
                         path: 'campaigns/:entityId',
                         apiPath: api.campaigns,

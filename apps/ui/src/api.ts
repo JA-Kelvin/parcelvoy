@@ -397,6 +397,15 @@ const api = {
     },
 
     locales: createProjectEntityPath<Locale>('locales'),
+
+    analytics: {
+        blastPerformance: async (
+            projectId: number | string,
+            params: { from?: string, to?: string, bucket?: string | number, channels?: string[], types?: string[] | string, type?: string },
+        ) => await client
+            .get<any>(`${projectUrl(projectId)}/analytics/blast-performance`, { params })
+            .then(r => r.data),
+    },
 }
 
 export default api;
