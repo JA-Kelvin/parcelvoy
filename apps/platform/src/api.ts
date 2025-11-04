@@ -6,6 +6,7 @@ import controllers, { SubRouter, register } from './config/controllers'
 import { RequestError } from './core/errors'
 import { logger } from './config/logger'
 import Router from '@koa/router'
+import ApiErrorLog from './error/ApiErrorLog'
 
 export default class Api extends Koa {
     router = new Router()
@@ -27,6 +28,22 @@ export default class Api extends Koa {
                 logger.error({ error, ctx }, 'error')
                 if (error instanceof RequestError) {
                     ctx.status = error.statusCode ?? 400
+                    try {
+                        const userId = (ctx.state as any)?.user?.id
+                        const projectId = (ctx.state as any)?.project?.id ?? (ctx.params?.project && !isNaN(parseInt(ctx.params.project as any, 10)) ? parseInt(ctx.params.project as any, 10) : undefined)
+                        await ApiErrorLog.insert({
+                            request_id: ctx.get('X-Request-ID') || undefined,
+                            method: ctx.method,
+                            path: ctx.path,
+                            status: ctx.status,
+                            code: (error as any)?.code,
+                            message: error.message ?? String(error),
+                            stack: error.stack,
+                            user_id: userId,
+                            project_id: projectId,
+                            context: { ip: ctx.ip, ua: ctx.get('user-agent'), host: ctx.host },
+                        })
+                    } catch {}
                     ctx.body = error
                     return
                 } else if (error.status === 404) {
@@ -45,6 +62,22 @@ export default class Api extends Koa {
                                 stack: error.stack,
                             },
                         }
+                    try {
+                        const userId = (ctx.state as any)?.user?.id
+                        const projectId = (ctx.state as any)?.project?.id ?? (ctx.params?.project && !isNaN(parseInt(ctx.params.project as any, 10)) ? parseInt(ctx.params.project as any, 10) : undefined)
+                        await ApiErrorLog.insert({
+                            request_id: ctx.get('X-Request-ID') || undefined,
+                            method: ctx.method,
+                            path: ctx.path,
+                            status: ctx.status,
+                            code: (error as any)?.code,
+                            message: error.message ?? String(error),
+                            stack: error.stack,
+                            user_id: userId,
+                            project_id: projectId,
+                            context: { ip: ctx.ip, ua: ctx.get('user-agent'), host: ctx.host },
+                        })
+                    } catch {}
                 }
 
                 ctx.app.emit('error', error, ctx)

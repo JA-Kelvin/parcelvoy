@@ -31,6 +31,7 @@ import { createAuditLog } from '../core/audit/AuditService'
 import { WithAdmin } from '../core/audit/Audit'
 import { processUsers } from '../users/ProcessUsers'
 import { raw } from '../core/Model'
+import { insertSendEventFromCampaign } from './CampaignSendEventRepository'
 
 export const CacheKeys = {
     pendingStats: 'campaigns:pending_stats',
@@ -274,6 +275,9 @@ export const triggerCampaignSend = async ({ campaign, user, exists, reference_ty
             send_at: new Date(),
             ...reference,
         })
+        try {
+            await insertSendEventFromCampaign(campaign, user.id, 'pending', reference)
+        } catch { /* best-effort */ }
     }
 
     return sendCampaignJob({
@@ -336,6 +340,17 @@ export const updateSendState = async ({ campaign, user, state = 'sent', referenc
             .onConflict(['campaign_id', 'user_id', 'reference_id'])
             .merge(['state'])
         return Array.isArray(records) ? records[0] : records
+    }
+
+    // Append event log for state transitions except 'sent' and 'failed'
+    // (those are logged with provider metadata in MessageTriggerService)
+    if (state !== 'sent' && state !== 'failed') {
+        try {
+            const c = campaign instanceof Campaign ? campaign : await Campaign.find(campaignId)
+            if (c) {
+                await insertSendEventFromCampaign(c, userId, state, { reference_id })
+            }
+        } catch { /* best-effort */ }
     }
 
     return records

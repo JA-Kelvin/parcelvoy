@@ -65,7 +65,8 @@
     "docker:build:push": "pnpm docker:build --push",
     "docker:build-beta:push": "pnpm docker:build-beta --push",
     "migration:create": "node ./scripts/create-migration.mjs",
-    "migration:output": "node ./scripts/output-migration.mjs"
+    "migration:output": "node ./scripts/output-migration.mjs",
+    "backfill:send-events": "node ./scripts/backfill-send-events.mjs"
   },
   "devDependencies": {
     "@types/busboy": "^1.5.4",

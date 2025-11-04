@@ -353,6 +353,21 @@ const api = {
             .then(r => r.data),
     },
 
+    errorLogs: {
+        search: async (projectId: number | string, params: SearchParams) => await client
+            .get<SearchResult<any>>(`${projectUrl(projectId)}/error-logs`, { params })
+            .then(r => r.data),
+        exportUrl: (projectId: number | string, params: { format?: 'csv' | 'ndjson', filter?: Record<string, any> }) => {
+            const format = params.format ?? 'ndjson'
+            const filter = params.filter ? encodeURIComponent(JSON.stringify(params.filter)) : ''
+            const qs = `format=${format}${filter ? `&filter=${filter}` : ''}`
+            return apiUrl(projectId, `error-logs/export?${qs}`)
+        },
+        prune: async (projectId: number | string, params: { before?: string, days?: number, dryRun?: boolean, filter?: Record<string, any> }) => await client
+            .delete(`${projectUrl(projectId)}/error-logs`, { params })
+            .then(r => r.data),
+    },
+
     tags: {
         ...createProjectEntityPath<Tag>('tags'),
         used: async (projectId: number | string, entity: string) => await client
@@ -401,7 +416,7 @@ const api = {
     analytics: {
         blastPerformance: async (
             projectId: number | string,
-            params: { from?: string, to?: string, bucket?: string | number, channels?: string[], types?: string[] | string, type?: string },
+            params: { from?: string, to?: string, bucket?: string | number, channels?: string[], types?: string[] | string, type?: string, source?: string },
         ) => await client
             .get<any>(`${projectUrl(projectId)}/analytics/blast-performance`, { params })
             .then(r => r.data),

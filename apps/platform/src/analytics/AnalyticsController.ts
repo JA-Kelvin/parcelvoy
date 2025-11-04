@@ -2,6 +2,7 @@ import Router from '@koa/router'
 import { ProjectState } from '../auth/AuthMiddleware'
 import { Context } from 'koa'
 import { CampaignSend } from '../campaigns/Campaign'
+import { CampaignSendEvent } from '../campaigns/CampaignSendEvent'
 
 const router = new Router<ProjectState>({ prefix: '/analytics' })
 
@@ -58,27 +59,51 @@ router.get('/blast-performance', async (ctx: Context & { state: ProjectState }) 
     const types = (Array.isArray(typesParam) ? typesParam : (typesParam ? [typesParam] : []))
         .filter(Boolean) as Array<'blast' | 'trigger'>
 
-    // Build query
-    const qb = CampaignSend.query()
-        .join('campaigns', 'campaigns.id', 'campaign_sends.campaign_id')
-        .where('campaigns.project_id', projectId)
-        .where('campaign_sends.send_at', '>=', from)
-        .where('campaign_sends.send_at', '<=', to)
+    const source = Array.isArray((ctx.query as any).source) ? (ctx.query as any).source[0] : (ctx.query as any).source
 
-    if (channels.length > 0) qb.whereIn('campaigns.channel', channels)
-    if (types.length > 0) qb.whereIn('campaigns.type', types)
+    let rows: any[] = []
+    if (source === 'logs') {
+        const qb = CampaignSendEvent.query()
+            .join('campaigns', 'campaigns.id', 'campaign_send_events.campaign_id')
+            .where('campaign_send_events.project_id', projectId)
+            .where('campaign_send_events.created_at', '>=', from)
+            .where('campaign_send_events.created_at', '<=', to)
+        if (channels.length > 0) qb.whereIn('campaign_send_events.channel', channels)
+        if (types.length > 0) qb.whereIn('campaigns.type', types)
 
-    const rows = await qb
-        .select(
-            CampaignSend.raw(`FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(campaign_sends.send_at)/${bucketSeconds}) * ${bucketSeconds}) AS bucket`),
-            'campaigns.channel as channel',
-            CampaignSend.raw("CASE WHEN campaign_sends.state = 'pending' AND campaign_sends.send_at > NOW() THEN 'Upcoming' ELSE campaign_sends.state END AS status"),
-            CampaignSend.raw('COUNT(*) as count'),
-            CampaignSend.raw('SUM(CASE WHEN campaign_sends.opened_at IS NOT NULL THEN 1 ELSE 0 END) as opens'),
-            CampaignSend.raw('SUM(CASE WHEN campaign_sends.clicks > 0 THEN 1 ELSE 0 END) as clicks'),
-        )
-        .groupBy('bucket', 'channel', 'status')
-        .orderBy('bucket', 'asc')
+        rows = await qb
+            .select(
+                CampaignSendEvent.raw(`FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(campaign_send_events.created_at)/${bucketSeconds}) * ${bucketSeconds}) AS bucket`),
+                'campaign_send_events.channel as channel',
+                CampaignSendEvent.raw("CASE WHEN campaign_send_events.event IN ('opened','clicked','complained') THEN NULL ELSE campaign_send_events.event END AS status"),
+                CampaignSendEvent.raw('COUNT(*) as count'),
+                CampaignSendEvent.raw("SUM(CASE WHEN campaign_send_events.event = 'opened' THEN 1 ELSE 0 END) as opens"),
+                CampaignSendEvent.raw("SUM(CASE WHEN campaign_send_events.event = 'clicked' THEN 1 ELSE 0 END) as clicks"),
+            )
+            .groupBy('bucket', 'channel', 'status')
+            .havingNotNull('status')
+            .orderBy('bucket', 'asc') as any[]
+    } else {
+        const qb = CampaignSend.query()
+            .join('campaigns', 'campaigns.id', 'campaign_sends.campaign_id')
+            .where('campaigns.project_id', projectId)
+            .where('campaign_sends.send_at', '>=', from)
+            .where('campaign_sends.send_at', '<=', to)
+        if (channels.length > 0) qb.whereIn('campaigns.channel', channels)
+        if (types.length > 0) qb.whereIn('campaigns.type', types)
+
+        rows = await qb
+            .select(
+                CampaignSend.raw(`FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(campaign_sends.send_at)/${bucketSeconds}) * ${bucketSeconds}) AS bucket`),
+                'campaigns.channel as channel',
+                CampaignSend.raw("CASE WHEN campaign_sends.state = 'pending' AND campaign_sends.send_at > NOW() THEN 'Upcoming' ELSE campaign_sends.state END AS status"),
+                CampaignSend.raw('COUNT(*) as count'),
+                CampaignSend.raw('SUM(CASE WHEN campaign_sends.opened_at IS NOT NULL THEN 1 ELSE 0 END) as opens'),
+                CampaignSend.raw('SUM(CASE WHEN campaign_sends.clicks > 0 THEN 1 ELSE 0 END) as clicks'),
+            )
+            .groupBy('bucket', 'channel', 'status')
+            .orderBy('bucket', 'asc') as any[]
+    }
 
     // Optional quick KPIs per channel
     const kpiMap: Record<string, any> = {}

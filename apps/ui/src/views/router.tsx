@@ -28,6 +28,7 @@ import JourneyEditor from './journey/JourneyEditor'
 import ProjectSettings from './settings/ProjectSettings'
 import Integrations from './settings/Integrations'
 import Tags from './settings/Tags'
+import ErrorLogs from './settings/ErrorLogs'
 import Login from './auth/Login'
 import OnboardingStart from './auth/OnboardingStart'
 import Onboarding from './auth/Onboarding'
@@ -372,6 +373,10 @@ export const createRouter = ({
                             {
                                 path: 'tags',
                                 element: <Tags />,
+                            },
+                            {
+                                path: 'error-logs',
+                                element: <ErrorLogs />,
                             },
                             {
                                 path: 'performance',

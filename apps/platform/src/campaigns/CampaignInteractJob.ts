@@ -3,6 +3,8 @@ import { Job } from '../queue'
 import { unsubscribe } from '../subscriptions/SubscriptionService'
 import { CampaignSend } from './Campaign'
 import { CacheKeys, getCampaignSend, updateCampaignSend } from './CampaignService'
+import Campaign from './Campaign'
+import { insertSendEventFromCampaign } from './CampaignSendEventRepository'
 
 interface CampaignIteraction {
     user_id: number
@@ -44,5 +46,13 @@ export default class CampaignInteractJob extends Job {
         if (subscription_id && action === 'unsubscribe') {
             await unsubscribe(user_id, subscription_id)
         }
+
+        // Append interaction to logs (best-effort)
+        try {
+            const campaign = await Campaign.find(campaign_id)
+            if (campaign) {
+                await insertSendEventFromCampaign(campaign, user_id, type as any, { reference_id, meta: action ? { action } : undefined })
+            }
+        } catch { /* ignore */ }
     }
 }

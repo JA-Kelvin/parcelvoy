@@ -48,6 +48,11 @@ export default function Settings() {
             to: 'tags',
             children: t('tags'),
         },
+        {
+            key: 'error-logs',
+            to: 'error-logs',
+            children: 'Error Logs',
+        },
     ]
 
     return (

@@ -16,6 +16,7 @@ import { SubscriptionState } from '../subscriptions/Subscription'
 import { getUserSubscriptionState } from '../subscriptions/SubscriptionService'
 import { User } from '../users/User'
 import { createEvent } from '../users/UserEventRepository'
+import { insertSendEventFromCampaign } from '../campaigns/CampaignSendEventRepository'
 import { random, randomInt } from '../utilities'
 import { MessageTrigger } from './MessageTrigger'
 

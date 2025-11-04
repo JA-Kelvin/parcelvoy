@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { ProjectContext } from '../../contexts'
 import { MultiSelect } from '../../ui/form/MultiSelect'
 import { SingleSelect } from '../../ui/form/SingleSelect'
+import SwitchField from '../../ui/form/SwitchField'
 
 const STATUSES = [
     'Upcoming',
@@ -62,6 +63,7 @@ export default function BlastPerformance() {
     const [data, setData] = useState<any | null>(null)
     const [option, setOption] = useState<any | null>(null)
     const mounted = useRef(true)
+    const [useLogs, setUseLogs] = useState(false)
 
     const fetchData = useCallback(async () => {
         const now = new Date()
@@ -73,9 +75,10 @@ export default function BlastPerformance() {
             bucket,
             channels,
             types,
+            source: useLogs ? 'logs' : undefined,
         })
         if (mounted.current) setData(res)
-    }, [project.id, windowMs, channels, types])
+    }, [project.id, windowMs, channels, types, useLogs])
 
     const buildOption = useCallback(() => {
         if (!data) return null
@@ -215,6 +218,14 @@ export default function BlastPerformance() {
                         value={statuses as string[]}
                         onChange={(vals: string[]) => setStatuses(vals as any)}
                     />
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <SwitchField<any, any>
+                            label="Use send logs"
+                            name={'useLogs' as any}
+                            checked={useLogs}
+                            onChange={setUseLogs}
+                        />
+                    </div>
                 </div>
             }
         >
