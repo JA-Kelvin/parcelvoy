@@ -19,6 +19,7 @@ import EventPostJob from '../client/EventPostJob'
 import { getPushDevicesForUser } from '../users/DeviceRepository'
 import Campaign from '../campaigns/Campaign'
 import { loadInAppChannel } from '../providers/inapp'
+import { insertSendEventFromCampaign } from '../campaigns/CampaignSendEventRepository'
 
 export const pagedTemplates = async (params: PageParams, projectId: number) => {
     return await Template.search(
@@ -118,6 +119,22 @@ export const sendProof = async (template: TemplateType, variables: Variables, re
         response = await sendInAppProof(campaign, template, variables)
     } else {
         throw new RequestError('Sending template proofs is only supported for email and text message types at this time.')
+    }
+
+    // Best-effort: write a send log entry for proof sends
+    try {
+        const providerMessageId = response?.messageId
+            ?? response?.MessageId
+            ?? response?.id
+            ?? response?.messageID
+        await insertSendEventFromCampaign(campaign, variables.user.id ?? 0, 'sent', {
+            reference_id: 'proof',
+            provider_id: campaign.provider_id,
+            provider_message_id: providerMessageId ? String(providerMessageId) : undefined,
+            meta: { proof: true, recipient, template_id: template.id },
+        })
+    } catch {
+        // ignore logging errors to avoid impacting proof sending
     }
 
     await EventPostJob.from({
