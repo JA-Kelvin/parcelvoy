@@ -29,6 +29,7 @@ import DebugController from '../debug/DebugController'
 import ProjectDebugController from '../debug/ProjectDebugController'
 import AnalyticsController from '../analytics/AnalyticsController'
 import ApiErrorLogController from '../error/ApiErrorLogController'
+import SendLogController from '../campaigns/SendLogController'
 
 export const register = (parent: Router, ...routers: Router[]) => {
     for (const router of routers) {
@@ -111,6 +112,7 @@ export const projectRouter = (prefix?: string) => {
         ResourceController,
         AnalyticsController,
         ApiErrorLogController,
+        SendLogController,
         ProjectDebugController,
     )
 }

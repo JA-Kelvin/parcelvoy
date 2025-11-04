@@ -368,6 +368,18 @@ const api = {
             .then(r => r.data),
     },
 
+    sendLogs: {
+        search: async (projectId: number | string, params: SearchParams) => await client
+            .get<SearchResult<any>>(`${projectUrl(projectId)}/send-logs`, { params })
+            .then(r => r.data),
+        exportUrl: (projectId: number | string, params: { format?: 'csv' | 'ndjson', filter?: Record<string, any> }) => {
+            const format = params.format ?? 'ndjson'
+            const filter = params.filter ? encodeURIComponent(JSON.stringify(params.filter)) : ''
+            const qs = `format=${format}${filter ? `&filter=${filter}` : ''}`
+            return apiUrl(projectId, `send-logs/export?${qs}`)
+        },
+    },
+
     tags: {
         ...createProjectEntityPath<Tag>('tags'),
         used: async (projectId: number | string, entity: string) => await client

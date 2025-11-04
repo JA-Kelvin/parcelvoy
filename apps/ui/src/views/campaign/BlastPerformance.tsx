@@ -8,6 +8,10 @@ import { ProjectContext } from '../../contexts'
 import { MultiSelect } from '../../ui/form/MultiSelect'
 import { SingleSelect } from '../../ui/form/SingleSelect'
 import SwitchField from '../../ui/form/SwitchField'
+import { SearchTable, useSearchTableQueryState } from '../../ui/SearchTable'
+import TextInput from '../../ui/form/TextInput'
+import { Button, Modal } from '../../ui'
+import { InfoTable } from '../../ui/InfoTable'
 
 const STATUSES = [
     'Upcoming',
@@ -64,6 +68,21 @@ export default function BlastPerformance() {
     const [option, setOption] = useState<any | null>(null)
     const mounted = useRef(true)
     const [useLogs, setUseLogs] = useState(false)
+
+    // Send Logs table state
+    const [logSelected, setLogSelected] = useState<any | null>(null)
+    const logsState = useSearchTableQueryState<any>(
+        useCallback(async params => await api.sendLogs.search(project.id, params), [project.id]),
+        {
+            limit: 25,
+            sort: 'id',
+            direction: 'desc',
+            filter: {
+                from: new Date(Date.now() - (60 * 60 * 1000)).toISOString(),
+                to: new Date().toISOString(),
+            },
+        },
+    )
 
     const fetchData = useCallback(async () => {
         const now = new Date()
@@ -181,6 +200,17 @@ export default function BlastPerformance() {
         setOption(buildOption())
     }, [data, buildOption])
 
+    // Keep logs table time window in sync with selected window
+    useEffect(() => {
+        const now = new Date()
+        const from = new Date(now.getTime() - windowMs)
+        logsState.setParams({
+            ...logsState.params,
+            filter: { ...(logsState.params.filter ?? {}), from: from.toISOString(), to: now.toISOString() },
+        })
+        // eslint-disable-next-line
+    }, [windowMs])
+
     const kpis = data?.kpisByChannel ?? {}
 
     return (
@@ -264,6 +294,74 @@ export default function BlastPerformance() {
                     />
                 )}
             </div>
+            <Heading size="h4" title="Send Logs" />
+            <SearchTable
+                {...logsState}
+                enableSearch
+                searchPlaceholder={'Search message id / channel / event'}
+                actions={
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <a href={api.sendLogs.exportUrl(project.id, { format: 'ndjson', filter: logsState.params.filter })} target="_blank" rel="noreferrer">
+                            <Button variant="secondary">NDJSON</Button>
+                        </a>
+                        <a href={api.sendLogs.exportUrl(project.id, { format: 'csv', filter: logsState.params.filter })} target="_blank" rel="noreferrer">
+                            <Button variant="secondary">CSV</Button>
+                        </a>
+                    </div>
+                }
+                filters={(() => {
+                    const filter = logsState.params.filter ?? {}
+                    const setFilter = (patch: Record<string, any>) => logsState.setParams({ ...logsState.params, filter: { ...filter, ...patch } })
+                    return [
+                        <SingleSelect key="channel" label={'Channel'} value={filter.channel ?? ''} onChange={v => setFilter({ channel: v || undefined })} options={['email', 'text', 'push', 'webhook', 'in_app']} />,
+                        <SingleSelect key="event" label={'Event'} value={filter.event ?? ''} onChange={v => setFilter({ event: v || undefined })} options={['queued', 'pending', 'throttled', 'sent', 'failed', 'bounced', 'aborted', 'opened', 'clicked', 'complained']} />,
+                        <TextInput key="campaign_id" name="campaign_id" label={'Campaign ID'} value={filter.campaign_id ?? ''} onChange={v => setFilter({ campaign_id: v || undefined })} />,
+                        <TextInput key="user_id" name="user_id" label={'User ID'} value={filter.user_id ?? ''} onChange={v => setFilter({ user_id: v || undefined })} />,
+                        <TextInput key="provider_message_id" name="provider_message_id" label={'Provider Message ID'} value={filter.provider_message_id ?? ''} onChange={v => setFilter({ provider_message_id: v || undefined })} />,
+                        <TextInput key="reference_type" name="reference_type" label={'Reference Type'} value={filter.reference_type ?? ''} onChange={v => setFilter({ reference_type: v || undefined })} />,
+                        <TextInput key="reference_id" name="reference_id" label={'Reference ID'} value={filter.reference_id ?? ''} onChange={v => setFilter({ reference_id: v || undefined })} />,
+                    ]
+                })()}
+                columns={[
+                    { key: 'id', title: 'ID', sortable: true },
+                    { key: 'created_at', title: 'Created', sortable: true },
+                    { key: 'channel', title: 'Channel' },
+                    { key: 'event', title: 'Event' },
+                    { key: 'campaign_id', title: 'Campaign' },
+                    { key: 'user_id', title: 'User' },
+                    { key: 'provider_message_id', title: 'Provider Message ID' },
+                    { key: 'reference_type', title: 'Ref Type' },
+                    { key: 'reference_id', title: 'Ref ID' },
+                ]}
+                onSelectRow={item => setLogSelected(item)}
+                selectedRow={logSelected?.id}
+            />
+
+            <Modal open={!!logSelected} onClose={() => setLogSelected(null)} title={'Send Log Detail'}>
+                {logSelected && (
+                    <div style={{ display: 'grid', gap: 12 }}>
+                        <InfoTable rows={{
+                            id: logSelected.id,
+                            created_at: logSelected.created_at,
+                            channel: logSelected.channel,
+                            event: logSelected.event,
+                            campaign_id: logSelected.campaign_id,
+                            user_id: logSelected.user_id,
+                            provider_message_id: logSelected.provider_message_id,
+                            reference_type: logSelected.reference_type,
+                            reference_id: logSelected.reference_id,
+                        }} />
+                        {logSelected.meta && (
+                            <div>
+                                <div style={{ fontWeight: 600, marginBottom: 4 }}>Meta</div>
+                                <div style={{ maxHeight: 300, overflow: 'auto', background: '#f6f8fa', padding: 8, borderRadius: 4 }}>
+                                    {typeof logSelected.meta === 'string' ? logSelected.meta : JSON.stringify(logSelected.meta, null, 2)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
         </PageContent>
     )
 }
