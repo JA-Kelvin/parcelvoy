@@ -20,18 +20,22 @@ router.get('/', async ctx => {
     const filter = params.filter || {}
 
     ctx.body = await CampaignSendEvent.search(
-        { ...params, fields: ['provider_message_id', 'event', 'channel'] },
+        { ...params, fields: ['campaign_send_events.provider_message_id', 'campaign_send_events.event', 'campaign_send_events.channel'] },
         qb => qb
-            .where('project_id', ctx.state.project.id)
-            .when(!!filter.channel, q => q.where('channel', filter.channel))
-            .when(!!filter.event, q => q.where('event', filter.event))
-            .when(!!filter.campaign_id, q => q.where('campaign_id', filter.campaign_id))
-            .when(!!filter.user_id, q => q.where('user_id', filter.user_id))
-            .when(!!filter.provider_message_id, q => q.where('provider_message_id', filter.provider_message_id))
-            .when(!!filter.reference_type, q => q.where('reference_type', filter.reference_type))
-            .when(!!filter.reference_id, q => q.where('reference_id', filter.reference_id))
-            .when(!!filter.from, q => q.where('created_at', '>=', new Date(filter.from)))
-            .when(!!filter.to, q => q.where('created_at', '<=', new Date(filter.to))),
+            // Include all columns from campaign_send_events plus campaign name
+            .select('campaign_send_events.*')
+            .leftJoin('campaigns', 'campaigns.id', 'campaign_send_events.campaign_id')
+            .select('campaigns.name as campaign_name')
+            .where('campaign_send_events.project_id', ctx.state.project.id)
+            .when(!!filter.channel, q => q.where('campaign_send_events.channel', filter.channel))
+            .when(!!filter.event, q => q.where('campaign_send_events.event', filter.event))
+            .when(!!filter.campaign_id, q => q.where('campaign_send_events.campaign_id', filter.campaign_id))
+            .when(!!filter.user_id, q => q.where('campaign_send_events.user_id', filter.user_id))
+            .when(!!filter.provider_message_id, q => q.where('campaign_send_events.provider_message_id', filter.provider_message_id))
+            .when(!!filter.reference_type, q => q.where('campaign_send_events.reference_type', filter.reference_type))
+            .when(!!filter.reference_id, q => q.where('campaign_send_events.reference_id', filter.reference_id))
+            .when(!!filter.from, q => q.where('campaign_send_events.created_at', '>=', new Date(filter.from)))
+            .when(!!filter.to, q => q.where('campaign_send_events.created_at', '<=', new Date(filter.to))),
     )
 })
 

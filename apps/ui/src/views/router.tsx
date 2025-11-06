@@ -173,6 +173,7 @@ export const createRouter = ({
                                 {
                                     key: 'campaigns',
                                     to: 'campaigns',
+                                    end: true,
                                     children: <Translation>{ t => t('campaigns') }</Translation>,
                                     icon: <CampaignsIcon />,
                                     minRole: 'editor',

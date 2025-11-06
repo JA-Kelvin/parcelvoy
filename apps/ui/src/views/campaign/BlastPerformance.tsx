@@ -318,7 +318,7 @@ export default function BlastPerformance() {
                         <TextInput key="campaign_id" name="campaign_id" label={'Campaign ID'} value={filter.campaign_id ?? ''} onChange={v => setFilter({ campaign_id: v || undefined })} />,
                         <TextInput key="user_id" name="user_id" label={'User ID'} value={filter.user_id ?? ''} onChange={v => setFilter({ user_id: v || undefined })} />,
                         <TextInput key="provider_message_id" name="provider_message_id" label={'Provider Message ID'} value={filter.provider_message_id ?? ''} onChange={v => setFilter({ provider_message_id: v || undefined })} />,
-                        <TextInput key="reference_type" name="reference_type" label={'Reference Type'} value={filter.reference_type ?? ''} onChange={v => setFilter({ reference_type: v || undefined })} />,
+                        <SingleSelect key="reference_type" label={'Reference Type'} value={filter.reference_type ?? ''} onChange={v => setFilter({ reference_type: v || undefined })} options={['journey', 'trigger']} />,
                         <TextInput key="reference_id" name="reference_id" label={'Reference ID'} value={filter.reference_id ?? ''} onChange={v => setFilter({ reference_id: v || undefined })} />,
                     ]
                 })()}
@@ -327,7 +327,11 @@ export default function BlastPerformance() {
                     { key: 'created_at', title: 'Created', sortable: true },
                     { key: 'channel', title: 'Channel' },
                     { key: 'event', title: 'Event' },
-                    { key: 'campaign_id', title: 'Campaign' },
+                    {
+                        key: 'campaign',
+                        title: 'Campaign',
+                        cell: ({ item }: { item: any }) => item.campaign_name ?? item.campaign_id,
+                    },
                     { key: 'user_id', title: 'User' },
                     { key: 'provider_message_id', title: 'Provider Message ID' },
                     { key: 'reference_type', title: 'Ref Type' },
@@ -345,7 +349,7 @@ export default function BlastPerformance() {
                             created_at: logSelected.created_at,
                             channel: logSelected.channel,
                             event: logSelected.event,
-                            campaign_id: logSelected.campaign_id,
+                            campaign: logSelected.campaign_name ?? logSelected.campaign_id,
                             user_id: logSelected.user_id,
                             provider_message_id: logSelected.provider_message_id,
                             reference_type: logSelected.reference_type,
