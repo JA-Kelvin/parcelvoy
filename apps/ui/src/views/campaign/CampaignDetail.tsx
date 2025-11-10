@@ -133,7 +133,7 @@ export default function CampaignDetail() {
             />}
             actions={
                 <>
-                    {checkProjectRole('publisher', project.role) && (
+                    {checkProjectRole('editor', project.role) && (
                         campaign.type !== 'trigger' && action[state]
                     )}
                     <Menu size="regular">
