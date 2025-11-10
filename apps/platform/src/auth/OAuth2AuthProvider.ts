@@ -203,7 +203,7 @@ export default class OAuth2AuthProvider extends AuthProvider {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                     'X-APP-VERSION': '1.0.0',
-                    'X-APP-NAME': 'web',
+                    'X-APP-PLATFORM': 'web',
                 },
             })
 
