@@ -144,6 +144,7 @@ const MJML_COMPONENTS: ComponentDefinition[] = [
         defaultAttributes: {
             width: '100%',
             alt: 'Image',
+            padding: '0px 0px',
         },
         isVoid: true,
     },

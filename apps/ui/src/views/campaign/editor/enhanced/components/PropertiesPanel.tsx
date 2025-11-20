@@ -217,6 +217,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         { key: 'height', label: 'Height', type: 'text', placeholder: 'auto' },
                         { key: 'border-radius', label: 'Border Radius', type: 'text', placeholder: '4px' },
                         { key: 'fluid-on-mobile', label: 'Fluid on Mobile', type: 'select', options: ['true', 'false'] },
+                        { key: 'padding', label: 'Padding', type: 'text', placeholder: '0px 0px' },
                         { key: 'align', label: 'Alignment', type: 'select', options: ['left', 'center', 'right'] },
                         { key: 'href', label: 'Link URL', type: 'url', placeholder: 'https://example.com' },
                         { key: 'target', label: 'Link Target', type: 'select', options: ['_self', '_blank'] },
