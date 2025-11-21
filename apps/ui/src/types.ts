@@ -432,7 +432,7 @@ export type CampaignCreateParams = Pick<Campaign, 'name' | 'type' | 'list_ids' |
 export type CampaignLaunchType = 'now' | 'later'
 export type CampaignLaunchParams = Pick<Campaign, 'send_at' | 'send_in_user_timezone' | 'state'> & { launch_type?: CampaignLaunchType }
 // export type ListUpdateParams = Pick<List, 'name' | 'rule'>
-export type CampaignUser = User & { state: CampaignSendState, send_at: string }
+export type CampaignUser = User & { state: CampaignSendState, send_at: string, sent_at?: string }
 
 interface NamedEmail { name: string, address: string }
 export interface EmailTemplateData {

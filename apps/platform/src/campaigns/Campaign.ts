@@ -79,6 +79,7 @@ export class CampaignSend extends SQLModel {
     send_at!: string | Date
     opened_at!: string | Date
     clicks!: number
+    sent_at?: string | Date
     reference_type?: CampaignSendReferenceType
     reference_id?: string
 

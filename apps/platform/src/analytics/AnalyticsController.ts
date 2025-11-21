@@ -87,16 +87,16 @@ router.get('/blast-performance', async (ctx: Context & { state: ProjectState }) 
         const qb = CampaignSend.query()
             .join('campaigns', 'campaigns.id', 'campaign_sends.campaign_id')
             .where('campaigns.project_id', projectId)
-            .where('campaign_sends.send_at', '>=', from)
-            .where('campaign_sends.send_at', '<=', to)
+            .whereRaw('COALESCE(campaign_sends.sent_at, campaign_sends.send_at) >= ?', [from])
+            .whereRaw('COALESCE(campaign_sends.sent_at, campaign_sends.send_at) <= ?', [to])
         if (channels.length > 0) qb.whereIn('campaigns.channel', channels)
         if (types.length > 0) qb.whereIn('campaigns.type', types)
 
         rows = await qb
             .select(
-                CampaignSend.raw(`FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(campaign_sends.send_at)/${bucketSeconds}) * ${bucketSeconds}) AS bucket`),
+                CampaignSend.raw(`FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(COALESCE(campaign_sends.sent_at, campaign_sends.send_at))/${bucketSeconds}) * ${bucketSeconds}) AS bucket`),
                 'campaigns.channel as channel',
-                CampaignSend.raw("CASE WHEN campaign_sends.state = 'pending' AND campaign_sends.send_at > NOW() THEN 'Upcoming' ELSE campaign_sends.state END AS status"),
+                CampaignSend.raw("CASE WHEN campaign_sends.state = 'pending' AND COALESCE(campaign_sends.sent_at, campaign_sends.send_at) > NOW() THEN 'Upcoming' ELSE campaign_sends.state END AS status"),
                 CampaignSend.raw('COUNT(*) as count'),
                 CampaignSend.raw('SUM(CASE WHEN campaign_sends.opened_at IS NOT NULL THEN 1 ELSE 0 END) as opens'),
                 CampaignSend.raw('SUM(CASE WHEN campaign_sends.clicks > 0 THEN 1 ELSE 0 END) as clicks'),

@@ -245,7 +245,7 @@ export const getCampaignUsers = async (id: number, params: PageParams, projectId
         b => b.rightJoin('campaign_sends', 'campaign_sends.user_id', 'users.id')
             .where('project_id', projectId)
             .where('campaign_id', id)
-            .select('users.*', 'state', 'send_at', 'opened_at', 'clicks'),
+            .select('users.*', 'state', 'send_at', 'sent_at', 'opened_at', 'clicks'),
     )
 }
 

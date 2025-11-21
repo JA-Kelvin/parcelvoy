@@ -78,6 +78,7 @@ export default class CampaignExportJob extends Job {
                 'users.phone',
                 'campaign_sends.state',
                 'campaign_sends.send_at',
+                'campaign_sends.sent_at',
                 'campaign_sends.opened_at',
                 'campaign_sends.clicks',
             )
@@ -91,7 +92,7 @@ export default class CampaignExportJob extends Job {
         const uploadPromise = storage.upload({ stream: content, url: resolved })
 
         if (format === 'csv') {
-            content.write('\uFEFFuser_id,external_id,email,phone,state,send_at,opened_at,clicks\n')
+            content.write('\uFEFFuser_id,external_id,email,phone,state,send_at,sent_at,opened_at,clicks\n')
         }
 
         let processed = 0
@@ -104,6 +105,7 @@ export default class CampaignExportJob extends Job {
                     row.phone ?? '',
                     row.state ?? '',
                     row.send_at ? new Date(row.send_at).toISOString() : '',
+                    row.sent_at ? new Date(row.sent_at).toISOString() : '',
                     row.opened_at ? new Date(row.opened_at).toISOString() : '',
                     row.clicks ?? 0,
                 ]

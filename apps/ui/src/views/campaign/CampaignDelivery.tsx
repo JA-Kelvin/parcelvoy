@@ -210,7 +210,15 @@ export default function CampaignDelivery() {
                                 cell: ({ item: { state } }) => CampaignSendTag({ state }),
                                 sortable: true,
                             },
-                            { key: 'send_at', title: t('send_at'), sortable: true },
+                            {
+                                key: 'send_at',
+                                title: t('send_at'),
+                                sortable: true,
+                                cell: ({ item: { send_at, sent_at } }) => {
+                                    const effective = sent_at ?? send_at
+                                    return effective ? formatDate(preferences, effective) : ''
+                                },
+                            },
                             { key: 'opened_at', title: t('opened_at') },
                             { key: 'clicks', title: t('clicks') },
                         ]}

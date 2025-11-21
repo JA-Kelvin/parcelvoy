@@ -28,15 +28,35 @@ const STATUS_COLORS: Record<(typeof STATUSES)[number], string> = {
     aborted: 'var(--color-orange)',
 }
 
-type WindowKey = '5m' | '15m' | '30m' | '60m' | '1d' | '2d'
+type WindowKey =
+    | '5m'
+    | '15m'
+    | '30m'
+    | '60m'
+    | '2h'
+    | '6h'
+    | '12h'
+    | '1d'
+    | '2d'
+    | '7d'
+    | '30d'
+    | '90d'
+    | '180d'
 
 const WINDOW_PRESETS: Array<{ key: WindowKey, label: string, ms: number }> = [
     { key: '5m', label: '5m (past & next)', ms: 5 * 60 * 1000 },
     { key: '15m', label: '15m (past & next)', ms: 15 * 60 * 1000 },
     { key: '30m', label: '30m (past & next)', ms: 30 * 60 * 1000 },
     { key: '60m', label: '60m (past & next)', ms: 60 * 60 * 1000 },
+    { key: '2h', label: '2h (past & next)', ms: 2 * 60 * 60 * 1000 },
+    { key: '6h', label: '6h (past & next)', ms: 6 * 60 * 60 * 1000 },
+    { key: '12h', label: '12h (past & next)', ms: 12 * 60 * 60 * 1000 },
     { key: '1d', label: '1 day (past & next)', ms: 24 * 60 * 60 * 1000 },
     { key: '2d', label: '2 days (past & next)', ms: 2 * 24 * 60 * 60 * 1000 },
+    { key: '7d', label: '7 days (past & next)', ms: 7 * 24 * 60 * 60 * 1000 },
+    { key: '30d', label: '30 days (past & next)', ms: 30 * 24 * 60 * 60 * 1000 },
+    { key: '90d', label: '90 days (past & next)', ms: 90 * 24 * 60 * 60 * 1000 },
+    { key: '180d', label: '180 days (past & next)', ms: 180 * 24 * 60 * 60 * 1000 },
 ]
 
 function bucketMsForRange(rangeMs: number): number {
@@ -53,7 +73,7 @@ function floorToBucket(ts: number, bucketMs: number): number {
 }
 
 function getStatusForPoint(user: CampaignUser, nowMs: number): (typeof STATUSES)[number] {
-    const sendAt = Date.parse(user.send_at)
+    const sendAt = Date.parse(user.sent_at ?? user.send_at)
     if (sendAt > nowMs) return 'Upcoming'
     // else use user state (already constrained by CampaignSendState)
     return user.state as any
@@ -110,7 +130,7 @@ export default function BlastMonitor() {
             })
 
             for (const user of res.results) {
-                const sendAt = Date.parse(user.send_at)
+                const sendAt = Date.parse(user.sent_at ?? user.send_at)
                 if (sendAt < startTime) { // we've gone past window on the old side
                     stop = true
                     break

@@ -244,6 +244,7 @@ router.get('/:campaignId/export', async ctx => {
             'users.phone',
             'campaign_sends.state',
             'campaign_sends.send_at',
+            'campaign_sends.sent_at',
             'campaign_sends.opened_at',
             'campaign_sends.clicks',
         )
@@ -261,7 +262,7 @@ router.get('/:campaignId/export', async ctx => {
 
     if (format !== 'ndjson') {
         // Write UTF-8 BOM to help Excel and immediately send first bytes to keep proxies happy
-        await write('\uFEFFuser_id,external_id,email,phone,state,send_at,opened_at,clicks\n')
+        await write('\uFEFFuser_id,external_id,email,phone,state,send_at,sent_at,opened_at,clicks\n')
     }
 
     let aborted = false
@@ -282,6 +283,7 @@ router.get('/:campaignId/export', async ctx => {
                         row.phone ?? '',
                         row.state ?? '',
                         row.send_at ? new Date(row.send_at).toISOString() : '',
+                        row.sent_at ? new Date(row.sent_at).toISOString() : '',
                         row.opened_at ? new Date(row.opened_at).toISOString() : '',
                         row.clicks ?? 0,
                     ]
