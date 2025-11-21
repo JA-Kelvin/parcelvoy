@@ -33,14 +33,34 @@ const STATUS_COLORS: Record<(typeof STATUSES)[number], string> = {
     aborted: 'var(--color-orange)',
 }
 
-type WindowKey = '5m' | '15m' | '30m' | '60m' | '1d' | '2d'
+type WindowKey =
+    | '5m'
+    | '15m'
+    | '30m'
+    | '60m'
+    | '2h'
+    | '6h'
+    | '12h'
+    | '1d'
+    | '2d'
+    | '7d'
+    | '30d'
+    | '90d'
+    | '180d'
 const WINDOW_PRESETS: Array<{ key: WindowKey, label: string, ms: number }> = [
-    { key: '5m', label: '5 minutes', ms: 5 * 60 * 1000 },
-    { key: '15m', label: '15 minutes', ms: 15 * 60 * 1000 },
-    { key: '30m', label: '30 minutes', ms: 30 * 60 * 1000 },
-    { key: '60m', label: '1 hour', ms: 60 * 60 * 1000 },
-    { key: '1d', label: '1 day', ms: 24 * 60 * 60 * 1000 },
-    { key: '2d', label: '2 days', ms: 2 * 24 * 60 * 60 * 1000 },
+    { key: '5m', label: '5m (past & next)', ms: 5 * 60 * 1000 },
+    { key: '15m', label: '15m (past & next)', ms: 15 * 60 * 1000 },
+    { key: '30m', label: '30m (past & next)', ms: 30 * 60 * 1000 },
+    { key: '60m', label: '60m (past & next)', ms: 60 * 60 * 1000 },
+    { key: '2h', label: '2h (past & next)', ms: 2 * 60 * 60 * 1000 },
+    { key: '6h', label: '6h (past & next)', ms: 6 * 60 * 60 * 1000 },
+    { key: '12h', label: '12h (past & next)', ms: 12 * 60 * 60 * 1000 },
+    { key: '1d', label: '1 day (past & next)', ms: 24 * 60 * 60 * 1000 },
+    { key: '2d', label: '2 days (past & next)', ms: 2 * 24 * 60 * 60 * 1000 },
+    { key: '7d', label: '7 days (past & next)', ms: 7 * 24 * 60 * 60 * 1000 },
+    { key: '30d', label: '30 days (past & next)', ms: 30 * 24 * 60 * 60 * 1000 },
+    { key: '90d', label: '90 days (past & next)', ms: 90 * 24 * 60 * 60 * 1000 },
+    { key: '180d', label: '180 days (past & next)', ms: 180 * 24 * 60 * 60 * 1000 },
 ]
 
 const ALL_CHANNELS = ['email', 'text', 'push', 'webhook', 'in_app'] as const
