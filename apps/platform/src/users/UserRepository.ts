@@ -95,7 +95,6 @@ export const pagedUsers = async (params: PageParams, projectId: number) => {
         {
             ...params,
             fields: ['external_id', 'email', 'phone'],
-            mode: 'exact',
         },
         qb => {
             qb.where('project_id', projectId)
